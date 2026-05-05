@@ -163,6 +163,30 @@ details>summary{font-size:12px !important;color:#6B7280 !important}
     border:1px solid #E5E7EB !important;overflow:hidden !important}
 .stSpinner>div{border-top-color:#111 !important}
 
+/* ── Metric cards (step 4 summary) ── */
+[data-testid="stMetric"]{
+    background:#fff !important;
+    border:1px solid #E5E7EB !important;
+    border-radius:10px !important;
+    padding:10px 12px !important;
+    margin-bottom:0 !important;
+}
+[data-testid="stMetricLabel"]{
+    font-size:10px !important;
+    font-weight:700 !important;
+    color:#9CA3AF !important;
+    text-transform:uppercase !important;
+    letter-spacing:.7px !important;
+}
+[data-testid="stMetricValue"]{
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:#111 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+}
+
 /* ── Dataframe improvements ── */
 [data-testid="stDataFrame"]{
     border-radius:12px !important;
@@ -915,26 +939,32 @@ if st.session_state.tab == "input":
           </div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown(
-            '<div class="sec-lbl" style="margin-top:14px">Ringkasan</div>',
-            unsafe_allow_html=True,
-        )
-        card_list_open()
-        for lbl, key, clr, ufmt in [
-            ("Booking ID",   "booking_id", "#EF4444", False),
-            ("Supplier",     "supplier",   "#D946EF", False),
-            ("Hotel",        "hotel",      "#22C55E", False),
-            ("Guest Name",   "name",       "#EC4899", False),
-            ("Check-in",     "checkin",    "#3B82F6", False),
-            ("Room × Night", "qty",        "#0D9488", False),
-            ("Check-out",    "checkout",   "#7C3AED", False),
-            ("Total (Rp)",   "room",       "#EA580C", True),
-            ("Credit Card",  "card",       "#F43F5E", False),
-            ("Issuer",       "issuer",     "#6366F1", False),
-            ("PIC",          "pic",        "#0891B2", False),
-        ]:
-            field_row(lbl, fmt(d.get(key, 0)) if ufmt else d.get(key, ""), clr)
-        card_list_close()
+        # ── 2-column metric grid summary ────────────────────────────────────
+        st.markdown('<div class="sec-lbl" style="margin-top:14px">Ringkasan</div>',
+                    unsafe_allow_html=True)
+
+        _pairs = [
+            ("Booking ID",   d.get("booking_id",  "—")),
+            ("Supplier",     d.get("supplier",     "—")),
+            ("Hotel",        d.get("hotel",        "—")),
+            ("Guest Name",   d.get("name",         "—")),
+            ("Check-in",     d.get("checkin",      "—")),
+            ("Check-out",    d.get("checkout",     "—")),
+            ("Room × Night", d.get("qty",          "—")),
+            ("Total (Rp)",   fmt(d.get("room", 0))),
+            ("Credit Card",  d.get("card",         "—")),
+            ("Issuer",       d.get("issuer",       "—")),
+            ("PIC",          d.get("pic",          "—")),
+        ]
+        # Add optional fields only if filled
+        if d.get("no_bc"):
+            _pairs.append(("No. BC", d.get("no_bc")))
+        if d.get("nama_kegiatan"):
+            _pairs.append(("Nama Kegiatan", d.get("nama_kegiatan")))
+
+        _g1, _g2 = st.columns(2)
+        for _i, (_lbl, _val) in enumerate(_pairs):
+            (_g1 if _i % 2 == 0 else _g2).metric(_lbl, _val or "—")
 
         if st.button("➕  Input Baru", type="primary", use_container_width=True):
             reset()
