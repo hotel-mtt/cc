@@ -162,6 +162,59 @@ details>summary{font-size:12px !important;color:#6B7280 !important}
 [data-testid="stDataFrame"]{border-radius:11px !important;
     border:1px solid #E5E7EB !important;overflow:hidden !important}
 .stSpinner>div{border-top-color:#111 !important}
+
+/* ── Metric cards (step 4 summary) ── */
+[data-testid="stMetric"]{
+    background:#fff !important;
+    border:1px solid #E5E7EB !important;
+    border-radius:10px !important;
+    padding:10px 12px !important;
+    margin-bottom:0 !important;
+}
+[data-testid="stMetricLabel"]{
+    font-size:10px !important;
+    font-weight:700 !important;
+    color:#9CA3AF !important;
+    text-transform:uppercase !important;
+    letter-spacing:.7px !important;
+}
+[data-testid="stMetricValue"]{
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:#111 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+}
+
+/* ── Dataframe improvements ── */
+[data-testid="stDataFrame"]{
+    border-radius:12px !important;
+    border:1px solid #E5E7EB !important;
+    overflow:hidden !important;
+    box-shadow:0 1px 3px rgba(0,0,0,.04) !important;
+}
+[data-testid="stDataFrame"] table{font-size:12px !important}
+[data-testid="stDataFrame"] th{
+    background:#F9FAFB !important;
+    color:#6B7280 !important;
+    font-size:11px !important;
+    font-weight:600 !important;
+    text-transform:uppercase !important;
+    letter-spacing:.5px !important;
+    border-bottom:1px solid #E5E7EB !important;
+    padding:10px 12px !important;
+}
+[data-testid="stDataFrame"] td{
+    font-size:12px !important;
+    color:#111827 !important;
+    padding:9px 12px !important;
+    border-bottom:1px solid #F9FAFB !important;
+    vertical-align:middle !important;
+}
+[data-testid="stDataFrame"] tr:hover td{
+    background:#F9FAFB !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -196,7 +249,8 @@ COLS = [
     "Timestamp Input", "Supplier",      "Booking ID",  "Booking Date",
     "Issued Date",     "Hotel",         "Check-in",    "Room x Night",
     "Total (Rp)",      "Check-out",     "Guest Name",  "Kartu Kredit",
-    "Issuer",          "PIC",           "Catatan",
+    "Issuer",          "PIC",           "No. BC",          "Nama Kegiatan",
+    "Catatan",
 ]
 
 
@@ -224,7 +278,8 @@ def save_row(d: dict):
             "timestamp_input", "supplier",  "booking_id", "booked_on",
             "issued_on",       "hotel",     "checkin",    "qty",
             "room",            "checkout",  "name",       "card",
-            "issuer",          "pic",       "notes",
+            "issuer",          "pic",       "no_bc",     "nama_kegiatan",
+            "notes",
         ]],
         value_input_option="USER_ENTERED",
     )
@@ -547,42 +602,81 @@ if st.session_state.tab == "input":
     if st.session_state.step == 1:
 
         m = st.session_state.mode
+        # ── Mode selector — pure Streamlit buttons styled as cards via CSS ──────
+        st.markdown("""
+        <style>
+        div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"])
+            button[kind="secondary"] {
+            height: 88px !important;
+            border: 1.5px solid #E5E7EB !important;
+            border-radius: 12px !important;
+            background: #fff !important;
+            color: #111 !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            padding: 8px 4px !important;
+            transition: all .18s !important;
+            white-space: pre-line !important;
+            line-height: 1.5 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"])
+            button[kind="secondary"]:hover {
+            border-color: #555 !important;
+            background: #F9FAFB !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08) !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"])
+            button[kind="primary"] {
+            height: 88px !important;
+            border: 2.5px solid #111 !important;
+            border-radius: 12px !important;
+            background: #F9FAFB !important;
+            color: #111 !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            padding: 8px 4px !important;
+            box-shadow: 0 0 0 2.5px #111 !important;
+            white-space: pre-line !important;
+            line-height: 1.5 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         st.markdown('<div class="sec-lbl">Metode input</div>', unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div class="mode-grid">
-          <div class="mode-card {'on' if m=='text'  else ''}">
-            <span class="ic">✏️</span>
-            <div class="lb">Teks Bebas</div>
-            <div class="sb">Ketik langsung</div>
-          </div>
-          <div class="mode-card {'on' if m=='photo' else ''}">
-            <span class="ic">📄</span>
-            <div class="lb">Dokumen</div>
-            <div class="sb">PDF · Foto</div>
-          </div>
-          <div class="mode-card {'on' if m=='both'  else ''}">
-            <span class="ic">🗒️</span>
-            <div class="lb">Kombinasi</div>
-            <div class="sb">Dok + catatan</div>
-          </div>
-        </div>""", unsafe_allow_html=True)
-
-        mc1, mc2, mc3 = st.columns(3)
-        for col, mid, mlbl in [
-            (mc1, "text",  "Teks"),
-            (mc2, "photo", "Dokumen"),
-            (mc3, "both",  "Kombinasi"),
-        ]:
-            with col:
-                if st.button(
-                    mlbl, key=f"m_{mid}", use_container_width=True,
-                    type="primary" if m == mid else "secondary",
-                ):
-                    st.session_state.mode   = mid
-                    st.session_state.imgs   = []
-                    st.session_state.pdfraw = b""
-                    st.rerun()
+        _NL = "\n"
+        _mc1, _mc2, _mc3 = st.columns(3)
+        with _mc1:
+            if st.button(
+                f"✏️{_NL}Teks Bebas{_NL}Ketik langsung",
+                key="m_text", use_container_width=True,
+                type="primary" if m == "text" else "secondary",
+            ):
+                st.session_state.mode   = "text"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
+        with _mc2:
+            if st.button(
+                f"📄{_NL}Dokumen{_NL}PDF · Foto",
+                key="m_photo", use_container_width=True,
+                type="primary" if m == "photo" else "secondary",
+            ):
+                st.session_state.mode   = "photo"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
+        with _mc3:
+            if st.button(
+                f"🗒️{_NL}Kombinasi{_NL}Dok + catatan",
+                key="m_both", use_container_width=True,
+                type="primary" if m == "both" else "secondary",
+            ):
+                st.session_state.mode   = "both"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
 
         report_text = ""
 
@@ -654,7 +748,7 @@ if st.session_state.tab == "input":
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-        if st.button("✦  Auto-generate", type="primary", use_container_width=True):
+        if st.button("✦  Proses dengan AI", type="primary", use_container_width=True):
             has_txt = bool(report_text.strip()) if m in ("text", "both") else False
             has_doc = bool(st.session_state.imgs)
             if not has_txt and not has_doc:
@@ -785,6 +879,13 @@ if st.session_state.tab == "input":
                 value=st.session_state.get("last_pic", ""),
                 placeholder="Nama penanggung jawab")
 
+            c9, c10 = st.columns(2)
+            no_bc         = c9.text_input("No. BC",
+                value=p.get("no_bc", ""),
+                placeholder="Nomor BC (opsional)")
+            nama_kegiatan = c10.text_input("Nama Kegiatan",
+                value=p.get("nama_kegiatan", ""),
+                placeholder="Nama kegiatan (opsional)")
             notes = st.text_area("Catatan", value=p.get("notes", ""), height=68)
 
             sb1, sb2 = st.columns(2)
@@ -853,7 +954,8 @@ if st.session_state.tab == "input":
                                     "qty":       qty,        "room":       room,
                                     "checkout":  checkout,   "name":       name,
                                     "card":      card,       "issuer":     issuer,
-                                    "pic":       pic,        "notes":      notes,
+                                    "pic":       pic,        "no_bc":      no_bc,
+                                    "nama_kegiatan": nama_kegiatan, "notes": notes,
                                 }
                                 save_row(row)
                                 st.session_state.saved = row
@@ -876,26 +978,32 @@ if st.session_state.tab == "input":
           </div>
         </div>""", unsafe_allow_html=True)
 
-        st.markdown(
-            '<div class="sec-lbl" style="margin-top:14px">Ringkasan</div>',
-            unsafe_allow_html=True,
-        )
-        card_list_open()
-        for lbl, key, clr, ufmt in [
-            ("Booking ID",   "booking_id", "#EF4444", False),
-            ("Supplier",     "supplier",   "#D946EF", False),
-            ("Hotel",        "hotel",      "#22C55E", False),
-            ("Guest Name",   "name",       "#EC4899", False),
-            ("Check-in",     "checkin",    "#3B82F6", False),
-            ("Room × Night", "qty",        "#0D9488", False),
-            ("Check-out",    "checkout",   "#7C3AED", False),
-            ("Total (Rp)",   "room",       "#EA580C", True),
-            ("Credit Card",  "card",       "#F43F5E", False),
-            ("Issuer",       "issuer",     "#6366F1", False),
-            ("PIC",          "pic",        "#0891B2", False),
-        ]:
-            field_row(lbl, fmt(d.get(key, 0)) if ufmt else d.get(key, ""), clr)
-        card_list_close()
+        # ── 2-column metric grid summary ────────────────────────────────────
+        st.markdown('<div class="sec-lbl" style="margin-top:14px">Ringkasan</div>',
+                    unsafe_allow_html=True)
+
+        _pairs = [
+            ("Booking ID",   d.get("booking_id",  "—")),
+            ("Supplier",     d.get("supplier",     "—")),
+            ("Hotel",        d.get("hotel",        "—")),
+            ("Guest Name",   d.get("name",         "—")),
+            ("Check-in",     d.get("checkin",      "—")),
+            ("Check-out",    d.get("checkout",     "—")),
+            ("Room × Night", d.get("qty",          "—")),
+            ("Total (Rp)",   fmt(d.get("room", 0))),
+            ("Credit Card",  d.get("card",         "—")),
+            ("Issuer",       d.get("issuer",       "—")),
+            ("PIC",          d.get("pic",          "—")),
+        ]
+        # Add optional fields only if filled
+        if d.get("no_bc"):
+            _pairs.append(("No. BC", d.get("no_bc")))
+        if d.get("nama_kegiatan"):
+            _pairs.append(("Nama Kegiatan", d.get("nama_kegiatan")))
+
+        _g1, _g2 = st.columns(2)
+        for _i, (_lbl, _val) in enumerate(_pairs):
+            (_g1 if _i % 2 == 0 else _g2).metric(_lbl, _val or "—")
 
         if st.button("➕  Input Baru", type="primary", use_container_width=True):
             reset()
@@ -964,7 +1072,7 @@ elif st.session_state.tab == "dashboard":
             </div>""", unsafe_allow_html=True)
 
             srch = st.text_input(
-                "", placeholder="Cari hotel / tamu / booking ID...",
+                "", placeholder="🔍  Cari hotel / tamu / booking ID...",
                 label_visibility="collapsed", key="srch",
             )
             if srch:
@@ -978,10 +1086,36 @@ elif st.session_state.tab == "dashboard":
                 '<div class="sec-lbl">Data transaksi</div>',
                 unsafe_allow_html=True,
             )
+
+            # ── Force Booking ID as plain string (prevent comma-formatting) ──
+            display_df = df.iloc[::-1].reset_index(drop=True).copy()
+            if "Booking ID" in display_df.columns:
+                display_df["Booking ID"] = display_df["Booking ID"].astype(str)
+
+            # ── Column config: Booking ID as plain text, Total formatted ──────
+            import streamlit as _st
+            col_cfg = {}
+            if "Booking ID" in display_df.columns:
+                col_cfg["Booking ID"] = st.column_config.TextColumn(
+                    "Booking ID",
+                    help="Nomor booking",
+                )
+            if "Total (Rp)" in display_df.columns:
+                col_cfg["Total (Rp)"] = st.column_config.NumberColumn(
+                    "Total (Rp)",
+                    format="Rp %d",
+                )
+            if "Room x Night" in display_df.columns:
+                col_cfg["Room x Night"] = st.column_config.TextColumn("Room × Night")
+            if "Timestamp Input" in display_df.columns:
+                col_cfg["Timestamp Input"] = st.column_config.TextColumn("Timestamp")
+
             st.dataframe(
-                df.iloc[::-1].reset_index(drop=True),
+                display_df,
                 use_container_width=True,
-                height=340,
+                height=360,
+                column_config=col_cfg,
+                hide_index=True,
             )
 
     except Exception as e:
@@ -1126,7 +1260,7 @@ elif st.session_state.tab == "settings":
     if oai_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
         <div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
-        <div class="st-sub">API key dikonfigurasi</div></div>
+        <div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
         <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
@@ -1154,7 +1288,7 @@ elif st.session_state.tab == "settings":
     if sh_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">📊</div>
         <div class="st-body"><div class="st-title">Google Sheets</div>
-        <div class="st-sub">Terhubung</div></div>
+        <div class="st-sub">Terhubung via secrets.toml</div></div>
         <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">📊</div>
@@ -1209,7 +1343,7 @@ st.markdown("""
     color:#9CA3AF;
     line-height:1.8;
 ">
-  Built with 🦖 &nbsp;·&nbsp; AI CC Reporting System v5<br>
+  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v5<br>
   <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
      style="color:#0A66C2;font-weight:600;text-decoration:none;
             display:inline-flex;align-items:center;gap:4px;margin-top:4px">
@@ -1224,4 +1358,3 @@ st.markdown("""
   </a>
 </div>
 """, unsafe_allow_html=True)
- 
