@@ -162,6 +162,35 @@ details>summary{font-size:12px !important;color:#6B7280 !important}
 [data-testid="stDataFrame"]{border-radius:11px !important;
     border:1px solid #E5E7EB !important;overflow:hidden !important}
 .stSpinner>div{border-top-color:#111 !important}
+
+/* ── Dataframe improvements ── */
+[data-testid="stDataFrame"]{
+    border-radius:12px !important;
+    border:1px solid #E5E7EB !important;
+    overflow:hidden !important;
+    box-shadow:0 1px 3px rgba(0,0,0,.04) !important;
+}
+[data-testid="stDataFrame"] table{font-size:12px !important}
+[data-testid="stDataFrame"] th{
+    background:#F9FAFB !important;
+    color:#6B7280 !important;
+    font-size:11px !important;
+    font-weight:600 !important;
+    text-transform:uppercase !important;
+    letter-spacing:.5px !important;
+    border-bottom:1px solid #E5E7EB !important;
+    padding:10px 12px !important;
+}
+[data-testid="stDataFrame"] td{
+    font-size:12px !important;
+    color:#111827 !important;
+    padding:9px 12px !important;
+    border-bottom:1px solid #F9FAFB !important;
+    vertical-align:middle !important;
+}
+[data-testid="stDataFrame"] tr:hover td{
+    background:#F9FAFB !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -196,7 +225,8 @@ COLS = [
     "Timestamp Input", "Supplier",      "Booking ID",  "Booking Date",
     "Issued Date",     "Hotel",         "Check-in",    "Room x Night",
     "Total (Rp)",      "Check-out",     "Guest Name",  "Kartu Kredit",
-    "Issuer",          "PIC",           "Catatan",
+    "Issuer",          "PIC",           "No. BC",          "Nama Kegiatan",
+    "Catatan",
 ]
 
 
@@ -224,7 +254,8 @@ def save_row(d: dict):
             "timestamp_input", "supplier",  "booking_id", "booked_on",
             "issued_on",       "hotel",     "checkin",    "qty",
             "room",            "checkout",  "name",       "card",
-            "issuer",          "pic",       "notes",
+            "issuer",          "pic",       "no_bc",     "nama_kegiatan",
+            "notes",
         ]],
         value_input_option="USER_ENTERED",
     )
@@ -654,7 +685,7 @@ if st.session_state.tab == "input":
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-        if st.button("✦  Auto-generate", type="primary", use_container_width=True):
+        if st.button("✦  Proses dengan AI", type="primary", use_container_width=True):
             has_txt = bool(report_text.strip()) if m in ("text", "both") else False
             has_doc = bool(st.session_state.imgs)
             if not has_txt and not has_doc:
@@ -785,6 +816,13 @@ if st.session_state.tab == "input":
                 value=st.session_state.get("last_pic", ""),
                 placeholder="Nama penanggung jawab")
 
+            c9, c10 = st.columns(2)
+            no_bc         = c9.text_input("No. BC",
+                value=p.get("no_bc", ""),
+                placeholder="Nomor BC (opsional)")
+            nama_kegiatan = c10.text_input("Nama Kegiatan",
+                value=p.get("nama_kegiatan", ""),
+                placeholder="Nama kegiatan (opsional)")
             notes = st.text_area("Catatan", value=p.get("notes", ""), height=68)
 
             sb1, sb2 = st.columns(2)
@@ -853,7 +891,8 @@ if st.session_state.tab == "input":
                                     "qty":       qty,        "room":       room,
                                     "checkout":  checkout,   "name":       name,
                                     "card":      card,       "issuer":     issuer,
-                                    "pic":       pic,        "notes":      notes,
+                                    "pic":       pic,        "no_bc":      no_bc,
+                                    "nama_kegiatan": nama_kegiatan, "notes": notes,
                                 }
                                 save_row(row)
                                 st.session_state.saved = row
@@ -964,7 +1003,7 @@ elif st.session_state.tab == "dashboard":
             </div>""", unsafe_allow_html=True)
 
             srch = st.text_input(
-                "", placeholder="Cari hotel / tamu / booking ID...",
+                "", placeholder="🔍  Cari hotel / tamu / booking ID...",
                 label_visibility="collapsed", key="srch",
             )
             if srch:
@@ -978,10 +1017,36 @@ elif st.session_state.tab == "dashboard":
                 '<div class="sec-lbl">Data transaksi</div>',
                 unsafe_allow_html=True,
             )
+
+            # ── Force Booking ID as plain string (prevent comma-formatting) ──
+            display_df = df.iloc[::-1].reset_index(drop=True).copy()
+            if "Booking ID" in display_df.columns:
+                display_df["Booking ID"] = display_df["Booking ID"].astype(str)
+
+            # ── Column config: Booking ID as plain text, Total formatted ──────
+            import streamlit as _st
+            col_cfg = {}
+            if "Booking ID" in display_df.columns:
+                col_cfg["Booking ID"] = st.column_config.TextColumn(
+                    "Booking ID",
+                    help="Nomor booking",
+                )
+            if "Total (Rp)" in display_df.columns:
+                col_cfg["Total (Rp)"] = st.column_config.NumberColumn(
+                    "Total (Rp)",
+                    format="Rp %d",
+                )
+            if "Room x Night" in display_df.columns:
+                col_cfg["Room x Night"] = st.column_config.TextColumn("Room × Night")
+            if "Timestamp Input" in display_df.columns:
+                col_cfg["Timestamp Input"] = st.column_config.TextColumn("Timestamp")
+
             st.dataframe(
-                df.iloc[::-1].reset_index(drop=True),
+                display_df,
                 use_container_width=True,
-                height=340,
+                height=360,
+                column_config=col_cfg,
+                hide_index=True,
             )
 
     except Exception as e:
@@ -1126,7 +1191,7 @@ elif st.session_state.tab == "settings":
     if oai_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
         <div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
-        <div class="st-sub">API key dikonfigurasi</div></div>
+        <div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
         <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
@@ -1154,7 +1219,7 @@ elif st.session_state.tab == "settings":
     if sh_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">📊</div>
         <div class="st-body"><div class="st-title">Google Sheets</div>
-        <div class="st-sub">Terhubung</div></div>
+        <div class="st-sub">Terhubung via secrets.toml</div></div>
         <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">📊</div>
@@ -1209,7 +1274,7 @@ st.markdown("""
     color:#9CA3AF;
     line-height:1.8;
 ">
-  Built with 🦖 &nbsp;·&nbsp; AI CC Reporting System v5<br>
+  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v5<br>
   <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
      style="color:#0A66C2;font-weight:600;text-decoration:none;
             display:inline-flex;align-items:center;gap:4px;margin-top:4px">
@@ -1224,4 +1289,3 @@ st.markdown("""
   </a>
 </div>
 """, unsafe_allow_html=True)
- 
