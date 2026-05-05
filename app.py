@@ -1209,7 +1209,7 @@ st.markdown("""
     color:#9CA3AF;
     line-height:1.8;
 ">
-  Built with &nbsp;·&nbsp; AI CC Reporting System v5<br>
+  Built with 🦖 &nbsp;·&nbsp; AI CC Reporting System v5<br>
   <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
      style="color:#0A66C2;font-weight:600;text-decoration:none;
             display:inline-flex;align-items:center;gap:4px;margin-top:4px">
