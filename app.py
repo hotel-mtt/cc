@@ -1195,3 +1195,33 @@ elif st.session_state.tab == "settings":
       <div class="about-r"><div class="about-k">Model AI</div>
         <div class="about-v">GPT-4o (OpenAI)</div></div>
     </div>""", unsafe_allow_html=True)
+
+# =============================================================================
+#  FOOTER — shown on all tabs
+# =============================================================================
+st.markdown("""
+<div style="
+    margin-top:32px;
+    padding:16px 0 8px;
+    border-top:1px solid #E5E7EB;
+    text-align:center;
+    font-size:11px;
+    color:#9CA3AF;
+    line-height:1.8;
+">
+  Built with &nbsp;·&nbsp; AI CC Reporting System v5<br>
+  <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
+     style="color:#0A66C2;font-weight:600;text-decoration:none;
+            display:inline-flex;align-items:center;gap:4px;margin-top:4px">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="#0A66C2">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
+               -1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046
+               c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z
+               M5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1
+               2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/>
+    </svg>
+    Rifyal Tumber
+  </a>
+</div>
+""", unsafe_allow_html=True)
+ 
