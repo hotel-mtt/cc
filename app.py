@@ -1126,7 +1126,7 @@ elif st.session_state.tab == "settings":
     if oai_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
         <div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
-        <div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
+        <div class="st-sub">API key dikonfigurasi</div></div>
         <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
@@ -1154,7 +1154,7 @@ elif st.session_state.tab == "settings":
     if sh_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">📊</div>
         <div class="st-body"><div class="st-title">Google Sheets</div>
-        <div class="st-sub">Terhubung via secrets.toml</div></div>
+        <div class="st-sub">Terhubung</div></div>
         <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">📊</div>
