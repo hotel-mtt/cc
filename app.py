@@ -158,22 +158,38 @@ label[data-testid="stWidgetLabel"]{
 .stButton>button[kind="secondary"]:hover{
     background:#F9FAFB !important;border-color:#D1D5DB !important}
 
-/* ── Nav buttons: flat pill style, taller ── */
+/* ── Nav buttons: identical shape, only bg/color differs ── */
 div[data-testid="stHorizontalBlock"]:first-of-type .stButton>button{
-    height:44px !important;border-radius:10px !important;
-    font-size:13px !important;font-weight:600 !important;
+    height:44px !important;
+    border-radius:10px !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    box-shadow:none !important;
+    /* Force same border on ALL nav buttons so shape is identical */
+    border:1.5px solid #E5E7EB !important;
+    padding:0 !important;
 }
 div[data-testid="stHorizontalBlock"]:first-of-type
     .stButton>button[kind="primary"]{
-    background:#111 !important;color:#fff !important;
-    border:none !important;box-shadow:none !important;
+    background:#111 !important;
+    color:#fff !important;
+    border-color:#111 !important;
+}
+div[data-testid="stHorizontalBlock"]:first-of-type
+    .stButton>button[kind="primary"]:hover{
+    background:#333 !important;
+    border-color:#333 !important;
 }
 div[data-testid="stHorizontalBlock"]:first-of-type
     .stButton>button[kind="secondary"]{
     background:#fff !important;
-    border:1.5px solid #E5E7EB !important;
     color:#374151 !important;
-    box-shadow:none !important;
+    border-color:#E5E7EB !important;
+}
+div[data-testid="stHorizontalBlock"]:first-of-type
+    .stButton>button[kind="secondary"]:hover{
+    background:#F9FAFB !important;
+    border-color:#D1D5DB !important;
 }
 [data-testid="stFileUploader"]>div:first-child{
     border:1.5px dashed #D1D5DB !important;border-radius:11px !important;
