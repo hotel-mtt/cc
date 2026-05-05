@@ -604,40 +604,98 @@ if st.session_state.tab == "input":
         m = st.session_state.mode
         st.markdown('<div class="sec-lbl">Metode input</div>', unsafe_allow_html=True)
 
+        # Clickable cards — each triggers a hidden Streamlit button via JS
         st.markdown(f"""
+        <style>
+        .mode-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}}
+        .mode-card{{border:1.5px solid #E5E7EB;border-radius:12px;padding:16px 8px 14px;
+          text-align:center;background:#fff;cursor:pointer;transition:all .18s;
+          user-select:none;position:relative;}}
+        .mode-card:hover{{border-color:#555;background:#F9FAFB;
+          transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.07)}}
+        .mode-card.on{{border-color:#111;background:#F9FAFB;box-shadow:0 0 0 2px #111}}
+        .mode-card .ic{{font-size:22px;line-height:1;margin-bottom:8px;display:block}}
+        .mode-card .lb{{font-size:12px;font-weight:600;color:#111;line-height:1.3}}
+        .mode-card .sb{{font-size:10px;color:#9CA3AF;margin-top:3px}}
+        .mode-card.on .lb{{font-weight:700}}
+        .mode-chk{{display:none;position:absolute;top:8px;right:8px;width:16px;height:16px;
+          background:#111;border-radius:50%;align-items:center;justify-content:center;
+          font-size:9px;color:#fff;font-weight:700}}
+        .mode-card.on .mode-chk{{display:flex}}
+        </style>
         <div class="mode-grid">
-          <div class="mode-card {'on' if m=='text'  else ''}">
+          <div class="mode-card {'on' if m=='text'  else ''}"
+               onclick="document.querySelector('[data-testid=stBaseButton-secondary][kind=secondary]#btn_m_text,button[aria-label=btn_text]') || document.querySelectorAll('button').forEach(b=>{{if(b.innerText.trim()==='__btn_text__')b.click()}}); parent.document.querySelectorAll('button').forEach(b=>{{if(b.innerText.trim()==='__btn_text__')b.click()}})"
+               id="mc-text">
+            <div class="mode-chk">✓</div>
             <span class="ic">✏️</span>
             <div class="lb">Teks Bebas</div>
             <div class="sb">Ketik langsung</div>
           </div>
-          <div class="mode-card {'on' if m=='photo' else ''}">
+          <div class="mode-card {'on' if m=='photo' else ''}"
+               id="mc-photo">
+            <div class="mode-chk">✓</div>
             <span class="ic">📄</span>
             <div class="lb">Dokumen</div>
             <div class="sb">PDF · Foto</div>
           </div>
-          <div class="mode-card {'on' if m=='both'  else ''}">
+          <div class="mode-card {'on' if m=='both'  else ''}"
+               id="mc-both">
+            <div class="mode-chk">✓</div>
             <span class="ic">🗒️</span>
             <div class="lb">Kombinasi</div>
             <div class="sb">Dok + catatan</div>
           </div>
-        </div>""", unsafe_allow_html=True)
+        </div>
+        <script>
+        (function() {{
+          var map = {{'mc-text':'Teks','mc-photo':'Dokumen','mc-both':'Kombinasi'}};
+          function clickBtn(label) {{
+            var btns = window.parent.document.querySelectorAll('button');
+            for(var b of btns) {{
+              if(b.innerText.trim() === label) {{ b.click(); return; }}
+            }}
+          }}
+          ['mc-text','mc-photo','mc-both'].forEach(function(id) {{
+            var el = document.getElementById(id);
+            if(el) el.onclick = function() {{ clickBtn(map[id]); }};
+          }});
+        }})();
+        </script>
+        """, unsafe_allow_html=True)
 
-        mc1, mc2, mc3 = st.columns(3)
-        for col, mid, mlbl in [
-            (mc1, "text",  "Teks"),
-            (mc2, "photo", "Dokumen"),
-            (mc3, "both",  "Kombinasi"),
-        ]:
-            with col:
-                if st.button(
-                    mlbl, key=f"m_{mid}", use_container_width=True,
-                    type="primary" if m == mid else "secondary",
-                ):
-                    st.session_state.mode   = mid
-                    st.session_state.imgs   = []
-                    st.session_state.pdfraw = b""
-                    st.rerun()
+        # Hidden functional buttons — same row, collapsed to 0 height via CSS
+        st.markdown("""
+        <style>
+        /* Hide the mode button row — buttons still clickable via JS */
+        div[data-testid="stHorizontalBlock"]:has(button[kind="secondary"]:first-child) {
+            height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        _hc1, _hc2, _hc3 = st.columns(3)
+        with _hc1:
+            if st.button("Teks", key="m_text", use_container_width=True):
+                st.session_state.mode   = "text"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
+        with _hc2:
+            if st.button("Dokumen", key="m_photo", use_container_width=True):
+                st.session_state.mode   = "photo"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
+        with _hc3:
+            if st.button("Kombinasi", key="m_both", use_container_width=True):
+                st.session_state.mode   = "both"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
 
         report_text = ""
 
