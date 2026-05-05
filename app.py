@@ -654,7 +654,7 @@ if st.session_state.tab == "input":
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-        if st.button("✦  Proses dengan AI", type="primary", use_container_width=True):
+        if st.button("✦  Auto-generate", type="primary", use_container_width=True):
             has_txt = bool(report_text.strip()) if m in ("text", "both") else False
             has_doc = bool(st.session_state.imgs)
             if not has_txt and not has_doc:
