@@ -142,15 +142,39 @@ label[data-testid="stWidgetLabel"]{
     width:100% !important;height:46px !important;border-radius:10px !important;
     font-size:13px !important;font-weight:600 !important;border:none !important;
     font-family:'Inter',sans-serif !important}
+
+/* ── All primary: black solid ── */
 .stButton>button[kind="primary"],
 .stFormSubmitButton>button[kind="primary"]{
-    background:#111 !important;color:#fff !important}
-.stButton>button[kind="primary"]:hover{background:#222 !important}
+    background:#111 !important;color:#fff !important;
+    border:none !important;box-shadow:none !important}
+.stButton>button[kind="primary"]:hover{background:#333 !important}
+
+/* ── All secondary: white with border ── */
 .stButton>button[kind="secondary"],
 .stFormSubmitButton>button[kind="secondary"]{
     background:#fff !important;border:1.5px solid #E5E7EB !important;
     color:#374151 !important}
-.stButton>button[kind="secondary"]:hover{background:#F9FAFB !important}
+.stButton>button[kind="secondary"]:hover{
+    background:#F9FAFB !important;border-color:#D1D5DB !important}
+
+/* ── Nav buttons: flat pill style, taller ── */
+div[data-testid="stHorizontalBlock"]:first-of-type .stButton>button{
+    height:44px !important;border-radius:10px !important;
+    font-size:13px !important;font-weight:600 !important;
+}
+div[data-testid="stHorizontalBlock"]:first-of-type
+    .stButton>button[kind="primary"]{
+    background:#111 !important;color:#fff !important;
+    border:none !important;box-shadow:none !important;
+}
+div[data-testid="stHorizontalBlock"]:first-of-type
+    .stButton>button[kind="secondary"]{
+    background:#fff !important;
+    border:1.5px solid #E5E7EB !important;
+    color:#374151 !important;
+    box-shadow:none !important;
+}
 [data-testid="stFileUploader"]>div:first-child{
     border:1.5px dashed #D1D5DB !important;border-radius:11px !important;
     background:#FAFAFA !important}
@@ -636,7 +660,7 @@ if st.session_state.tab == "input":
             font-size: 12px !important;
             font-weight: 700 !important;
             padding: 8px 4px !important;
-            box-shadow: 0 0 0 2.5px #111 !important;
+            box-shadow: none !important;
             white-space: pre-line !important;
             line-height: 1.5 !important;
         }
