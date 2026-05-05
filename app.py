@@ -158,39 +158,7 @@ label[data-testid="stWidgetLabel"]{
 .stButton>button[kind="secondary"]:hover{
     background:#F9FAFB !important;border-color:#D1D5DB !important}
 
-/* ── Nav buttons: identical shape, only bg/color differs ── */
-div[data-testid="stHorizontalBlock"]:first-of-type .stButton>button{
-    height:44px !important;
-    border-radius:10px !important;
-    font-size:13px !important;
-    font-weight:600 !important;
-    box-shadow:none !important;
-    /* Force same border on ALL nav buttons so shape is identical */
-    border:1.5px solid #E5E7EB !important;
-    padding:0 !important;
-}
-div[data-testid="stHorizontalBlock"]:first-of-type
-    .stButton>button[kind="primary"]{
-    background:#111 !important;
-    color:#fff !important;
-    border-color:#111 !important;
-}
-div[data-testid="stHorizontalBlock"]:first-of-type
-    .stButton>button[kind="primary"]:hover{
-    background:#333 !important;
-    border-color:#333 !important;
-}
-div[data-testid="stHorizontalBlock"]:first-of-type
-    .stButton>button[kind="secondary"]{
-    background:#fff !important;
-    color:#374151 !important;
-    border-color:#E5E7EB !important;
-}
-div[data-testid="stHorizontalBlock"]:first-of-type
-    .stButton>button[kind="secondary"]:hover{
-    background:#F9FAFB !important;
-    border-color:#D1D5DB !important;
-}
+
 [data-testid="stFileUploader"]>div:first-child{
     border:1.5px dashed #D1D5DB !important;border-radius:11px !important;
     background:#FAFAFA !important}
@@ -615,20 +583,72 @@ st.markdown("""
   <span class="live">LIVE</span>
 </div>""", unsafe_allow_html=True)
 
-_nav_cols = st.columns(4)
-for _i, (_tid, _tlbl) in enumerate([
-    ("input", "Input"), ("dashboard", "Dashboard"),
-    ("log", "Riwayat"), ("settings", "Pengaturan"),
-]):
-    with _nav_cols[_i]:
-        if st.button(
-            _tlbl, key=f"nav_{_tid}", use_container_width=True,
-            type="primary" if st.session_state.tab == _tid else "secondary",
-        ):
-            st.session_state.tab = _tid
-            st.rerun()
+# ── Navigation: st.radio horizontal — single widget, consistent shape ──────
+st.markdown("""
+<style>
+/* Radio nav: hide default radio circle, style label as pill button */
+div[data-testid="stRadio"] > label { display:none }
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 14px !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    border: 1.5px solid #E5E7EB !important;
+    background: #fff !important;
+    cursor: pointer !important;
+    transition: all .15s !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
+    background: #F9FAFB !important;
+    border-color: #D1D5DB !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] {
+    background: #111 !important;
+    border-color: #111 !important;
+    color: #fff !important;
+}
+/* Radio text */
+div[data-testid="stRadio"] label[data-baseweb="radio"] span:last-child {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] span:last-child {
+    color: #fff !important;
+}
+/* Hide the actual radio dot */
+div[data-testid="stRadio"] label[data-baseweb="radio"] span:first-child {
+    display: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
-st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+_NAV_OPTIONS = ["Input", "Dashboard", "Riwayat", "Pengaturan"]
+_NAV_KEYS    = {"Input":"input","Dashboard":"dashboard",
+                "Riwayat":"log","Pengaturan":"settings"}
+_NAV_REV     = {v:k for k,v in _NAV_KEYS.items()}
+
+_nav_sel = st.radio(
+    "nav", _NAV_OPTIONS,
+    index=_NAV_OPTIONS.index(_NAV_REV.get(st.session_state.tab, "Input")),
+    horizontal=True,
+    label_visibility="collapsed",
+    key="nav_radio",
+)
+if _NAV_KEYS[_nav_sel] != st.session_state.tab:
+    st.session_state.tab = _NAV_KEYS[_nav_sel]
+    st.rerun()
 
 
 # =============================================================================
