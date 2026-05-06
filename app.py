@@ -1131,6 +1131,45 @@ elif st.session_state.tab == "dashboard":
               </div>
             </div>""", unsafe_allow_html=True)
 
+            # ── CC Summary ──────────────────────────────────────────────────
+            if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
+                _cc_df = df[df["Kartu Kredit"].astype(str).str.strip().ne("")]
+                if not _cc_df.empty:
+                    st.markdown('<div class="sec-lbl">Kartu Kredit</div>', unsafe_allow_html=True)
+                    _cc_grp = (
+                        _cc_df.groupby("Kartu Kredit")["Total (Rp)"]
+                        .sum().sort_values(ascending=False).reset_index()
+                    )
+                    _cc_grp.columns = ["label", "val"]
+                    _total_cc = _cc_grp["val"].sum()
+                    _cc_counts = _cc_df.groupby("Kartu Kredit").size()
+
+                    _rows_html = ""
+                    for _i, _r in _cc_grp.iterrows():
+                        _pct = _r["val"] / _total_cc * 100 if _total_cc else 0
+                        _amt = "Rp {:,.0f}".format(_r["val"]).replace(",", ".")
+                        _cnt = int(_cc_counts.get(_r["label"], 0))
+                        _bar_w = int(_pct)
+                        _rows_html += (
+                            f'<div style="padding:10px 0;border-bottom:1px solid #F3F4F6">'
+                            f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">'
+                            f'<span style="font-size:12px;font-weight:600;color:#111">{_r["label"]}</span>'
+                            f'<span style="font-size:12px;font-weight:600;color:#111">{_amt}</span>'
+                            f'</div>'
+                            f'<div style="display:flex;align-items:center;gap:8px">'
+                            f'<div style="flex:1;background:#F3F4F6;border-radius:4px;height:4px">'
+                            f'<div style="width:{_bar_w}%;background:#111;border-radius:4px;height:4px"></div>'
+                            f'</div>'
+                            f'<span style="font-size:11px;color:#9CA3AF;white-space:nowrap">{_pct:.1f}% · {_cnt} transaksi</span>'
+                            f'</div>'
+                            f'</div>'
+                        )
+                    st.markdown(
+                        f'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:4px 14px 4px">'
+                        f'{_rows_html}</div>',
+                        unsafe_allow_html=True,
+                    )
+
             srch = st.text_input(
                 "", placeholder="🔍  Cari hotel / tamu / booking ID...",
                 label_visibility="collapsed", key="srch",
@@ -1178,6 +1217,8 @@ elif st.session_state.tab == "dashboard":
                 hide_index=True,
             )
 
+
+
     except Exception as e:
         notice("err", str(e))
         notice("info", "Konfigurasi Google Sheets di tab Pengaturan.")
@@ -1188,11 +1229,6 @@ elif st.session_state.tab == "dashboard":
 # =============================================================================
 elif st.session_state.tab == "log":
 
-    st.markdown(
-        '<div class="sec-lbl">20 transaksi terakhir</div>',
-        unsafe_allow_html=True,
-    )
-
     try:
         with st.spinner("Memuat..."):
             rows = load_rows()
@@ -1200,32 +1236,46 @@ elif st.session_state.tab == "log":
         if not rows:
             notice("info", "Belum ada data transaksi.")
         else:
-            st.caption(f"{len(rows)} entri tersimpan")
-            for i, row in enumerate(reversed(rows[-20:]), 1):
-                bid   = row.get("Booking ID", "—")
-                hotel = row.get("Hotel", "—")
-                with st.expander(f"{bid} — {hotel}", expanded=(i == 1)):
-                    card_list_open()
-                    for lbl, key, clr, ufmt in [
-                        ("Supplier",     "Supplier",     "#D946EF", False),
-                        ("Guest Name",   "Guest Name",   "#EC4899", False),
-                        ("Booking Date", "Booking Date", "#F97316", False),
-                        ("Issued Date",  "Issued Date",  "#EAB308", False),
-                        ("Check-in",     "Check-in",     "#3B82F6", False),
-                        ("Room × Night", "Room x Night", "#0D9488", False),
-                        ("Check-out",    "Check-out",    "#7C3AED", False),
-                        ("Total (Rp)",   "Total (Rp)",   "#EA580C", True),
-                        ("Credit Card",  "Kartu Kredit", "#F43F5E", False),
-                        ("Issuer",       "Issuer",       "#6366F1", False),
-                        ("PIC",          "PIC",          "#0891B2", False),
-                        ("Catatan",      "Catatan",      "#9CA3AF", False),
-                    ]:
-                        field_row(
-                            lbl,
-                            fmt(row.get(key, 0)) if ufmt else row.get(key, ""),
-                            clr,
-                        )
-                    card_list_close()
+            import pandas as pd
+
+            df_log = pd.DataFrame(rows)
+
+            # Parse Timestamp Input → sortable datetime
+            def _parse_ts(v):
+                try:
+                    return pd.to_datetime(str(v), dayfirst=True)
+                except Exception:
+                    return pd.NaT
+
+            df_log["_ts"] = df_log["Timestamp Input"].apply(_parse_ts)
+            df_log = df_log.sort_values("_ts", ascending=False).reset_index(drop=True)
+
+            total = len(df_log)
+            st.markdown(
+                f'<div class="sec-lbl">Riwayat — {total} transaksi</div>',
+                unsafe_allow_html=True,
+            )
+
+            # ── Table: Timestamp | Booking ID | Issuer ──────────────────────
+            display_log = df_log[["Timestamp Input", "Booking ID", "Issuer"]].copy()
+            display_log["Booking ID"] = display_log["Booking ID"].astype(str)
+
+            st.dataframe(
+                display_log,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Timestamp Input": st.column_config.TextColumn(
+                        "Timestamp", width="medium"
+                    ),
+                    "Booking ID": st.column_config.TextColumn(
+                        "Booking ID", width="medium"
+                    ),
+                    "Issuer": st.column_config.TextColumn(
+                        "Issuer", width="medium"
+                    ),
+                },
+            )
 
     except Exception as e:
         notice("err", str(e))
