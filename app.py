@@ -1170,58 +1170,58 @@ elif st.session_state.tab == "dashboard":
                         unsafe_allow_html=True,
                     )
 
-#            srch = st.text_input(
-#                "", placeholder="🔍  Cari hotel / tamu / booking ID...",
-#                label_visibility="collapsed", key="srch",
-#            )
-#            if srch:
-#                df = df[df.apply(
-#                    lambda r: r.astype(str).str.contains(
-#                        srch, case=False, na=False).any(),
-#                    axis=1,
-#                )]
+            st.markdown(
+                '<div class="sec-lbl">Data transaksi</div>',
+                unsafe_allow_html=True,
+            )
 
-#            st.markdown(
-#                '<div class="sec-lbl">Data transaksi</div>',
-#                unsafe_allow_html=True,
-#            )
+            srch = st.text_input(
+                "", placeholder="🔍  Cari hotel / tamu / booking ID...",
+                label_visibility="collapsed", key="srch",
+            )
+            if srch:
+                df = df[df.apply(
+                    lambda r: r.astype(str).str.contains(
+                        srch, case=False, na=False).any(),
+                    axis=1,
+                )]
 
-#            # ── Force Booking ID as plain string (prevent comma-formatting) ──
-#            display_df = df.iloc[::-1].reset_index(drop=True).copy()
-#            if "Booking ID" in display_df.columns:
-#                display_df["Booking ID"] = display_df["Booking ID"].astype(str)
+            # ── Force Booking ID as plain string (prevent comma-formatting) ──
+            display_df = df.iloc[::-1].reset_index(drop=True).copy()
+            if "Booking ID" in display_df.columns:
+                display_df["Booking ID"] = display_df["Booking ID"].astype(str)
 
-#            # ── Column config: Booking ID as plain text, Total formatted ──────
-#            import streamlit as _st
-#            col_cfg = {}
-#            if "Booking ID" in display_df.columns:
-#                col_cfg["Booking ID"] = st.column_config.TextColumn(
-#                    "Booking ID",
-#                    help="Nomor booking",
-#                )
-#            if "Total (Rp)" in display_df.columns:
-#                col_cfg["Total (Rp)"] = st.column_config.NumberColumn(
-#                    "Total (Rp)",
-#                    format="Rp %d",
-#                )
-#            if "Room x Night" in display_df.columns:
-#                col_cfg["Room x Night"] = st.column_config.TextColumn("Room × Night")
-#           if "Timestamp Input" in display_df.columns:
-#               col_cfg["Timestamp Input"] = st.column_config.TextColumn("Timestamp")
+            # ── Column config: Booking ID as plain text, Total formatted ──────
+            import streamlit as _st
+            col_cfg = {}
+            if "Booking ID" in display_df.columns:
+                col_cfg["Booking ID"] = st.column_config.TextColumn(
+                    "Booking ID",
+                    help="Nomor booking",
+                )
+            if "Total (Rp)" in display_df.columns:
+                col_cfg["Total (Rp)"] = st.column_config.NumberColumn(
+                    "Total (Rp)",
+                    format="Rp %d",
+                )
+            if "Room x Night" in display_df.columns:
+                col_cfg["Room x Night"] = st.column_config.TextColumn("Room × Night")
+           if "Timestamp Input" in display_df.columns:
+               col_cfg["Timestamp Input"] = st.column_config.TextColumn("Timestamp")
 
-#            st.dataframe(
-#                display_df,
-#                use_container_width=True,
-#                height=360,
-#                column_config=col_cfg,
-#                hide_index=True,
-#            )
+            st.dataframe(
+                display_df,
+                use_container_width=True,
+                height=360,
+                column_config=col_cfg,
+                hide_index=True,
+            )
 
 
 
-#    except Exception as e:
-#        notice("err", str(e))
-#        notice("info", "Konfigurasi Google Sheets di tab Pengaturan.")
+    except Exception as e:
+        notice("err", str(e))
+        notice("info", "Konfigurasi Google Sheets di tab Pengaturan.")
 
 
 # =============================================================================
