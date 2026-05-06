@@ -830,9 +830,30 @@ if st.session_state.tab == "input":
             if "bulk_saved_count" not in st.session_state:
                 st.session_state.bulk_saved_count = 0
  
-            # ── CSS (inject sekali, Streamlit akan de-dup otomatis) ────────
+            # ── CSS ────────────────────────────────────────────────────────
             st.markdown("""
 <style>
+/* ── Tombol bulk: slim & minimalist ── */
+div[data-testid="column"]:has(button[key="bulk_run"]) button,
+div[data-testid="column"]:has(button[key="bulk_clear"]) button {
+    height:34px !important;
+    font-size:12px !important;
+    font-weight:500 !important;
+    border-radius:8px !important;
+    box-shadow:none !important;
+}
+div[data-testid="column"]:has(button[key="bulk_run"]) button[kind="primary"] {
+    background:#111 !important;
+    color:#fff !important;
+    border:none !important;
+}
+div[data-testid="column"]:has(button[key="bulk_clear"]) button[kind="secondary"] {
+    background:#FAFAFA !important;
+    border:1px solid #E5E7EB !important;
+    color:#9CA3AF !important;
+    font-weight:400 !important;
+}
+/* ── File cards ── */
 .file-item{background:#fff;border:1px solid #E5E7EB;border-radius:11px;
     padding:11px 13px;margin-bottom:7px}
 .fi-success{border-color:#22C55E!important;background:#F0FDF4!important}
@@ -852,8 +873,7 @@ if st.session_state.tab == "input":
 .fb-ok  {background:#DCFCE7;color:#166534}
 .fb-err {background:#FFE4E6;color:#9F1239}
 .fb-sk  {background:#FEF9C3;color:#713F12}
-.fi-grid{margin-top:8px;padding-top:7px;
-    border-top:1px solid #F3F4F6;
+.fi-grid{margin-top:8px;padding-top:7px;border-top:1px solid #F3F4F6;
     display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
 .fi-kv  {display:flex;gap:4px}
 .fi-k   {font-size:9px;font-weight:700;color:#9CA3AF;min-width:50px;
@@ -932,18 +952,44 @@ if st.session_state.tab == "input":
  
             st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
  
-            # ── Tombol aksi ────────────────────────────────────────────────
+            # ── Tombol aksi (slim minimalist) ──────────────────────────────
+            st.markdown("""
+<style>
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button {
+    height:34px !important;
+    font-size:12px !important;
+    font-weight:500 !important;
+    border-radius:8px !important;
+    box-shadow:none !important;
+    letter-spacing:0 !important;
+}
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"] {
+    background:#111 !important;
+    color:#fff !important;
+    border:none !important;
+}
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button[kind="secondary"] {
+    background:#FAFAFA !important;
+    border:1px solid #E5E7EB !important;
+    color:#9CA3AF !important;
+    font-weight:400 !important;
+}
+</style>
+<div class="bulk-btn-wrap">
+""", unsafe_allow_html=True)
             _bta, _btb = st.columns(2)
             _run_bulk   = _bta.button(
                 "⚡  Proses & Simpan Semua", type="primary",
                 use_container_width=True,
                 disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
+                key="bulk_run",
             )
             _clear_bulk = _btb.button(
                 "✕  Hapus Hasil", type="secondary",
                 use_container_width=True,
                 key="bulk_clear",
             )
+            st.markdown('</div>', unsafe_allow_html=True)
  
             if _clear_bulk:
                 st.session_state.bulk_results     = []
@@ -1166,275 +1212,6 @@ if st.session_state.tab == "input":
             # ── Sembunyikan tombol Auto-generate & Reset ───────────────────
             # (tidak relevan di mode bulk — proses dilakukan di atas)
             st.stop()
-            
-        if st.button("✦  Auto-generate", type="primary", use_container_width=True):
-            has_txt = bool(report_text.strip()) if m in ("text", "both") else False
-            has_doc = bool(st.session_state.imgs)
-            if not has_txt and not has_doc:
-                notice("err", "Masukkan teks atau upload dokumen terlebih dahulu.")
-            elif not oai_key():
-                notice("err", "OpenAI API key belum diisi — buka tab <b>Pengaturan</b>.")
-            else:
-                with st.spinner("GPT-4o membaca dokumen..."):
-                    try:
-                        ptxt     = pdf_text(st.session_state.pdfraw)
-                        combined = ""
-                        if ptxt:
-                            combined = (
-                                "EXTRACTED PDF TEXT "
-                                "(authoritative — use for all numbers and dates):\n" + ptxt
-                            )
-                        if report_text.strip():
-                            combined = (
-                                combined + "\n\nREPORTER NOTES:\n" + report_text.strip()
-                                if combined else report_text.strip()
-                            )
-                        parsed, raw = ai_parse(combined, st.session_state.imgs or None)
-                        parsed["timestamp_input"] = now_ts()
-                        st.session_state.parsed = parsed
-                        st.session_state.raw    = raw
-                        st.session_state.step   = 3
-                        st.rerun()
-                    except Exception as e:
-                        notice("err", str(e))
-
-        st.button(
-            "Reset", type="secondary", use_container_width=True,
-            on_click=reset, key="rst",
-        )
-
-    # ── STEP 3 : verify + edit ────────────────────────────────────────────────
-    elif st.session_state.step == 3:
-
-        p   = st.session_state.parsed
-        sup = p.get("supplier", "").lower()
-        doc_label = (
-            "Expedia TAAP"          if "expedia" in sup else
-            "Mitra Tours & Travel"  if "mitra"   in sup else
-            p.get("supplier") or "Dokumen"
-        )
-
-        notice("info", f"Dokumen: <b>{doc_label}</b> — periksa sebelum menyimpan.")
-
-        # Duplicate pre-check (non-blocking warning)
-        try:
-            existing = load_rows()
-            is_dup, reason, _ = check_duplicate(
-                {"booking_id": p.get("booking_id"), "hotel": p.get("hotel"),
-                 "checkin": p.get("checkin"), "name": p.get("name"),
-                 "room": p.get("room")},
-                existing,
-            )
-            if is_dup:
-                notice("warn", f"⚠ Potensi duplikat: {reason}")
-        except Exception:
-            pass
-
-        st.markdown('<div class="sec-lbl">Hasil ekstraksi AI</div>', unsafe_allow_html=True)
-        preview_grid(p)
-
-        with st.expander("Raw JSON dari AI"):
-            st.code(st.session_state.raw, language="json")
-
-        st.markdown(
-            '<div class="sec-lbl" style="margin-top:4px">Edit & konfirmasi</div>',
-            unsafe_allow_html=True,
-        )
-
-        with st.form("frm_verify"):
-            supplier   = st.text_input("Supplier *",          value=p.get("supplier",   ""))
-            booking_id = st.text_input("Booking ID *",        value=p.get("booking_id", ""))
-
-            c1, c2 = st.columns(2)
-            booked_on = c1.text_input("Booking Date (YYYY-MM-DD)", value=p.get("booked_on", ""))
-            issued_on = c2.text_input("Issued Date (YYYY-MM-DD)",  value=p.get("issued_on", ""))
-
-            hotel = st.text_input("Hotel *", value=p.get("hotel", ""))
-
-            c3, c4 = st.columns(2)
-            checkin  = c3.text_input("Check-in * (YYYY-MM-DD)",  value=p.get("checkin",  ""))
-            checkout = c4.text_input("Check-out * (YYYY-MM-DD)", value=p.get("checkout", ""))
-
-            qty  = st.text_input(
-                "Room × Night",
-                value=p.get("qty", ""),
-                placeholder="1 room x 3 nights",
-            )
-            room = st.number_input(
-                "Total (Rp)",
-                value=int(float(p.get("room") or 0)),
-                min_value=0,
-                step=1_000,
-                help="Nilai dari baris 'Subtotal paid to Expedia' di dokumen",
-            )
-
-            c5, c6 = st.columns(2)
-            name = c5.text_input("Guest Name *", value=p.get("name", ""))
-            card = c6.text_input("Credit Card",  value=p.get("card", ""))
-
-            _ISSUERS = [
-                "",
-                "Ade Puspitasari",
-                "Farras Mahmud",
-                "Meijika",
-                "Muhammad Geraldi Jagaddhita",
-                "Nur Anissa Firda Aulia",
-                "Riega Wisudhantara",
-                "Rifyal Tumber",
-                "Selvy Anggraini",
-                "Shaiful Baldy",
-                "Veronica Novi Heri",
-            ]
-            _last = st.session_state.get("last_issuer", "")
-            _idx  = _ISSUERS.index(_last) if _last in _ISSUERS else 0
-            c7, c8 = st.columns(2)
-            issuer = c7.selectbox(
-                "Issuer *",
-                options=_ISSUERS,
-                index=_idx,
-                format_func=lambda x: "— Pilih Issuer —" if x == "" else x,
-            )
-            pic    = c8.text_input("PIC *",
-                value=st.session_state.get("last_pic", ""),
-                placeholder="Nama penanggung jawab")
-
-            c9, c10 = st.columns(2)
-            no_bc         = c9.text_input("No. BC",
-                value=p.get("no_bc", ""),
-                placeholder="Nomor BC (opsional)")
-            nama_kegiatan = c10.text_input("Nama Kegiatan",
-                value=p.get("nama_kegiatan", ""),
-                placeholder="Nama kegiatan (opsional)")
-            notes = st.text_area("Catatan", value=p.get("notes", ""), height=68)
-
-            sb1, sb2 = st.columns(2)
-            submit = sb1.form_submit_button(
-                "💾  Simpan", type="primary", use_container_width=True)
-            back   = sb2.form_submit_button(
-                "← Input ulang", type="secondary", use_container_width=True)
-
-            if back:
-                st.session_state.step = 1
-                st.rerun()
-
-            if submit:
-                # Validation
-                errs = [lbl for val, lbl in [
-                    (supplier,   "Supplier"),
-                    (booking_id, "Booking ID"),
-                    (hotel,      "Hotel"),
-                    (checkin,    "Check-in"),
-                    (checkout,   "Check-out"),
-                    (name,       "Guest Name"),
-                    (issuer,     "Issuer"),
-                    (pic,        "PIC"),
-                ] if not val.strip()]
-
-                if errs:
-                    notice("err", f"Wajib diisi: {', '.join(errs)}")
-                else:
-                    with st.spinner("Menyimpan ke Google Sheets..."):
-                        try:
-                            existing = load_rows()
-                            is_dup, reason, matched = check_duplicate(
-                                {"booking_id": booking_id, "hotel": hotel,
-                                 "checkin": checkin, "name": name, "room": room},
-                                existing,
-                            )
-
-                            if is_dup:
-                                notice("err", f"Duplikat terdeteksi: {reason}")
-                                st.markdown(
-                                    '<div class="sec-lbl" style="margin-top:8px">'
-                                    'Data yang sudah ada:</div>',
-                                    unsafe_allow_html=True,
-                                )
-                                card_list_open()
-                                for fl, fk, fc in [
-                                    ("Booking ID",  "Booking ID",  "#EF4444"),
-                                    ("Hotel",       "Hotel",       "#22C55E"),
-                                    ("Guest Name",  "Guest Name",  "#EC4899"),
-                                    ("Check-in",    "Check-in",    "#3B82F6"),
-                                    ("Total (Rp)",  "Total (Rp)",  "#EA580C"),
-                                ]:
-                                    v = matched.get(fk, "")
-                                    field_row(fl,
-                                        fmt(v) if fk == "Total (Rp)" else v, fc)
-                                card_list_close()
-                            else:
-                                # remember issuer/pic for next input
-                                st.session_state.last_issuer = issuer
-                                st.session_state.last_pic    = pic
-                                row = {
-                                    "timestamp_input": p.get("timestamp_input", ""),
-                                    "supplier":  supplier,   "booking_id": booking_id,
-                                    "booked_on": booked_on,  "issued_on":  issued_on,
-                                    "hotel":     hotel,      "checkin":    checkin,
-                                    "qty":       qty,        "room":       room,
-                                    "checkout":  checkout,   "name":       name,
-                                    "card":      card,       "issuer":     issuer,
-                                    "pic":       pic,        "no_bc":      no_bc,
-                                    "nama_kegiatan": nama_kegiatan, "notes": notes,
-                                }
-                                save_row(row)
-                                st.session_state.saved = row
-                                st.session_state.step  = 4
-                                st.rerun()
-                        except Exception as e:
-                            notice("err", f"Gagal: {e}")
-
-    # ── STEP 4 : success ──────────────────────────────────────────────────────
-    elif st.session_state.step == 4:
-
-        d = st.session_state.saved or {}
-
-        st.markdown("""
-        <div style="background:#fff;border:1px solid #E5E7EB;border-radius:14px">
-          <div class="done-box">
-            <div class="done-circle">✓</div>
-            <div class="done-title">Tersimpan!</div>
-            <div class="done-sub">Data berhasil dicatat ke Google Sheets.</div>
-          </div>
-        </div>""", unsafe_allow_html=True)
-
-        # ── 2-column metric grid summary ────────────────────────────────────
-        st.markdown('<div class="sec-lbl" style="margin-top:14px">Ringkasan</div>',
-                    unsafe_allow_html=True)
-
-        _pairs = [
-            ("Booking ID",   d.get("booking_id",  "—")),
-            ("Supplier",     d.get("supplier",     "—")),
-            ("Hotel",        d.get("hotel",        "—")),
-            ("Guest Name",   d.get("name",         "—")),
-            ("Check-in",     d.get("checkin",      "—")),
-            ("Check-out",    d.get("checkout",     "—")),
-            ("Room × Night", d.get("qty",          "—")),
-            ("Total (Rp)",   fmt(d.get("room", 0))),
-            ("Credit Card",  d.get("card",         "—")),
-            ("Issuer",       d.get("issuer",       "—")),
-            ("PIC",          d.get("pic",          "—")),
-        ]
-        # Add optional fields only if filled
-        if d.get("no_bc"):
-            _pairs.append(("No. BC", d.get("no_bc")))
-        if d.get("nama_kegiatan"):
-            _pairs.append(("Nama Kegiatan", d.get("nama_kegiatan")))
-
-        _g1, _g2 = st.columns(2)
-        for _i, (_lbl, _val) in enumerate(_pairs):
-            (_g1 if _i % 2 == 0 else _g2).metric(_lbl, _val or "—")
-
-        if st.button("➕  Input Baru", type="primary", use_container_width=True):
-            reset()
-            st.rerun()
-
-        sid = sheet_id()
-        if sid:
-            st.link_button(
-                "Buka Google Sheets →",
-                f"https://docs.google.com/spreadsheets/d/{sid}",
-                use_container_width=True,
-            )
 
 # =============================================================================
 #  TAB — DASHBOARD
