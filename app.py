@@ -1170,6 +1170,12 @@ elif st.session_state.tab == "dashboard":
                         unsafe_allow_html=True,
                     )
 
+                    st.markdown(
+                        f'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:4px 14px 4px">'
+                        f'{_rows_html}</div>',
+                        unsafe_allow_html=True,
+                    )
+
             st.markdown(
                 '<div class="sec-lbl">Data transaksi</div>',
                 unsafe_allow_html=True,
