@@ -708,7 +708,7 @@ if st.session_state.tab == "input":
         _mc1, _mc2, _mc3, _mc4 = st.columns(4)
         with _mc1:
             if st.button(
-                f"✏️{_NL}Teks Bebas{_NL}Ketik langsung",
+                f"✏️{_NL}Teks Bebas{_NL}",
                 key="m_text", use_container_width=True,
                 type="primary" if m == "text" else "secondary",
             ):
@@ -718,7 +718,7 @@ if st.session_state.tab == "input":
                 st.rerun()
         with _mc2:
             if st.button(
-                f"📄{_NL}Dokumen{_NL}PDF · Foto",
+                f"📄{_NL}{_NL}PDF · Foto",
                 key="m_photo", use_container_width=True,
                 type="primary" if m == "photo" else "secondary",
             ):
@@ -728,7 +728,7 @@ if st.session_state.tab == "input":
                 st.rerun()
         with _mc3:
             if st.button(
-                f"🗒️{_NL}Kombinasi{_NL}Dok + catatan",
+                f"🗒️{_NL}{_NL}Dok + catatan",
                 key="m_both", use_container_width=True,
                 type="primary" if m == "both" else "secondary",
             ):
@@ -738,7 +738,7 @@ if st.session_state.tab == "input":
                 st.rerun()
         with _mc4:
             if st.button(
-                f"⚡{_NL}Bulk Upload{_NL}Banyak file",
+                f"⚡{_NL}Bulk Upload{_NL}",
                 key="m_bulk", use_container_width=True,
                 type="primary" if m == "bulk" else "secondary",
             ):
