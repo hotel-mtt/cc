@@ -705,7 +705,7 @@ if st.session_state.tab == "input":
         st.markdown('<div class="sec-lbl">Metode input</div>', unsafe_allow_html=True)
 
         _NL = "\n"
-        _mc1, _mc2, _mc3 = st.columns(3)
+        _mc1, _mc2, _mc3, _mc4 = st.columns(4)
         with _mc1:
             if st.button(
                 f"✏️{_NL}Teks Bebas{_NL}Ketik langsung",
@@ -733,6 +733,16 @@ if st.session_state.tab == "input":
                 type="primary" if m == "both" else "secondary",
             ):
                 st.session_state.mode   = "both"
+                st.session_state.imgs   = []
+                st.session_state.pdfraw = b""
+                st.rerun()
+        with _mc4:
+            if st.button(
+                f"⚡{_NL}Bulk Upload{_NL}Banyak file",
+                key="m_bulk", use_container_width=True,
+                type="primary" if m == "bulk" else "secondary",
+            ):
+                st.session_state.mode   = "bulk"
                 st.session_state.imgs   = []
                 st.session_state.pdfraw = b""
                 st.rerun()
@@ -806,7 +816,357 @@ if st.session_state.tab == "input":
             )
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-
+        
+# =============================================================================
+#  BULK MODE — letakkan di dalam:  if st.session_state.step == 1:
+#  tepat sebelum tombol "✦  Auto-generate"
+# =============================================================================
+ 
+        if m == "bulk":
+ 
+            # ── Session state bulk ─────────────────────────────────────────
+            if "bulk_results" not in st.session_state:
+                st.session_state.bulk_results = []
+            if "bulk_saved_count" not in st.session_state:
+                st.session_state.bulk_saved_count = 0
+ 
+            # ── CSS (inject sekali, Streamlit akan de-dup otomatis) ────────
+            st.markdown("""
+<style>
+.file-item{background:#fff;border:1px solid #E5E7EB;border-radius:11px;
+    padding:11px 13px;margin-bottom:7px}
+.fi-success{border-color:#22C55E!important;background:#F0FDF4!important}
+.fi-error  {border-color:#EF4444!important;background:#FFF1F2!important}
+.fi-skipped{border-color:#EAB308!important;background:#FEFCE8!important}
+.fi-top{display:flex;align-items:center;gap:9px}
+.fi-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;flex-shrink:0}
+.ic-ok  {background:#DCFCE7}
+.ic-err {background:#FFE4E6}
+.ic-skip{background:#FEF9C3}
+.ic-n   {background:#F3F4F6}
+.fi-name{font-size:11px;font-weight:600;color:#111;flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-badge{font-size:9px;font-weight:700;padding:3px 8px;
+    border-radius:20px;white-space:nowrap}
+.fb-ok  {background:#DCFCE7;color:#166534}
+.fb-err {background:#FFE4E6;color:#9F1239}
+.fb-sk  {background:#FEF9C3;color:#713F12}
+.fi-grid{margin-top:8px;padding-top:7px;
+    border-top:1px solid #F3F4F6;
+    display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+.fi-kv  {display:flex;gap:4px}
+.fi-k   {font-size:9px;font-weight:700;color:#9CA3AF;min-width:50px;
+    flex-shrink:0;text-transform:uppercase;letter-spacing:.4px}
+.fi-v   {font-size:11px;font-weight:500;color:#111;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk-sum{background:#fff;border:1px solid #E5E7EB;border-radius:12px;
+    padding:13px 15px;margin-bottom:12px}
+.bulk-sum-ttl{font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.8px;color:#9CA3AF;margin-bottom:9px}
+.bulk-stats{display:grid;grid-template-columns:repeat(4,1fr);
+    gap:8px;text-align:center;margin-bottom:9px}
+.bs-val{font-size:20px;font-weight:700;color:#111;line-height:1}
+.bs-lbl{font-size:10px;color:#9CA3AF;margin-top:2px}
+.bs-g{color:#22C55E}.bs-r{color:#EF4444}.bs-y{color:#EAB308}
+.bulk-bar{background:#F3F4F6;border-radius:99px;height:5px;overflow:hidden}
+.bulk-bar-f{height:100%;background:#22C55E;border-radius:99px}
+.bulk-prog{background:#F3F4F6;border-radius:99px;height:4px;
+    overflow:hidden;margin-bottom:5px}
+.bulk-prog-f{height:100%;background:#111;border-radius:99px}
+.bulk-prog-lbl{font-size:10px;color:#9CA3AF;text-align:center;margin-bottom:10px}
+</style>
+""", unsafe_allow_html=True)
+ 
+            # ── Pengaturan Issuer & PIC ────────────────────────────────────
+            st.markdown('<div class="sec-lbl" style="margin-top:4px">Issuer &amp; PIC (berlaku untuk semua file)</div>',
+                        unsafe_allow_html=True)
+ 
+            _ISSUERS_B = [
+                "", "Ade Puspitasari", "Farras Mahmud", "Meijika",
+                "Muhammad Geraldi Jagaddhita", "Nur Anissa Firda Aulia",
+                "Riega Wisudhantara", "Rifyal Tumber", "Selvy Anggraini",
+                "Shaiful Baldy", "Veronica Novi Heri",
+            ]
+            _li = st.session_state.get("last_issuer", "")
+            _bi = _ISSUERS_B.index(_li) if _li in _ISSUERS_B else 0
+ 
+            _bc1, _bc2 = st.columns(2)
+            bulk_issuer = _bc1.selectbox(
+                "Issuer *", options=_ISSUERS_B, index=_bi,
+                format_func=lambda x: "— Pilih Issuer —" if x == "" else x,
+                key="bulk_issuer",
+            )
+            bulk_pic = _bc2.text_input(
+                "PIC *",
+                value=st.session_state.get("last_pic", ""),
+                placeholder="Nama penanggung jawab",
+                key="bulk_pic",
+            )
+ 
+            # ── File uploader multi-file ───────────────────────────────────
+            st.markdown('<div class="sec-lbl" style="margin-top:10px">Upload file (pilih banyak sekaligus)</div>',
+                        unsafe_allow_html=True)
+ 
+            if not _PDF_OK:
+                notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
+                       "Jalankan: <code>pip install pypdfium2==4.30.0</code>")
+ 
+            _ftypes_b = ["jpg", "jpeg", "png", "webp"] + (["pdf"] if _PDF_OK else [])
+            bulk_files = st.file_uploader(
+                "Drag & drop semua file — JPG · PNG · PDF",
+                type=_ftypes_b,
+                accept_multiple_files=True,
+                label_visibility="visible",
+                key="bulk_uf",
+            )
+ 
+            _n = len(bulk_files) if bulk_files else 0
+            if _n:
+                notice("info", f"<b>{_n} file</b> dipilih dan siap diproses.")
+ 
+            skip_dup = st.checkbox(
+                "Lewati duplikat — jangan simpan jika booking sudah ada",
+                value=True, key="bulk_skip_dup",
+            )
+ 
+            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+ 
+            # ── Tombol aksi ────────────────────────────────────────────────
+            _bta, _btb = st.columns(2)
+            _run_bulk   = _bta.button(
+                "⚡  Proses & Simpan Semua", type="primary",
+                use_container_width=True,
+                disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
+            )
+            _clear_bulk = _btb.button(
+                "✕  Hapus Hasil", type="secondary",
+                use_container_width=True,
+                key="bulk_clear",
+            )
+ 
+            if _clear_bulk:
+                st.session_state.bulk_results     = []
+                st.session_state.bulk_saved_count = 0
+                st.rerun()
+ 
+            # ── Proses ────────────────────────────────────────────────────
+            if _run_bulk:
+                if not bulk_issuer:
+                    notice("err", "Pilih Issuer terlebih dahulu.")
+                elif not bulk_pic.strip():
+                    notice("err", "Isi PIC terlebih dahulu.")
+                elif not oai_key():
+                    notice("err", "OpenAI API key belum diisi — buka tab <b>Pengaturan</b>.")
+                else:
+                    st.session_state.last_issuer      = bulk_issuer
+                    st.session_state.last_pic         = bulk_pic
+                    st.session_state.bulk_results     = []
+                    st.session_state.bulk_saved_count = 0
+ 
+                    try:
+                        _existing = load_rows()
+                    except Exception:
+                        _existing = []
+ 
+                    _all_res   = []
+                    _saved_run = 0
+                    _prog_slot = st.empty()
+ 
+                    for _idx, _uf in enumerate(bulk_files):
+                        _pct = int(_idx / _n * 100)
+                        _prog_slot.markdown(
+                            '<div class="bulk-prog">'
+                            + '<div class="bulk-prog-f" style="width:' + str(_pct) + '%"></div>'
+                            + '</div>'
+                            + '<div class="bulk-prog-lbl">Memproses '
+                            + str(_idx + 1) + ' / ' + str(_n)
+                            + ' &nbsp;&middot;&nbsp; ' + _uf.name + '</div>',
+                            unsafe_allow_html=True,
+                        )
+ 
+                        _res = {"file": _uf.name, "status": "error", "parsed": {}, "err": ""}
+ 
+                        try:
+                            _raw = _uf.read()
+                            _imgs_b, _ptxt_b = [], ""
+ 
+                            if _uf.name.lower().endswith(".pdf"):
+                                if not _PDF_OK:
+                                    raise RuntimeError("pypdfium2 tidak terinstall")
+                                _pages  = pdf_images(_raw)
+                                _imgs_b = [to_b64(pg) for pg in _pages]
+                                _ptxt_b = pdf_text(_raw)
+                            else:
+                                _img_obj = Image.open(io.BytesIO(_raw)).convert("RGB")
+                                _b64, _mime = to_b64(_img_obj)
+                                _imgs_b = [(_b64, _mime)]
+ 
+                            _comb = ""
+                            if _ptxt_b:
+                                _comb = (
+                                    "EXTRACTED PDF TEXT "
+                                    "(authoritative — use for all numbers and dates):\n"
+                                    + _ptxt_b
+                                )
+ 
+                            _parsed, _ = ai_parse(_comb, _imgs_b or None)
+                            _parsed["timestamp_input"] = now_ts()
+ 
+                            _is_dup, _dup_reason, _ = check_duplicate(
+                                {
+                                    "booking_id": _parsed.get("booking_id"),
+                                    "hotel":      _parsed.get("hotel"),
+                                    "checkin":    _parsed.get("checkin"),
+                                    "name":       _parsed.get("name"),
+                                    "room":       _parsed.get("room"),
+                                },
+                                _existing,
+                            )
+ 
+                            if _is_dup and skip_dup:
+                                _res["status"] = "skipped"
+                                _res["parsed"] = _parsed
+                                _res["err"]    = _dup_reason
+                            else:
+                                _row = {
+                                    "timestamp_input": _parsed.get("timestamp_input", ""),
+                                    "supplier":        _parsed.get("supplier",      ""),
+                                    "booking_id":      _parsed.get("booking_id",    ""),
+                                    "booked_on":       _parsed.get("booked_on",     ""),
+                                    "issued_on":       _parsed.get("issued_on",     ""),
+                                    "hotel":           _parsed.get("hotel",         ""),
+                                    "checkin":         _parsed.get("checkin",       ""),
+                                    "qty":             _parsed.get("qty",           ""),
+                                    "room":            _parsed.get("room",          0),
+                                    "checkout":        _parsed.get("checkout",      ""),
+                                    "name":            _parsed.get("name",          ""),
+                                    "card":            _parsed.get("card",          ""),
+                                    "issuer":          bulk_issuer,
+                                    "pic":             bulk_pic,
+                                    "no_bc":           _parsed.get("no_bc",        ""),
+                                    "nama_kegiatan":   _parsed.get("nama_kegiatan",""),
+                                    "notes":           _parsed.get("notes",        ""),
+                                }
+                                save_row(_row)
+                                _res["status"] = "success"
+                                _res["parsed"] = _parsed
+                                _saved_run += 1
+ 
+                                # Update cache lokal agar dup check antar-file akurat
+                                _existing.append({
+                                    "Booking ID": _parsed.get("booking_id", ""),
+                                    "Hotel":      _parsed.get("hotel",      ""),
+                                    "Check-in":   _parsed.get("checkin",    ""),
+                                    "Guest Name": _parsed.get("name",       ""),
+                                    "Total (Rp)": _parsed.get("room",       0),
+                                })
+ 
+                        except Exception as _exc:
+                            _res["status"] = "error"
+                            _res["err"]    = str(_exc)[:120]
+ 
+                        _all_res.append(_res)
+ 
+                    _prog_slot.empty()
+                    st.session_state.bulk_results     = _all_res
+                    st.session_state.bulk_saved_count = _saved_run
+                    st.rerun()
+ 
+            # ── Tampilkan hasil ────────────────────────────────────────────
+            _results = st.session_state.bulk_results
+ 
+            if _results:
+                _n_ok   = sum(1 for r in _results if r["status"] == "success")
+                _n_err  = sum(1 for r in _results if r["status"] == "error")
+                _n_skip = sum(1 for r in _results if r["status"] == "skipped")
+                _n_tot  = len(_results)
+                _pct_ok = int(_n_ok / _n_tot * 100) if _n_tot else 0
+ 
+                # Summary
+                st.markdown(
+                    '<div class="bulk-sum">'
+                    '<div class="bulk-sum-ttl">Hasil Proses Batch</div>'
+                    '<div class="bulk-stats">'
+                    + '<div><div class="bs-val">' + str(_n_tot) + '</div><div class="bs-lbl">Total</div></div>'
+                    + '<div><div class="bs-val bs-g">' + str(_n_ok) + '</div><div class="bs-lbl">Tersimpan</div></div>'
+                    + '<div><div class="bs-val bs-r">' + str(_n_err) + '</div><div class="bs-lbl">Gagal</div></div>'
+                    + '<div><div class="bs-val bs-y">' + str(_n_skip) + '</div><div class="bs-lbl">Duplikat</div></div>'
+                    + '</div>'
+                    + '<div class="bulk-bar"><div class="bulk-bar-f" style="width:' + str(_pct_ok) + '%"></div></div>'
+                    + '<div style="font-size:10px;color:#9CA3AF;text-align:right;margin-top:4px">'
+                    + str(_pct_ok) + '% berhasil tersimpan</div>'
+                    + '</div>',
+                    unsafe_allow_html=True,
+                )
+ 
+                st.markdown('<div class="sec-lbl">Detail per file</div>', unsafe_allow_html=True)
+ 
+                for _r in _results:
+                    _s = _r["status"]
+                    _p = _r.get("parsed", {})
+                    _fname = _r["file"]
+                    _ficon = "&#128196;" if _fname.lower().endswith(".pdf") else "&#128247;"
+ 
+                    _icls  = {"success": "ic-ok",  "error": "ic-err",  "skipped": "ic-skip"}.get(_s, "ic-n")
+                    _bcls  = {"success": "fb-ok",  "error": "fb-err",  "skipped": "fb-sk"}.get(_s, "fb-ok")
+                    _isym  = {"success": "&#10003;","error": "&#10005;","skipped": "&#9888;"}.get(_s, "")
+                    _lbl   = {"success": "Tersimpan","error": "Gagal",  "skipped": "Duplikat"}.get(_s, _s)
+                    _wcls  = {"success": "fi-success","error": "fi-error","skipped": "fi-skipped"}.get(_s, "")
+ 
+                    if _p and _s in ("success", "skipped"):
+                        _dw = (
+                            '<div style="margin-top:6px;font-size:11px;color:#92400E;'
+                            'background:#FEF9C3;padding:5px 8px;border-radius:6px">&#9888; '
+                            + _r.get("err", "Duplikat") + '</div>'
+                        ) if _s == "skipped" else ""
+ 
+                        _det = (
+                            '<div class="fi-grid">'
+                            + '<div class="fi-kv"><span class="fi-k">Hotel</span><span class="fi-v">' + (_p.get("hotel") or "—") + '</span></div>'
+                            + '<div class="fi-kv"><span class="fi-k">Total</span><span class="fi-v">' + fmt(_p.get("room", 0)) + '</span></div>'
+                            + '<div class="fi-kv"><span class="fi-k">Tamu</span><span class="fi-v">' + (_p.get("name") or "—") + '</span></div>'
+                            + '<div class="fi-kv"><span class="fi-k">Booking ID</span><span class="fi-v">' + (_p.get("booking_id") or "—") + '</span></div>'
+                            + '<div class="fi-kv"><span class="fi-k">Check-in</span><span class="fi-v">' + (_p.get("checkin") or "—") + '</span></div>'
+                            + '<div class="fi-kv"><span class="fi-k">Supplier</span><span class="fi-v">' + (_p.get("supplier") or "—") + '</span></div>'
+                            + '</div>' + _dw
+                        )
+                    elif _r.get("err"):
+                        _det = (
+                            '<div class="fi-grid" style="grid-template-columns:1fr">'
+                            + '<div class="fi-kv"><span class="fi-k">Error</span>'
+                            + '<span class="fi-v" style="color:#EF4444;white-space:normal">'
+                            + _r["err"] + '</span></div></div>'
+                        )
+                    else:
+                        _det = ""
+ 
+                    st.markdown(
+                        '<div class="file-item ' + _wcls + '">'
+                        + '<div class="fi-top">'
+                        + '<div class="fi-icon ' + _icls + '">' + _ficon + '</div>'
+                        + '<div class="fi-name">' + _fname + '</div>'
+                        + '<span class="fi-badge ' + _bcls + '">' + _isym + ' ' + _lbl + '</span>'
+                        + '</div>' + _det + '</div>',
+                        unsafe_allow_html=True,
+                    )
+ 
+                _sid = sheet_id()
+                if _sid and _n_ok:
+                    st.link_button(
+                        f"&#128202;  Buka Google Sheets &#8594; ({_n_ok} baris baru)",
+                        f"https://docs.google.com/spreadsheets/d/{_sid}",
+                        use_container_width=True,
+                    )
+ 
+                if _n_err:
+                    notice("warn",
+                        f"{_n_err} file gagal. Coba upload ulang manual via mode Dokumen.")
+ 
+            # ── Sembunyikan tombol Auto-generate & Reset ───────────────────
+            # (tidak relevan di mode bulk — proses dilakukan di atas)
+            st.stop()
+            
         if st.button("✦  Auto-generate", type="primary", use_container_width=True):
             has_txt = bool(report_text.strip()) if m in ("text", "both") else False
             has_doc = bool(st.session_state.imgs)
