@@ -1206,7 +1206,7 @@ elif st.session_state.tab == "dashboard":
                 )
             if "Room x Night" in display_df.columns:
                 col_cfg["Room x Night"] = st.column_config.TextColumn("Room × Night")
-           if "Timestamp Input" in display_df.columns:
+            if "Timestamp Input" in display_df.columns:
                col_cfg["Timestamp Input"] = st.column_config.TextColumn("Timestamp")
 
             st.dataframe(
