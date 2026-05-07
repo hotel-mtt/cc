@@ -51,54 +51,9 @@ html,body,[data-testid="stAppViewContainer"],
 .top-bar .live{font-size:10px;font-weight:700;background:#0d2b0d;color:#4ade80;
     border:1px solid #166534;padding:3px 9px;border-radius:20px}
 
-/* step bar */
-.step-row{display:flex;align-items:center;background:#fff;
-    border:1px solid #E5E7EB;border-radius:12px;padding:12px 10px;margin-bottom:16px}
-.step-col{display:flex;flex-direction:column;align-items:center;flex:1}
-.step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
-    justify-content:center;font-size:11px;font-weight:700;margin-bottom:4px}
-.step-dot.done{background:#1a1a1a;color:#fff}
-.step-dot.now{background:#111;color:#fff;outline:3px solid #ddd;outline-offset:1px}
-.step-dot.wait{background:#F3F4F6;color:#ccc;border:1px solid #E5E7EB}
-.step-lbl{font-size:9px;color:#9CA3AF;text-align:center;font-weight:500}
-.step-lbl.now{color:#111;font-weight:700}
-.step-line{flex:1;height:1px;background:#E5E7EB;margin:0 4px;margin-bottom:14px}
-.step-line.done{background:#111}
-
-/* mode selector */
-.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.mode-card{border:1.5px solid #E5E7EB;border-radius:10px;padding:12px 6px 10px;
-    text-align:center;background:#fff}
-.mode-card.on{border-color:#111;background:#F9FAFB}
-.mode-card .ic{font-size:18px;margin-bottom:5px;display:block}
-.mode-card .lb{font-size:11px;font-weight:600;color:#111}
-.mode-card .sb{font-size:10px;color:#9CA3AF;margin-top:2px}
-.mode-card.on .lb{font-weight:700}
-
 /* section label */
 .sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
     color:#9CA3AF;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #F3F4F6}
-
-/* preview grid */
-.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
-.pc{border-left:3px solid;padding:9px 11px;border-radius:0 8px 8px 0}
-.pc.wide{grid-column:span 2}
-.pc .k{font-size:9px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.6px;opacity:.65;margin-bottom:3px}
-.pc .v{font-size:13px;font-weight:700;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap}
-.pc .v.na{opacity:.35;font-style:italic;font-weight:400;font-size:11px}
-
-/* field rows */
-.frow{display:flex;align-items:center;padding:9px 13px;
-    border-bottom:1px solid #F9FAFB;gap:9px}
-.frow:last-child{border-bottom:none}
-.fdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.fbody{flex:1;min-width:0}
-.fk{font-size:9px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.6px;color:#9CA3AF;margin-bottom:1px}
-.fv{font-size:13px;font-weight:600;color:#111;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap}
 
 /* notices */
 .notice{border-radius:9px;padding:10px 13px;font-size:12px;line-height:1.5;
@@ -114,13 +69,16 @@ html,body,[data-testid="stAppViewContainer"],
 .stat-val{font-size:20px;font-weight:700;color:#111;line-height:1.1}
 .stat-lbl{font-size:10px;color:#9CA3AF;margin-top:4px;font-weight:500}
 
-/* done */
-.done-box{text-align:center;padding:22px 14px 14px}
-.done-circle{width:52px;height:52px;border-radius:50%;background:#F3F4F6;
-    border:2px solid #111;display:flex;align-items:center;justify-content:center;
-    font-size:22px;margin:0 auto 11px}
-.done-title{font-size:17px;font-weight:700;color:#111;margin-bottom:4px}
-.done-sub{font-size:12px;color:#9CA3AF}
+/* field rows */
+.frow{display:flex;align-items:center;padding:9px 13px;
+    border-bottom:1px solid #F9FAFB;gap:9px}
+.frow:last-child{border-bottom:none}
+.fdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fbody{flex:1;min-width:0}
+.fk{font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.6px;color:#9CA3AF;margin-bottom:1px}
+.fv{font-size:13px;font-weight:600;color:#111;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
 
 /* form overrides */
 .stTextInput input,.stNumberInput input,
@@ -142,22 +100,17 @@ label[data-testid="stWidgetLabel"]{
     width:100% !important;height:46px !important;border-radius:10px !important;
     font-size:13px !important;font-weight:600 !important;border:none !important;
     font-family:'Inter',sans-serif !important}
-
-/* ── All primary: black solid ── */
 .stButton>button[kind="primary"],
 .stFormSubmitButton>button[kind="primary"]{
     background:#111 !important;color:#fff !important;
     border:none !important;box-shadow:none !important}
 .stButton>button[kind="primary"]:hover{background:#333 !important}
-
-/* ── All secondary: white with border ── */
 .stButton>button[kind="secondary"],
 .stFormSubmitButton>button[kind="secondary"]{
     background:#fff !important;border:1.5px solid #E5E7EB !important;
     color:#374151 !important}
 .stButton>button[kind="secondary"]:hover{
     background:#F9FAFB !important;border-color:#D1D5DB !important}
-
 
 [data-testid="stFileUploader"]>div:first-child{
     border:1.5px dashed #D1D5DB !important;border-radius:11px !important;
@@ -171,58 +124,99 @@ details>summary{font-size:12px !important;color:#6B7280 !important}
     border:1px solid #E5E7EB !important;overflow:hidden !important}
 .stSpinner>div{border-top-color:#111 !important}
 
-/* ── Metric cards (step 4 summary) ── */
+/* Metric cards */
 [data-testid="stMetric"]{
-    background:#fff !important;
-    border:1px solid #E5E7EB !important;
-    border-radius:10px !important;
-    padding:10px 12px !important;
-    margin-bottom:0 !important;
-}
+    background:#fff !important;border:1px solid #E5E7EB !important;
+    border-radius:10px !important;padding:10px 12px !important;margin-bottom:0 !important}
 [data-testid="stMetricLabel"]{
-    font-size:10px !important;
-    font-weight:700 !important;
-    color:#9CA3AF !important;
-    text-transform:uppercase !important;
-    letter-spacing:.7px !important;
-}
+    font-size:10px !important;font-weight:700 !important;
+    color:#9CA3AF !important;text-transform:uppercase !important;letter-spacing:.7px !important}
 [data-testid="stMetricValue"]{
-    font-size:13px !important;
-    font-weight:600 !important;
-    color:#111 !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    white-space:nowrap !important;
-}
+    font-size:13px !important;font-weight:600 !important;color:#111 !important;
+    overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important}
 
-/* ── Dataframe improvements ── */
+/* Dataframe */
 [data-testid="stDataFrame"]{
-    border-radius:12px !important;
-    border:1px solid #E5E7EB !important;
-    overflow:hidden !important;
-    box-shadow:0 1px 3px rgba(0,0,0,.04) !important;
-}
+    border-radius:12px !important;border:1px solid #E5E7EB !important;
+    overflow:hidden !important;box-shadow:0 1px 3px rgba(0,0,0,.04) !important}
 [data-testid="stDataFrame"] table{font-size:12px !important}
 [data-testid="stDataFrame"] th{
-    background:#F9FAFB !important;
-    color:#6B7280 !important;
-    font-size:11px !important;
-    font-weight:600 !important;
-    text-transform:uppercase !important;
-    letter-spacing:.5px !important;
-    border-bottom:1px solid #E5E7EB !important;
-    padding:10px 12px !important;
-}
+    background:#F9FAFB !important;color:#6B7280 !important;
+    font-size:11px !important;font-weight:600 !important;
+    text-transform:uppercase !important;letter-spacing:.5px !important;
+    border-bottom:1px solid #E5E7EB !important;padding:10px 12px !important}
 [data-testid="stDataFrame"] td{
-    font-size:12px !important;
-    color:#111827 !important;
-    padding:9px 12px !important;
-    border-bottom:1px solid #F9FAFB !important;
-    vertical-align:middle !important;
-}
-[data-testid="stDataFrame"] tr:hover td{
-    background:#F9FAFB !important;
-}
+    font-size:12px !important;color:#111827 !important;
+    padding:9px 12px !important;border-bottom:1px solid #F9FAFB !important;
+    vertical-align:middle !important}
+[data-testid="stDataFrame"] tr:hover td{background:#F9FAFB !important}
+
+/* ── Bulk: tombol slim ── */
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button {
+    height:36px !important;font-size:12px !important;
+    font-weight:500 !important;border-radius:9px !important;box-shadow:none !important}
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"] {
+    background:#111 !important;color:#fff !important;border:none !important}
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button[kind="secondary"] {
+    background:#fff !important;border:1.5px solid #E5E7EB !important;
+    color:#9CA3AF !important;font-weight:400 !important}
+
+/* ── Bulk: progress bar ── */
+.bulk-prog{background:#F3F4F6;border-radius:99px;height:4px;overflow:hidden;margin-bottom:5px}
+.bulk-prog-f{height:100%;background:#111;border-radius:99px}
+.bulk-prog-lbl{font-size:10px;color:#9CA3AF;text-align:center;margin-bottom:10px}
+
+/* ── Bulk: summary card ── */
+.bulk-sum{background:#fff;border:1px solid #E5E7EB;border-radius:12px;
+    padding:13px 15px;margin-bottom:12px}
+.bulk-sum-ttl{font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.8px;color:#9CA3AF;margin-bottom:9px}
+.bulk-stats{display:grid;grid-template-columns:repeat(4,1fr);
+    gap:8px;text-align:center;margin-bottom:9px}
+.bs-val{font-size:20px;font-weight:700;color:#111;line-height:1}
+.bs-lbl{font-size:10px;color:#9CA3AF;margin-top:2px}
+.bs-g{color:#22C55E} .bs-r{color:#EF4444} .bs-y{color:#EAB308}
+.bulk-bar{background:#F3F4F6;border-radius:99px;height:5px;overflow:hidden}
+.bulk-bar-f{height:100%;background:#22C55E;border-radius:99px}
+
+/* ── Bulk: file result cards ── */
+.file-item{background:#fff;border:1px solid #E5E7EB;border-radius:11px;
+    padding:11px 13px;margin-bottom:7px}
+.fi-success{border-color:#22C55E!important;background:#F0FDF4!important}
+.fi-error  {border-color:#EF4444!important;background:#FFF1F2!important}
+.fi-skipped{border-color:#EAB308!important;background:#FEFCE8!important}
+.fi-top{display:flex;align-items:center;gap:9px}
+.fi-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;flex-shrink:0}
+.ic-ok{background:#DCFCE7} .ic-err{background:#FFE4E6}
+.ic-skip{background:#FEF9C3} .ic-n{background:#F3F4F6}
+.fi-name{font-size:11px;font-weight:600;color:#111;flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.fb-ok{background:#DCFCE7;color:#166534}
+.fb-err{background:#FFE4E6;color:#9F1239}
+.fb-sk{background:#FEF9C3;color:#713F12}
+.fi-grid{margin-top:8px;padding-top:7px;border-top:1px solid #F3F4F6;
+    display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+.fi-kv{display:flex;gap:4px}
+.fi-k{font-size:9px;font-weight:700;color:#9CA3AF;min-width:50px;
+    flex-shrink:0;text-transform:uppercase;letter-spacing:.4px}
+.fi-v{font-size:11px;font-weight:500;color:#111;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Expedia banner ── */
+.expedia-banner{
+    background:#fff;border:1px solid #E5E7EB;border-bottom:none;
+    border-radius:11px 11px 0 0;padding:12px 16px;
+    display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.expedia-banner img{height:24px;width:auto;object-fit:contain}
+.expedia-banner .taap-pill{
+    font-size:10px;font-weight:700;letter-spacing:.8px;color:#003580;
+    background:#EEF4FF;border:1px solid #BFDBFE;padding:3px 9px;border-radius:20px}
+[data-testid="stFileUploader"]>div:first-child{
+    border-radius:0 0 11px 11px !important;
+    border-top:none !important;
+    margin-top:0 !important}
 </style>
 """, unsafe_allow_html=True)
 
@@ -251,13 +245,13 @@ def sheet_id() -> str:
 
 
 # =============================================================================
-#  GOOGLE SHEETS  — 13 columns
+#  GOOGLE SHEETS
 # =============================================================================
 COLS = [
     "Timestamp Input", "Supplier",      "Booking ID",  "Booking Date",
     "Issued Date",     "Hotel",         "Check-in",    "Room x Night",
     "Total (Rp)",      "Check-out",     "Guest Name",  "Kartu Kredit",
-    "Issuer",          "PIC",           "No. BC",          "Nama Kegiatan",
+    "Issuer",          "PIC",           "No. BC",      "Nama Kegiatan",
     "Catatan",
 ]
 
@@ -286,7 +280,7 @@ def save_row(d: dict):
             "timestamp_input", "supplier",  "booking_id", "booked_on",
             "issued_on",       "hotel",     "checkin",    "qty",
             "room",            "checkout",  "name",       "card",
-            "issuer",          "pic",       "no_bc",     "nama_kegiatan",
+            "issuer",          "pic",       "no_bc",      "nama_kegiatan",
             "notes",
         ]],
         value_input_option="USER_ENTERED",
@@ -312,11 +306,6 @@ def _norm_int(v) -> int:
 
 
 def check_duplicate(new: dict, rows: list) -> tuple:
-    """
-    Returns (is_dup: bool, reason: str, matched_row: dict | None)
-    Primary   : same Booking ID
-    Secondary : 3+ of (hotel, checkin, name, amount) match
-    """
     bid   = _norm_str(new.get("booking_id"))
     hotel = _norm_str(new.get("hotel"))
     ci    = _norm_str(new.get("checkin"))
@@ -324,11 +313,8 @@ def check_duplicate(new: dict, rows: list) -> tuple:
     amt   = _norm_int(new.get("room"))
 
     for r in rows:
-        # Primary match
         if bid and bid == _norm_str(r.get("Booking ID")):
             return True, "Booking ID sudah terdaftar", r
-
-        # Secondary match
         score = sum([
             hotel == _norm_str(r.get("Hotel")),
             ci    == _norm_str(r.get("Check-in")),
@@ -337,7 +323,6 @@ def check_duplicate(new: dict, rows: list) -> tuple:
         ])
         if score >= 3:
             return True, "Kemungkinan duplikat (kesamaan tinggi)", r
-
     return False, "", None
 
 
@@ -346,9 +331,7 @@ def check_duplicate(new: dict, rows: list) -> tuple:
 # =============================================================================
 def pdf_images(data: bytes) -> list:
     if not _PDF_OK:
-        raise RuntimeError(
-            "pypdfium2 not installed — run: pip install pypdfium2==4.30.0"
-        )
+        raise RuntimeError("pypdfium2 not installed — run: pip install pypdfium2==4.30.0")
     doc = _pdfium.PdfDocument(data)
     return [doc[i].render(scale=2.0).to_pil() for i in range(len(doc))]
 
@@ -420,7 +403,6 @@ def ai_parse(text: str = "", images: list = None) -> tuple:
                 "type": "image_url",
                 "image_url": {"url": f"data:{mime};base64,{b64}", "detail": "high"},
             })
-
     content.append({
         "type": "text",
         "text": text if text else "Extract all structured data from this document.",
@@ -459,75 +441,16 @@ def notice(kind: str, msg: str):
     icons = {"ok": "✓", "err": "✕", "info": "ℹ", "warn": "⚠"}
     cls   = {"ok": "nok", "err": "nerr", "info": "ninfo", "warn": "nwarn"}
     st.markdown(
-        f'<div class="notice {cls[kind]}">'
-        f'<b>{icons[kind]}</b>&ensp;{msg}</div>',
+        f'<div class="notice {cls[kind]}"><b>{icons[kind]}</b>&ensp;{msg}</div>',
         unsafe_allow_html=True,
     )
 
 
-def stepbar(cur: int):
-    steps = [("Input", 1), ("Proses", 2), ("Konfirmasi", 3), ("Selesai", 4)]
-    h = '<div class="step-row">'
-    for lbl, n in steps:
-        dc  = "done" if n < cur else ("now" if n == cur else "wait")
-        sym = "✓" if n < cur else str(n)
-        lc  = " now" if n == cur else ""
-        h  += (
-            f'<div class="step-col">'
-            f'<div class="step-dot {dc}">{sym}</div>'
-            f'<div class="step-lbl{lc}">{lbl}</div>'
-            f'</div>'
-        )
-        if n < 4:
-            h += f'<div class="step-line{" done" if n < cur else ""}"></div>'
-    st.markdown(h + "</div>", unsafe_allow_html=True)
-
-
-# 12 colour-coded preview fields
-_FIELDS = [
-    # (key, label, border, bg, fg, wide, fmt_fn)
-    ("timestamp_input", "Timestamp",    "#8B5CF6", "#F5F3FF", "#4C1D95", False, None),
-    ("supplier",        "Supplier",     "#D946EF", "#FDF4FF", "#701A75", False, None),
-    ("booking_id",      "Booking ID",   "#EF4444", "#FFF1F2", "#881337", False, None),
-    ("booked_on",       "Booking Date", "#F97316", "#FFF7ED", "#7C2D12", False, None),
-    ("issued_on",       "Issued Date",  "#EAB308", "#FEFCE8", "#713F12", False, None),
-    ("hotel",           "Hotel",        "#22C55E", "#F0FDF4", "#14532D", True,  None),
-    ("checkin",         "Check-in",     "#3B82F6", "#EFF6FF", "#1E3A8A", False, None),
-    ("qty",             "Room × Night", "#0D9488", "#F0FDFA", "#134E4A", False, None),
-    ("room",            "Total (Rp)",   "#EA580C", "#FFF4EE", "#9A3412", False, fmt),
-    ("checkout",        "Check-out",    "#7C3AED", "#EDE9FE", "#3B0764", False, None),
-    ("name",            "Guest Name",   "#EC4899", "#FDF2F8", "#9D174D", False, None),
-    ("card",            "Credit Card",  "#F43F5E", "#FFF1F2", "#9F1239", False, None),
-]
-
-
-def preview_grid(p: dict):
-    h = '<div class="preview-grid">'
-    for key, lbl, bdr, bg, fg, wide, fn in _FIELDS:
-        val  = p.get(key, "")
-        if key == "timestamp_input" and not val:
-            val = now_ts()
-        disp = fn(val) if fn and val else (str(val) if val else "")
-        vcls = "" if disp else " na"
-        w    = " wide" if wide else ""
-        h   += (
-            f'<div class="pc{w}" '
-            f'style="background:{bg};border-color:{bdr};color:{fg}">'
-            f'<div class="k">{lbl}</div>'
-            f'<div class="v{vcls}">{disp or "—"}</div>'
-            f'</div>'
-        )
-    st.markdown(h + "</div>", unsafe_allow_html=True)
-
-
 def field_row(lbl: str, val: str, color: str = "#9CA3AF"):
     st.markdown(
-        f'<div class="frow">'
-        f'<div class="fdot" style="background:{color}"></div>'
-        f'<div class="fbody">'
-        f'<div class="fk">{lbl}</div>'
-        f'<div class="fv">{val or "—"}</div>'
-        f'</div></div>',
+        f'<div class="frow"><div class="fdot" style="background:{color}"></div>'
+        f'<div class="fbody"><div class="fk">{lbl}</div>'
+        f'<div class="fv">{val or "—"}</div></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -547,24 +470,24 @@ def card_list_close():
 # =============================================================================
 #  SESSION STATE
 # =============================================================================
-
-DEFAULT_SESSION = {
-    "tab": "input",
-    "bulk_results": [],
+# FIX BUG #2 & #3: semua key pakai dict-style konsisten
+_DEF = {
+    "tab":              "input",
+    "bulk_results":     [],
     "bulk_saved_count": 0,
-    "oai_key": "",
-    "sheet_id": "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
-    "last_issuer": "",
-    "last_pic": "",
+    "oai_key":          "",
+    "sheet_id":         "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
+    "last_issuer":      "",
+    "last_pic":         "",
 }
 
-for key, value in DEFAULT_SESSION.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
+for _k, _v in _DEF.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 
 
 def reset_bulk():
-    st.session_state["bulk_results"] = []
+    st.session_state["bulk_results"]     = []
     st.session_state["bulk_saved_count"] = 0
 
 
@@ -578,10 +501,8 @@ st.markdown("""
   <span class="live">LIVE</span>
 </div>""", unsafe_allow_html=True)
 
-# ── Navigation: st.radio horizontal — single widget, consistent shape ──────
 st.markdown("""
 <style>
-/* Radio nav: hide default radio circle, style label as pill button */
 div[data-testid="stRadio"] > label { display:none }
 div[data-testid="stRadio"] > div[role="radiogroup"] {
     display: grid !important;
@@ -612,7 +533,6 @@ div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] {
     border-color: #111 !important;
     color: #fff !important;
 }
-/* Radio text */
 div[data-testid="stRadio"] label[data-baseweb="radio"] span:last-child {
     font-size: 13px !important;
     font-weight: 600 !important;
@@ -622,7 +542,6 @@ div[data-testid="stRadio"] label[data-baseweb="radio"] span:last-child {
 div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] span:last-child {
     color: #fff !important;
 }
-/* Hide the actual radio dot */
 div[data-testid="stRadio"] label[data-baseweb="radio"] span:first-child {
     display: none !important;
 }
@@ -630,25 +549,26 @@ div[data-testid="stRadio"] label[data-baseweb="radio"] span:first-child {
 """, unsafe_allow_html=True)
 
 _NAV_OPTIONS = ["Input", "Dashboard", "Riwayat", "Pengaturan"]
-_NAV_KEYS    = {"Input":"input", "Dashboard":"dashboard","Riwayat":"log","Pengaturan":"settings"}
-_NAV_REV     = {v:k for k,v in _NAV_KEYS.items()}
+_NAV_KEYS    = {"Input": "input", "Dashboard": "dashboard",
+                "Riwayat": "log", "Pengaturan": "settings"}
+_NAV_REV     = {v: k for k, v in _NAV_KEYS.items()}
 
 _nav_sel = st.radio(
     "nav", _NAV_OPTIONS,
-    index=_NAV_OPTIONS.index(_NAV_REV.get(st.session_state.tab, "Input")),
+    index=_NAV_OPTIONS.index(_NAV_REV.get(st.session_state["tab"], "Input")),
     horizontal=True,
     label_visibility="collapsed",
     key="nav_radio",
 )
-if _NAV_KEYS[_nav_sel] != st.session_state.tab:
-    st.session_state.tab = _NAV_KEYS[_nav_sel]
+if _NAV_KEYS[_nav_sel] != st.session_state["tab"]:
+    st.session_state["tab"] = _NAV_KEYS[_nav_sel]
     st.rerun()
 
 
 # =============================================================================
-#  TAB — INPUT  ← HANYA BAGIAN INI YANG DIUBAH: bulk upload only, no stepbar
+#  TAB — INPUT
 # =============================================================================
-if st.session_state.tab == "input":
+if st.session_state["tab"] == "input":
 
     if not oai_key():
         notice("err", "OpenAI API key belum diisi — buka tab <b>Pengaturan</b>.")
@@ -685,39 +605,6 @@ if st.session_state.tab == "input":
 
     # ── Logo Expedia + file uploader ─────────────────────────────────────────
     st.markdown("""
-<style>
-.expedia-banner{
-    background:#fff;
-    border:1px solid #E5E7EB;
-    border-bottom:none;
-    border-radius:11px 11px 0 0;
-    padding:12px 16px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-top:10px;
-}
-.expedia-banner img{
-    height:24px;
-    width:auto;
-    object-fit:contain;
-}
-.expedia-banner .taap-pill{
-    font-size:10px;
-    font-weight:700;
-    letter-spacing:.8px;
-    color:#003580;
-    background:#EEF4FF;
-    border:1px solid #BFDBFE;
-    padding:3px 9px;
-    border-radius:20px;
-}
-[data-testid="stFileUploader"]>div:first-child{
-    border-radius:0 0 11px 11px !important;
-    border-top:none !important;
-    margin-top:0 !important;
-}
-</style>
 <div class="expedia-banner">
   <img
     src="https://www.expedia.com/newsroom/wp-content/uploads/2023/07/BEX_Logo_Horizontal_CMYK_FullColorDarkBlue--1024x199.jpg"
@@ -775,8 +662,8 @@ if st.session_state.tab == "input":
         elif not bulk_pic.strip():
             notice("err", "Isi PIC terlebih dahulu.")
         else:
-            st.session_state.last_issuer = bulk_issuer
-            st.session_state.last_pic    = bulk_pic
+            st.session_state["last_issuer"] = bulk_issuer
+            st.session_state["last_pic"]    = bulk_pic
             reset_bulk()
 
             try:
@@ -883,7 +770,8 @@ if st.session_state.tab == "input":
                 _all_res.append(_res)
 
             _prog_slot.empty()
-            st.session_state.get("bulk_results", [])     = _all_res
+            # FIX BUG #1: assignment dict-style (bukan .get()= yang invalid)
+            st.session_state["bulk_results"]     = _all_res
             st.session_state["bulk_saved_count"] = _saved_run
             st.rerun()
 
@@ -901,7 +789,7 @@ if st.session_state.tab == "input":
             '<div class="bulk-sum">'
             '<div class="bulk-sum-ttl">Hasil Proses Batch</div>'
             '<div class="bulk-stats">'
-            + '<div><div class="bs-val">'    + str(_n_tot) + '</div><div class="bs-lbl">Total</div></div>'
+            + '<div><div class="bs-val">'     + str(_n_tot) + '</div><div class="bs-lbl">Total</div></div>'
             + '<div><div class="bs-val bs-g">'+ str(_n_ok)  + '</div><div class="bs-lbl">Tersimpan</div></div>'
             + '<div><div class="bs-val bs-r">'+ str(_n_err) + '</div><div class="bs-lbl">Gagal</div></div>'
             + '<div><div class="bs-val bs-y">'+ str(_n_skip)+ '</div><div class="bs-lbl">Duplikat</div></div>'
@@ -975,15 +863,14 @@ if st.session_state.tab == "input":
 
 
 # =============================================================================
-#  TAB — DASHBOARD  (original — tidak diubah)
+#  TAB — DASHBOARD
 # =============================================================================
-elif st.session_state.tab == "dashboard":
+elif st.session_state["tab"] == "dashboard":
     import pandas as pd
 
     st.markdown('<div class="sec-lbl">Ringkasan</div>', unsafe_allow_html=True)
 
-    if st.button("↻  Refresh", type="secondary",
-                 use_container_width=True, key="ref"):
+    if st.button("↻  Refresh", type="secondary", use_container_width=True, key="ref"):
         st.cache_resource.clear()
         st.rerun()
 
@@ -996,8 +883,7 @@ elif st.session_state.tab == "dashboard":
         else:
             df = pd.DataFrame(rows)
             if "Total (Rp)" in df.columns:
-                df["Total (Rp)"] = pd.to_numeric(
-                    df["Total (Rp)"], errors="coerce").fillna(0)
+                df["Total (Rp)"] = pd.to_numeric(df["Total (Rp)"], errors="coerce").fillna(0)
 
             tn  = len(df)
             tr  = df["Total (Rp)"].sum() if "Total (Rp)" in df.columns else 0
@@ -1008,24 +894,12 @@ elif st.session_state.tab == "dashboard":
             ) if "Timestamp Input" in df.columns else 0
 
             st.markdown(f"""
-            <div class="stat-grid">
-              <div class="stat-card">
-                <div class="stat-val">{tn}</div>
-                <div class="stat-lbl">Total transaksi</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-val" style="font-size:15px">{fmt(tr)}</div>
-                <div class="stat-lbl">Total</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-val" style="font-size:15px">{fmt(avg)}</div>
-                <div class="stat-lbl">Rata-rata</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-val">{tdc}</div>
-                <div class="stat-lbl">Input hari ini</div>
-              </div>
-            </div>""", unsafe_allow_html=True)
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val">{tn}</div><div class="stat-lbl">Total transaksi</div></div>
+  <div class="stat-card"><div class="stat-val" style="font-size:15px">{fmt(tr)}</div><div class="stat-lbl">Total</div></div>
+  <div class="stat-card"><div class="stat-val" style="font-size:15px">{fmt(avg)}</div><div class="stat-lbl">Rata-rata</div></div>
+  <div class="stat-card"><div class="stat-val">{tdc}</div><div class="stat-lbl">Input hari ini</div></div>
+</div>""", unsafe_allow_html=True)
 
             if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
                 _cc_df = df[df["Kartu Kredit"].astype(str).str.strip().ne("")]
@@ -1059,7 +933,7 @@ elif st.session_state.tab == "dashboard":
                             f'</div></div>'
                         )
                     st.markdown(
-                        f'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:4px 14px 4px">'
+                        f'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:4px 14px">'
                         f'{_rows_html}</div>',
                         unsafe_allow_html=True,
                     )
@@ -1105,9 +979,9 @@ elif st.session_state.tab == "dashboard":
 
 
 # =============================================================================
-#  TAB — RIWAYAT  (original — tidak diubah)
+#  TAB — RIWAYAT
 # =============================================================================
-elif st.session_state.tab == "log":
+elif st.session_state["tab"] == "log":
 
     try:
         with st.spinner("Memuat..."):
@@ -1152,9 +1026,9 @@ elif st.session_state.tab == "log":
 
 
 # =============================================================================
-#  TAB — PENGATURAN  (original — tidak diubah)
+#  TAB — PENGATURAN
 # =============================================================================
-elif st.session_state.tab == "settings":
+elif st.session_state["tab"] == "settings":
 
     st.markdown('<div class="sec-lbl">OpenAI API Key</div>', unsafe_allow_html=True)
     oai_ok = False
@@ -1166,9 +1040,9 @@ elif st.session_state.tab == "settings":
         pass
 
     if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
-        _results = []
-        oai_live = bool(oai_key())
-        _results.append((oai_live, "OpenAI", "Terhubung" if oai_live else "Key tidak ditemukan"))
+        _res_list = []
+        _oai_live = bool(oai_key())
+        _res_list.append((_oai_live, "OpenAI", "Terhubung" if _oai_live else "Key tidak ditemukan"))
         _sh_check = False
         try:
             s2  = st.secrets["google_sheets"]["sheet_id"]
@@ -1180,23 +1054,25 @@ elif st.session_state.tab == "settings":
         if _sh_check:
             try:
                 ws()
-                _results.append((True, "Google Sheets", "Terhubung"))
+                _res_list.append((True, "Google Sheets", "Terhubung"))
             except Exception as e:
-                _results.append((False, "Google Sheets", str(e)[:60]))
+                _res_list.append((False, "Google Sheets", str(e)[:60]))
         else:
-            _results.append((False, "Google Sheets", "Belum dikonfigurasi"))
-        _results.append((_PDF_OK, "PDF Upload",
+            _res_list.append((False, "Google Sheets", "Belum dikonfigurasi"))
+        _res_list.append((_PDF_OK, "PDF Upload",
             "pypdfium2 aktif" if _PDF_OK else "pypdfium2 tidak terinstall"))
 
-        items = ""
-        for ok2, svc, msg in _results:
-            clr = "#22C55E" if ok2 else "#EF4444"
-            sym = "✓" if ok2 else "✕"
-            items += (f'<div class="conn-item">'
-                      f'<div class="cdot" style="background:{clr}"></div>'
-                      f'<span style="font-weight:600;color:{clr}">{sym} {svc}</span>'
-                      f'&ensp;<span style="color:#6B7280">{msg}</span></div>')
-        st.markdown(f'<div class="conn-list">{items}</div>', unsafe_allow_html=True)
+        _items = ""
+        for _ok2, _svc, _msg in _res_list:
+            _clr = "#22C55E" if _ok2 else "#EF4444"
+            _sym = "✓" if _ok2 else "✕"
+            _items += (
+                f'<div class="conn-item">'
+                f'<div class="cdot" style="background:{_clr}"></div>'
+                f'<span style="font-weight:600;color:{_clr}">{_sym} {_svc}</span>'
+                f'&ensp;<span style="color:#6B7280">{_msg}</span></div>'
+            )
+        st.markdown(f'<div class="conn-list">{_items}</div>', unsafe_allow_html=True)
 
     st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
     st.markdown('<div class="sec-lbl">Status Sistem</div>', unsafe_allow_html=True)
@@ -1233,21 +1109,22 @@ elif st.session_state.tab == "settings":
 
     if oai_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
-        <div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
-        <div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
-        <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
+<div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
+<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
+<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
-        <div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
-        <div class="st-sub">API key belum dikonfigurasi</div></div>
-        <span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+<div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
+<div class="st-sub">API key belum dikonfigurasi</div></div>
+<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+        # FIX BUG #2: dict-style, bukan .oai_key attribute
         nk = st.text_input("OpenAI API Key",
-            value=st.session_state.oai_key, type="password",
-            placeholder="sk-proj-...", label_visibility="collapsed")
-        if nk != st.session_state.oai_key:
-            st.session_state.oai_key = nk
+            value=st.session_state.get("oai_key", ""),
+            type="password", placeholder="sk-proj-...", label_visibility="collapsed")
+        if nk != st.session_state.get("oai_key", ""):
+            st.session_state["oai_key"] = nk
             st.rerun()
-        if st.session_state.oai_key:
+        if st.session_state.get("oai_key", ""):
             notice("ok", "Key aktif untuk sesi ini.")
 
     sh_ok = False
@@ -1261,30 +1138,32 @@ elif st.session_state.tab == "settings":
 
     if sh_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">📊</div>
-        <div class="st-body"><div class="st-title">Google Sheets</div>
-        <div class="st-sub">Terhubung via secrets.toml</div></div>
-        <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
+<div class="st-body"><div class="st-title">Google Sheets</div>
+<div class="st-sub">Terhubung via secrets.toml</div></div>
+<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">📊</div>
-        <div class="st-body"><div class="st-title">Google Sheets</div>
-        <div class="st-sub">Belum dikonfigurasi</div></div>
-        <span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+<div class="st-body"><div class="st-title">Google Sheets</div>
+<div class="st-sub">Belum dikonfigurasi</div></div>
+<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
         notice("warn", "Isi <code>.streamlit/secrets.toml</code> sesuai README.")
-        ns = st.text_input("Sheet ID", value=st.session_state.sheet_id,
+        # FIX BUG #3: dict-style, bukan .sheet_id attribute
+        ns = st.text_input("Sheet ID",
+            value=st.session_state.get("sheet_id", ""),
             label_visibility="collapsed", placeholder="1nvgMCmo...")
-        if ns != st.session_state.sheet_id:
-            st.session_state.sheet_id = ns
+        if ns != st.session_state.get("sheet_id", ""):
+            st.session_state["sheet_id"] = ns
 
     if _PDF_OK:
         st.markdown("""<div class="st-row"><div class="st-icon si-b">📄</div>
-        <div class="st-body"><div class="st-title">PDF Upload</div>
-        <div class="st-sub">pypdfium2 terinstall</div></div>
-        <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
+<div class="st-body"><div class="st-title">PDF Upload</div>
+<div class="st-sub">pypdfium2 terinstall</div></div>
+<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-r">📄</div>
-        <div class="st-body"><div class="st-title">PDF Upload</div>
-        <div class="st-sub">pypdfium2 tidak terinstall</div></div>
-        <span class="st-badge br">✕ Nonaktif</span></div>""", unsafe_allow_html=True)
+<div class="st-body"><div class="st-title">PDF Upload</div>
+<div class="st-sub">pypdfium2 tidak terinstall</div></div>
+<span class="st-badge br">✕ Nonaktif</span></div>""", unsafe_allow_html=True)
         notice("err", "Jalankan: <code>pip install pypdfium2==4.30.0</code>")
 
     st.markdown('<div class="sec-lbl" style="margin-top:14px">Tentang Aplikasi</div>',
@@ -1304,7 +1183,7 @@ elif st.session_state.tab == "settings":
 
 
 # =============================================================================
-#  FOOTER  (original — tidak diubah)
+#  FOOTER
 # =============================================================================
 st.markdown("""
 <div style="
