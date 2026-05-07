@@ -1,1639 +1,1217 @@
-"""
-Mitra Tours & Travel — Visitor Appointment System
-Redesign: Attractive Mobile-First UI — FIXED VERSION
-Warna: #1BA0E2 #1494C6 #0D7FCC #F0F0F0 #ff5e1f #DEDEDE
-
-Bugs Fixed:
-1. Session buttons showing as duplicate text below cards
-   → Removed CSS overlay approach; now uses pure st.button with CSS that
-     hides default button text and positions it correctly, OR uses a
-     simpler pattern: render the visual card INSIDE the button container
-     by using st.markdown + st.button side by side with a key-driven approach.
-     Final solution: render HTML card visuals separately, then use
-     st.button with label_visibility tricks. Actually cleanest fix:
-     wrap the entire sess-card in a container, render the HTML card,
-     then render a REAL st.button below but style it to look like part
-     of the card via CSS that hides its own text. Since Streamlit always
-     renders buttons below HTML, the only reliable fix is to NOT use
-     raw HTML for the clickable session cards, and instead style
-     st.button natively via CSS to look like the card design.
-
-2. _prev_date_key rerun loop → fixed by removing the nested rerun trigger
-
-3. Double submit guard → added st.session_state.submitting flag
-"""
-
+# =============================================================================
+#  AI CC Reporting System  v5
+#  Run  : streamlit run app.py
+#  Setup: pip install -r requirements.txt
+#         .streamlit/secrets.toml
+# =============================================================================
 import streamlit as st
-import requests, random, string, re
+import openai, gspread, json, base64, re, io, warnings
+from google.oauth2.service_account import Credentials
 from datetime import datetime
-from zoneinfo import ZoneInfo
+from PIL import Image
 
+try:
+    import pypdfium2 as _pdfium
+    _PDF_OK = True
+except ImportError:
+    _PDF_OK = False
+
+# =============================================================================
+#  PAGE CONFIG
+# =============================================================================
 st.set_page_config(
-    page_title="Kunjungan Sales — Mitra Tours",
-    page_icon="📅",
+    page_title="CC Reporting",
+    page_icon="💳",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
 
-# ── CONFIG ─────────────────────────────────────────────────────────────────────
-GAS_ENDPOINT    = "https://script.google.com/macros/s/AKfycbz78iwrv1FiIHqpqbA4dX6sQVzcfO4UodJ3BhW4bLH_7zLA_c4wMmXpuhHSGC5yiE6Pww/exec"
-SHEET_ID        = "1AQz-w3sLjGVdOsneDmdTFHFW6Nx7Z337Kjw2zzqFoXI"
-API_KEY         = "AIzaSyA1Mau8yZxao0MD5Mx_Dt027EuMbrUN9oo"
-SHEET_NAME      = "Sheet1"
-NOTIF_EMAIL     = "hotel@mitratour.com"
-SHEETS_READ_URL = (
-    f"https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}"
-    f"/values/{SHEET_NAME}?key={API_KEY}"
-)
-
-DATES = [
-    {"key":"6 Mei 2026",  "label":"Selasa, 6 Mei 2026",  "day":"6",  "mon":"Mei"},
-    {"key":"13 Mei 2026", "label":"Selasa, 13 Mei 2026", "day":"13", "mon":"Mei"},
-    {"key":"20 Mei 2026", "label":"Selasa, 20 Mei 2026", "day":"20", "mon":"Mei"},
-    {"key":"27 Mei 2026", "label":"Selasa, 27 Mei 2026", "day":"27", "mon":"Mei"},
-    {"key":"2 Jun 2026",  "label":"Selasa, 2 Jun 2026",  "day":"2",  "mon":"Jun"},
-    {"key":"9 Jun 2026",  "label":"Selasa, 9 Jun 2026",  "day":"9",  "mon":"Jun"},
-    {"key":"16 Jun 2026", "label":"Selasa, 16 Jun 2026", "day":"16", "mon":"Jun"},
-    {"key":"23 Jun 2026", "label":"Selasa, 23 Jun 2026", "day":"23", "mon":"Jun"},
-    {"key":"30 Jun 2026", "label":"Selasa, 30 Jun 2026", "day":"30", "mon":"Jun"},
-    {"key":"7 Jul 2026",  "label":"Selasa, 7 Jul 2026",  "day":"7",  "mon":"Jul"},
-    {"key":"14 Jul 2026", "label":"Selasa, 14 Jul 2026", "day":"14", "mon":"Jul"},
-    {"key":"21 Jul 2026", "label":"Selasa, 21 Jul 2026", "day":"21", "mon":"Jul"},
-    {"key":"28 Jul 2026", "label":"Selasa, 28 Jul 2026", "day":"28", "mon":"Jul"},
-    {"key":"4 Agt 2026",  "label":"Selasa, 4 Agt 2026",  "day":"4",  "mon":"Agt"},
-    {"key":"11 Agt 2026", "label":"Selasa, 11 Agt 2026", "day":"11", "mon":"Agt"},
-    {"key":"18 Agt 2026", "label":"Selasa, 18 Agt 2026", "day":"18", "mon":"Agt"},
-    {"key":"25 Agt 2026", "label":"Selasa, 25 Agt 2026", "day":"25", "mon":"Agt"},
-]
-
-SESSIONS = [
-    {"id":"P1","value":"09.00-10.00 WIB","label":"09.00 – 10.00 WIB","period":"Pagi"},
-    {"id":"P2","value":"10.00-11.00 WIB","label":"10.00 – 11.00 WIB","period":"Pagi"},
-    {"id":"S1","value":"13.30-14.30 WIB","label":"13.30 – 14.30 WIB","period":"Siang"},
-]
-
-HOTEL_BRANDS = [
-    "",
-    "Accor","Aman Resorts","Archipelago International","ARTOTEL Group",
-    "Aryaduta","Ascott Limited","Azana Hotels","Banyan Group Limited",
-    "Best Western Hotels","Cross Hotels & Resorts","Dafam Hotel Management",
-    "Dusit International","Four Seasons Hotels and Resorts","Hilton Worldwide",
-    "Horison Hotels Group","Hotel Indonesia Group","Hyatt Hotels Corporation",
-    "IHG Hotels & Resorts","Jambuluwuk Hotels & Resorts","Jumeirah","Kempinski",
-    "Mandarin Oriental Hotel Group","Marriott International","Meliá Hotels International",
-    "Minor Hotels","Oberoi Group","Pan Pacific Hotels and Resorts",
-    "Parador Hotels & Resorts","Radisson Hotel Group",
-    "Santika Indonesia Hotels & Resorts","Shangri-La Hotels and Resorts",
-    "Swiss-Belhotel International","The Ascott Limited",
-    "Waringin Hospitality Hotel Group","Wyndham Hotels & Resorts",
-    "Independen / Tidak Berantai","Lainnya",
-]
-
-TUJUAN_OPTIONS = [
-    "Perkenalan Hotel",
-    "Presentasi Produk / Fasilitas",
-    "Corporate Rate / Contract Rate",
-    "Promo / Special Offer",
-    "Kerja Sama Partnership",
-    "Follow Up Existing Business",
-]
-
-TUJUAN_BADGES = {
-    "Perkenalan Hotel":             "Intro",
-    "Presentasi Produk / Fasilitas":"Produk",
-    "Corporate Rate / Contract Rate":"Rate",
-    "Promo / Special Offer":        "Promo",
-    "Kerja Sama Partnership":       "Partner",
-    "Follow Up Existing Business":  "Follow Up",
-}
-
-# ── DATA LAYER ─────────────────────────────────────────────────────────────────
-@st.cache_data(ttl=20)
-def _fetch_cached():
-    try:
-        r = requests.get(SHEETS_READ_URL, timeout=10)
-        r.raise_for_status()
-        rows = r.json().get("values", [])[1:]
-        booked = {}
-        for row in rows:
-            while len(row) < 16:
-                row.append("")
-            if row[15].lower().strip() in ("ditolak","dibatalkan"):
-                continue
-            dk = re.sub(r"\s*\(.*?\)", "", row[11].strip()).strip()
-            sv = row[12].strip()
-            if dk and sv:
-                key = f"{dk}|{sv}"
-                booked[key] = booked.get(key, 0) + 1
-        return booked, ""
-    except Exception as e:
-        return {}, str(e)
-
-def fetch_booked():
-    b, err = _fetch_cached()
-    if err:
-        st.toast(f"Gagal memuat jadwal: {err}", icon="⚠️")
-    return b
-
-def is_booked(b, dk, sv):
-    return b.get(f"{dk}|{sv}", 0) >= 1
-
-def get_alts(b, edk, esv, n=3):
-    out = []
-    for d in DATES:
-        for s in SESSIONS:
-            if d["key"] == edk and s["value"] == esv:
-                continue
-            if not is_booked(b, d["key"], s["value"]):
-                out.append({
-                    "date_key":   d["key"],
-                    "date_label": d["label"],
-                    "sess_value": s["value"],
-                    "sess_label": s["label"],
-                })
-                if len(out) >= n:
-                    return out
-    return out
-
-def gen_ref():
-    return "SV-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=7))
-
-def save_to_gas(payload):
-    import json as _j
-    payload["notifEmail"] = NOTIF_EMAIL
-    headers = {"Content-Type": "application/json"}
-    body    = _j.dumps(payload)
-    ref     = payload.get("ref", "")
-    try:
-        resp = requests.post(GAS_ENDPOINT, data=body, headers=headers,
-                             allow_redirects=True, timeout=30)
-        raw = resp.text.strip()
-        if raw.startswith("{"):
-            r = _j.loads(raw)
-            if r.get("success"):
-                return True, r.get("ref", ref)
-            if r.get("error") in ("Jadwal_TAKEN", "SLOT_TAKEN"):
-                return False, "Jadwal_TAKEN"
-            if "duplicate" in r.get("message","").lower():
-                return True, ref
-            return False, r.get("message", r.get("error", "Unknown"))
-        if resp.status_code in (200, 201, 302):
-            return True, ref
-        return False, f"HTTP {resp.status_code}"
-    except requests.exceptions.Timeout:
-        return False, "Timeout — coba lagi"
-    except Exception as e:
-        return False, str(e)
-
-def valid_email(e):
-    return bool(re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", e.strip()))
-
-def valid_phone(p):
-    digits = re.sub(r"[\s\-\(\)]", "", p)
-    return bool(re.match(r"^(\+62|62|0)\d{8,13}$", digits))
-
-# ── SESSION STATE ──────────────────────────────────────────────────────────────
-def init_state():
-    defaults = {
-        "step": 1,
-        "sel_date_key": None, "sel_date_label": None,
-        "sel_sess_value": None, "sel_sess_label": None,
-        "nama_hotel": "", "alamat_hotel": "", "brand_hotel": "",
-        "nama_pic": "", "jabatan": "", "no_hp": "", "email": "",
-        "peserta": "1 orang", "tujuan": [],
-        "durasi": "30 Menit", "catatan": "",
-        "ref_number": "", "submitted_ref": "",
-        "conflict_type": None, "conflict_msg": "", "alternatives": [],
-        "submitting": False,
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-# ── MASTER CSS ─────────────────────────────────────────────────────────────────
-def inject_css():
-    st.markdown("""
+# =============================================================================
+#  CSS
+# =============================================================================
+st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Nunito+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"],.main{background:#F8F9FA !important}
+.main .block-container{
+    padding:1rem 1rem 4rem !important;
+    max-width:580px !important;
+    margin:0 auto !important}
+[data-testid="stSidebar"],#MainMenu,footer,header,
+[data-testid="stDecoration"]{display:none !important}
+*{font-family:'Inter',system-ui,sans-serif !important}
 
-/* ── VARIABLES ── */
-:root {
-  --c1: #1BA0E2;
-  --c2: #1494C6;
-  --c3: #0D7FCC;
-  --bg: #F0F0F0;
-  --border: #DEDEDE;
-  --accent: #ff5e1f;
-  --accent-dk: #e04c10;
-  --white: #ffffff;
-  --text: #1a1f2e;
-  --muted: #6b7280;
-  --light: #F7F9FC;
-  --danger: #ef4444;
-  --success: #10b981;
-  --r: 14px;
-  --r-sm: 10px;
-  --r-xs: 7px;
-  --shadow: 0 2px 12px rgba(13,127,204,0.10);
-  --shadow-md: 0 6px 24px rgba(13,127,204,0.16);
-}
+/* top bar */
+.top-bar{background:#111;padding:13px 18px;border-radius:12px;
+    display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.top-bar .mark{font-size:16px;font-weight:700;color:#fff;letter-spacing:-1px}
+.top-bar .sub{font-size:12px;color:#888;flex:1}
+.top-bar .live{font-size:10px;font-weight:700;background:#0d2b0d;color:#4ade80;
+    border:1px solid #166534;padding:3px 9px;border-radius:20px}
 
-/* ── RESET ── */
-*, *::before, *::after { box-sizing: border-box; }
-html, body, [class*="css"] {
-  font-family: 'Nunito Sans', sans-serif !important;
-  -webkit-font-smoothing: antialiased;
-  background: var(--bg) !important;
-}
-#MainMenu, footer, header { visibility: hidden; }
-.stDeployButton,[data-testid="stToolbar"],[data-testid="collapsedControl"]{ display:none!important; }
-.main { background: var(--bg) !important; }
-.main .block-container {
-  padding: 0 0 100px !important;
-  max-width: 460px !important;
-  margin: 0 auto !important;
-}
+/* section label */
+.sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+    color:#9CA3AF;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #F3F4F6}
 
-/* ── TOPBAR ── */
-.topbar {
-  background: var(--white);
-  border-bottom: 2px solid var(--border);
-  padding: 0 18px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 200;
-}
-.topbar-logo {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.topbar-live {
-  display: flex; align-items: center; gap: 5px;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #059669;
-  letter-spacing: 0.2px;
-}
-.pulse-dot {
-  width: 6px; height: 6px;
-  background: #10b981;
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:.4; transform:scale(.8); }
-}
+/* notices */
+.notice{border-radius:9px;padding:10px 13px;font-size:12px;line-height:1.5;
+    display:flex;align-items:flex-start;gap:7px;margin-bottom:12px}
+.nok{background:#F0FDF4;border:1px solid #86EFAC;color:#166534}
+.nerr{background:#FFF1F2;border:1px solid #FECDD3;color:#9F1239}
+.ninfo{background:#F0F6FF;border:1px solid #BFDBFE;color:#1E40AF}
+.nwarn{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E}
 
-/* ── HERO HEADER ── */
-.hero {
-  background: linear-gradient(145deg, var(--c1) 0%, var(--c3) 100%);
-  padding: 24px 20px 40px;
-  position: relative;
-  overflow: hidden;
-}
-.hero::before {
-  content: '';
-  position: absolute; top: -30px; right: -30px;
-  width: 130px; height: 130px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.07);
-}
-.hero::after {
-  content: '';
-  position: absolute; bottom: -20px; left: 50%;
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.05);
-}
-.hero-step-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.28);
-  border-radius: 20px;
-  padding: 4px 12px;
-  font-size: 10px;
-  font-weight: 700;
-  color: rgba(255,255,255,0.9);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-bottom: 12px;
-}
-.hero-title {
-  font-family: 'Nunito', sans-serif;
-  font-size: 22px;
-  font-weight: 900;
-  color: #fff;
-  line-height: 1.18;
-  margin-bottom: 5px;
-  letter-spacing: -0.5px;
-}
-.hero-sub {
-  font-size: 12.5px;
-  color: rgba(255,255,255,0.72);
-  line-height: 1.55;
-}
+/* stat grid */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.stat-card{background:#fff;border:1px solid #E5E7EB;border-radius:11px;padding:13px 12px}
+.stat-val{font-size:20px;font-weight:700;color:#111;line-height:1.1}
+.stat-lbl{font-size:10px;color:#9CA3AF;margin-top:4px;font-weight:500}
 
-/* ── STEP TRACKER ── */
-.step-track {
-  display: flex;
-  align-items: center;
-  background: var(--white);
-  margin: -20px 14px 0;
-  border-radius: var(--r);
-  padding: 14px 12px;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  z-index: 10;
-}
-.st-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  position: relative;
-}
-.st-item:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 13px;
-  left: 60%;
-  width: 80%;
-  height: 2px;
-  background: var(--border);
-}
-.st-item.done:not(:last-child)::after,
-.st-item.active:not(:last-child)::after {
-  background: linear-gradient(90deg, var(--c1), var(--border));
-}
-.st-dot {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px;
-  font-weight: 800;
-  border: 2px solid var(--border);
-  color: var(--muted);
-  background: var(--white);
-  transition: all 0.25s;
-  z-index: 1;
-}
-.st-item.done .st-dot {
-  background: var(--c1);
-  border-color: var(--c1);
-  color: white;
-  font-size: 12px;
-}
-.st-item.active .st-dot {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-  box-shadow: 0 0 0 4px rgba(255,94,31,0.18);
-}
-.st-label {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.st-item.done .st-label  { color: var(--c2); }
-.st-item.active .st-label { color: var(--accent); }
+/* field rows */
+.frow{display:flex;align-items:center;padding:9px 13px;
+    border-bottom:1px solid #F9FAFB;gap:9px}
+.frow:last-child{border-bottom:none}
+.fdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fbody{flex:1;min-width:0}
+.fk{font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.6px;color:#9CA3AF;margin-bottom:1px}
+.fv{font-size:13px;font-weight:600;color:#111;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
 
-/* ── CONTENT WRAP ── */
-.content { padding: 16px 14px 0; }
+/* form overrides */
+.stTextInput input,.stNumberInput input,
+.stTextArea textarea,.stSelectbox select{
+    border-radius:9px !important;border:1.5px solid #E5E7EB !important;
+    background:#FAFAFA !important;font-size:13px !important;
+    color:#111 !important;padding:9px 12px !important;
+    font-family:'Inter',sans-serif !important}
+.stTextInput input:focus,.stNumberInput input:focus,
+.stTextArea textarea:focus,.stSelectbox select:focus{
+    border-color:#111 !important;background:#fff !important;
+    box-shadow:0 0 0 3px rgba(0,0,0,.06) !important;outline:none !important}
+label[data-testid="stWidgetLabel"] p,
+label[data-testid="stWidgetLabel"]{
+    font-size:10px !important;font-weight:700 !important;
+    color:#9CA3AF !important;text-transform:uppercase !important;
+    letter-spacing:.8px !important}
+.stButton>button,.stFormSubmitButton>button{
+    width:100% !important;height:46px !important;border-radius:10px !important;
+    font-size:13px !important;font-weight:600 !important;border:none !important;
+    font-family:'Inter',sans-serif !important}
+.stButton>button[kind="primary"],
+.stFormSubmitButton>button[kind="primary"]{
+    background:#111 !important;color:#fff !important;
+    border:none !important;box-shadow:none !important}
+.stButton>button[kind="primary"]:hover{background:#333 !important}
+.stButton>button[kind="secondary"],
+.stFormSubmitButton>button[kind="secondary"]{
+    background:#fff !important;border:1.5px solid #E5E7EB !important;
+    color:#374151 !important}
+.stButton>button[kind="secondary"]:hover{
+    background:#F9FAFB !important;border-color:#D1D5DB !important}
 
-/* ── SECTION HEADING ── */
-.sec-head {
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--muted);
-  margin: 18px 0 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.sec-head::after {
-  content: '';
-  flex: 1;
-  height: 1.5px;
-  background: var(--border);
-  border-radius: 1px;
-}
+[data-testid="stFileUploader"]>div:first-child{
+    border:1.5px dashed #D1D5DB !important;border-radius:11px !important;
+    background:#FAFAFA !important}
+[data-testid="stFileUploader"]>div:first-child:hover{
+    border-color:#111 !important;background:#F3F4F6 !important}
+.stExpander{border:1px solid #E5E7EB !important;
+    border-radius:10px !important;margin-bottom:10px !important}
+details>summary{font-size:12px !important;color:#6B7280 !important}
+[data-testid="stDataFrame"]{border-radius:11px !important;
+    border:1px solid #E5E7EB !important;overflow:hidden !important}
+.stSpinner>div{border-top-color:#111 !important}
 
-/* ── INFO BOX ── */
-.ibox {
-  background: rgba(27,160,226,0.07);
-  border: 1.5px solid rgba(27,160,226,0.22);
-  border-radius: var(--r-sm);
-  padding: 11px 14px;
-  font-size: 12px;
-  color: var(--c3);
-  line-height: 1.6;
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-.ibox-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+/* Metric cards */
+[data-testid="stMetric"]{
+    background:#fff !important;border:1px solid #E5E7EB !important;
+    border-radius:10px !important;padding:10px 12px !important;margin-bottom:0 !important}
+[data-testid="stMetricLabel"]{
+    font-size:10px !important;font-weight:700 !important;
+    color:#9CA3AF !important;text-transform:uppercase !important;letter-spacing:.7px !important}
+[data-testid="stMetricValue"]{
+    font-size:13px !important;font-weight:600 !important;color:#111 !important;
+    overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important}
 
-/* ── ALERT ── */
-.alert {
-  border-radius: var(--r-sm);
-  padding: 11px 14px;
-  font-size: 12.5px;
-  line-height: 1.55;
-  margin-bottom: 12px;
-  display: flex; gap: 9px; align-items: flex-start;
-  font-weight: 500;
-}
-.alert-error   { background:#fef2f2; border:1.5px solid #fca5a5; color:#991b1b; }
-.alert-success { background:#ecfdf5; border:1.5px solid #6ee7b7; color:#065f46; }
-.alert-warn    { background:#fff7ed; border:1.5px solid #fed7aa; color:#92400e; }
+/* Dataframe */
+[data-testid="stDataFrame"]{
+    border-radius:12px !important;border:1px solid #E5E7EB !important;
+    overflow:hidden !important;box-shadow:0 1px 3px rgba(0,0,0,.04) !important}
+[data-testid="stDataFrame"] table{font-size:12px !important}
+[data-testid="stDataFrame"] th{
+    background:#F9FAFB !important;color:#6B7280 !important;
+    font-size:11px !important;font-weight:600 !important;
+    text-transform:uppercase !important;letter-spacing:.5px !important;
+    border-bottom:1px solid #E5E7EB !important;padding:10px 12px !important}
+[data-testid="stDataFrame"] td{
+    font-size:12px !important;color:#111827 !important;
+    padding:9px 12px !important;border-bottom:1px solid #F9FAFB !important;
+    vertical-align:middle !important}
+[data-testid="stDataFrame"] tr:hover td{background:#F9FAFB !important}
 
-/* ── SESSION BUTTONS — KEY FIX ──
-   Each session is rendered as a styled st.button.
-   We style the button itself to look like a card.
-   The button label carries all the visual info.
-   We use data-session-* approach via CSS targeting.
-*/
+/* ── Bulk: tombol slim ── */
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button {
+    height:36px !important;font-size:12px !important;
+    font-weight:500 !important;border-radius:9px !important;box-shadow:none !important}
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"] {
+    background:#111 !important;color:#fff !important;border:none !important}
+.bulk-btn-wrap div[data-testid="stHorizontalBlock"] button[kind="secondary"] {
+    background:#fff !important;border:1.5px solid #E5E7EB !important;
+    color:#9CA3AF !important;font-weight:400 !important}
 
-/* Session card buttons — available state */
-/* ── SESSION BUTTONS — Opsi A card style ── */
-div[data-testid="stButton"]:has(> button[data-testid^="sb_"]) {
-  margin-bottom: 6px !important;
-}
-div[data-testid="stButton"] > button[data-testid^="sb_"] {
-  width: 100% !important;
-  background: #ffffff !important;
-  border: 1.5px solid #DEDEDE !important;
-  border-radius: 10px !important;
-  padding: 0 14px !important;
-  min-height: 50px !important;
-  cursor: pointer !important;
-  box-shadow: none !important;
-  transition: border-color 0.15s, background 0.15s !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  text-align: left !important;
-}
-div[data-testid="stButton"] > button[data-testid^="sb_"]:hover {
-  border-color: #1BA0E2 !important;
-  background: rgba(27,160,226,0.04) !important;
-}
-div[data-testid="stButton"] > button[data-testid^="sb_"] > div,
-div[data-testid="stButton"] > button[data-testid^="sb_"] > div > p {
-  display: none !important;
-}
-/* sb_ button styles handled per-session inline */
+/* ── Bulk: progress bar ── */
+.bulk-prog{background:#F3F4F6;border-radius:99px;height:4px;overflow:hidden;margin-bottom:5px}
+.bulk-prog-f{height:100%;background:#111;border-radius:99px}
+.bulk-prog-lbl{font-size:10px;color:#9CA3AF;text-align:center;margin-bottom:10px}
 
-/* ── REVIEW TABLE ── */
-.rev-card {
-  background: var(--white);
-  border: 2px solid var(--border);
-  border-radius: var(--r);
-  overflow: hidden;
-  margin-bottom: 14px;
-}
-.rev-group-head {
-  background: linear-gradient(90deg, rgba(27,160,226,0.08), transparent);
-  border-bottom: 1.5px solid var(--border);
-  padding: 8px 14px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.7px;
-  color: var(--c2);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.rev-row { display:flex; border-bottom:1px solid var(--bg); }
-.rev-row:last-child { border-bottom:none; }
-.rev-lbl {
-  width: 82px; flex-shrink:0;
-  padding: 9px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  border-right: 1px solid var(--bg);
-}
-.rev-val {
-  padding: 9px 13px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  flex: 1;
-  word-break: break-word;
-  line-height: 1.45;
-}
-.rev-val.hl { color: var(--c3); font-weight: 800; }
+/* ── Bulk: summary card ── */
+.bulk-sum{background:#fff;border:1px solid #E5E7EB;border-radius:12px;
+    padding:13px 15px;margin-bottom:12px}
+.bulk-sum-ttl{font-size:9px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.8px;color:#9CA3AF;margin-bottom:9px}
+.bulk-stats{display:grid;grid-template-columns:repeat(4,1fr);
+    gap:8px;text-align:center;margin-bottom:9px}
+.bs-val{font-size:20px;font-weight:700;color:#111;line-height:1}
+.bs-lbl{font-size:10px;color:#9CA3AF;margin-top:2px}
+.bs-g{color:#22C55E} .bs-r{color:#EF4444} .bs-y{color:#EAB308}
+.bulk-bar{background:#F3F4F6;border-radius:99px;height:5px;overflow:hidden}
+.bulk-bar-f{height:100%;background:#22C55E;border-radius:99px}
 
-/* ── SUCCESS SCREEN ── */
-.succ-wrap { padding: 20px 14px; }
-.succ-hero {
-  background: linear-gradient(145deg, var(--c1), var(--c3));
-  border-radius: var(--r);
-  padding: 28px 20px;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow-md);
-}
-.succ-hero::before {
-  content:''; position:absolute; top:-20px; right:-20px;
-  width:100px; height:100px; border-radius:50%;
-  background:rgba(255,255,255,0.07);
-}
-.succ-ring {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  border: 3px solid rgba(255,255,255,0.5);
-  margin: 0 auto 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; color: white;
-  animation: pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
-}
-@keyframes pop {
-  0%   { transform:scale(0); opacity:0; }
-  100% { transform:scale(1); opacity:1; }
-}
-.succ-title {
-  font-family: 'Nunito', sans-serif;
-  font-size: 20px; font-weight: 900;
-  color: white; margin-bottom: 5px;
-  letter-spacing: -0.4px;
-}
-.succ-sub { font-size: 12px; color: rgba(255,255,255,0.78); line-height: 1.65; }
-.ref-tag {
-  display: inline-block;
-  font-family: 'Nunito', sans-serif;
-  font-size: 17px; font-weight: 900;
-  color: white;
-  background: rgba(255,255,255,0.18);
-  border: 1.5px solid rgba(255,255,255,0.35);
-  border-radius: var(--r-xs);
-  padding: 7px 18px;
-  letter-spacing: 2.5px;
-  margin: 12px 0 6px;
-}
-.ref-hint { font-size:10px; color:rgba(255,255,255,0.55); }
-.succ-grid {
-  display: grid; grid-template-columns:1fr 1fr;
-  gap: 8px; margin-bottom: 14px;
-}
-.succ-item {
-  background: var(--white);
-  border: 2px solid var(--border);
-  border-radius: var(--r-xs);
-  padding: 11px 13px;
-}
-.succ-lbl { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin-bottom:3px; }
-.succ-val { font-size:13px; font-weight:700; color:var(--text); }
+/* ── Bulk: file result cards ── */
+.file-item{background:#fff;border:1px solid #E5E7EB;border-radius:11px;
+    padding:11px 13px;margin-bottom:7px}
+.fi-success{border-color:#22C55E!important;background:#F0FDF4!important}
+.fi-error  {border-color:#EF4444!important;background:#FFF1F2!important}
+.fi-skipped{border-color:#EAB308!important;background:#FEFCE8!important}
+.fi-top{display:flex;align-items:center;gap:9px}
+.fi-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;flex-shrink:0}
+.ic-ok{background:#DCFCE7} .ic-err{background:#FFE4E6}
+.ic-skip{background:#FEF9C3} .ic-n{background:#F3F4F6}
+.fi-name{font-size:11px;font-weight:600;color:#111;flex:1;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.fb-ok{background:#DCFCE7;color:#166534}
+.fb-err{background:#FFE4E6;color:#9F1239}
+.fb-sk{background:#FEF9C3;color:#713F12}
+.fi-grid{margin-top:8px;padding-top:7px;border-top:1px solid #F3F4F6;
+    display:grid;grid-template-columns:1fr 1fr;gap:3px 12px}
+.fi-kv{display:flex;gap:4px}
+.fi-k{font-size:9px;font-weight:700;color:#9CA3AF;min-width:50px;
+    flex-shrink:0;text-transform:uppercase;letter-spacing:.4px}
+.fi-v{font-size:11px;font-weight:500;color:#111;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── GLOBAL BUTTONS ── */
-div[data-testid="stButton"] > button {
-  font-family: 'Nunito', sans-serif !important;
-  font-weight: 800 !important;
-  font-size: 14px !important;
-  border-radius: var(--r-xs) !important;
-  padding: 12px 18px !important;
-  width: 100% !important;
-  transition: all 0.18s !important;
-  letter-spacing: -0.2px !important;
-}
-div[data-testid="stButton"] > button[kind="primary"] {
-  background: linear-gradient(135deg, var(--c1), var(--c3)) !important;
-  border: none !important;
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(13,127,204,0.3) !important;
-}
-div[data-testid="stButton"] > button[kind="primary"]:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(13,127,204,0.4) !important;
-}
-div[data-testid="stButton"] > button[kind="secondary"] {
-  background: var(--white) !important;
-  border: 2px solid var(--border) !important;
-  color: var(--muted) !important;
-}
-div[data-testid="stButton"] > button[kind="secondary"]:hover {
-  border-color: var(--c1) !important;
-  color: var(--c1) !important;
-}
+/* ── Expedia banner ── */
+.expedia-banner{
+    background:#fff;border:1px solid #E5E7EB;border-bottom:none;
+    border-radius:11px 11px 0 0;padding:12px 16px;
+    display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.expedia-banner img{height:24px;width:auto;object-fit:contain}
+.expedia-banner .taap-pill{
+    font-size:10px;font-weight:700;letter-spacing:.8px;color:#003580;
+    background:#EEF4FF;border:1px solid #BFDBFE;padding:3px 9px;border-radius:20px}
+[data-testid="stFileUploader"]>div:first-child{
+    border-radius:0 0 11px 11px !important;
+    border-top:none !important;
+    margin-top:0 !important}
+</style>
+""", unsafe_allow_html=True)
 
-/* ── PESERTA & DURASI RADIO ── */
-div[data-testid="stRadio"] > div {
-  gap: 6px !important;
-  flex-wrap: wrap !important;
-}
-div[data-testid="stRadio"] > div > label {
-  border: 2px solid var(--border) !important;
-  border-radius: var(--r-xs) !important;
-  padding: 8px 14px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  background: var(--white) !important;
-  cursor: pointer !important;
-  transition: all 0.15s !important;
-  color: var(--text) !important;
-}
-div[data-testid="stRadio"] > div > label:has(input:checked) {
-  border-color: var(--c1) !important;
-  background: rgba(27,160,226,0.10) !important;
-  color: var(--c3) !important;
-}
-div[data-testid="stRadio"] > div > label > div:first-child { display:none !important; }
-div[data-testid="stRadio"] > div > label > div:last-child p {
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  color: inherit !important;
-  margin: 0 !important;
-}
 
-/* ── ACCENT SUBMIT BUTTON (Step 4 only) ── */
-.submit-accent-wrap div[data-testid="stButton"] > button {
-  background: linear-gradient(135deg, var(--accent), var(--accent-dk)) !important;
-  border: none !important;
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(255,94,31,0.35) !important;
-  font-size: 15px !important;
-  padding: 13px !important;
-}
-.submit-accent-wrap div[data-testid="stButton"] > button:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 22px rgba(255,94,31,0.45) !important;
+# =============================================================================
+#  KEY HELPERS
+# =============================================================================
+def oai_key() -> str:
+    try:
+        k = st.secrets["openai"]["api_key"]
+        if k and len(k) > 20 and "GANTI" not in k and "PASTE" not in k:
+            return k
+    except Exception:
+        pass
+    return st.session_state.get("oai_key", "")
+
+
+def sheet_id() -> str:
+    try:
+        s = st.secrets["google_sheets"]["sheet_id"]
+        if s and "GANTI" not in s:
+            return s
+    except Exception:
+        pass
+    return st.session_state.get("sheet_id", "")
+
+
+# =============================================================================
+#  GOOGLE SHEETS
+# =============================================================================
+COLS = [
+    "Timestamp Input", "Supplier",      "Booking ID",  "Booking Date",
+    "Issued Date",     "Hotel",         "Check-in",    "Room x Night",
+    "Total (Rp)",      "Check-out",     "Guest Name",  "Kartu Kredit",
+    "Issuer",          "PIC",           "No. BC",      "Nama Kegiatan",
+    "Catatan",
+]
+
+
+@st.cache_resource(ttl=300)
+def ws():
+    creds = Credentials.from_service_account_info(
+        dict(st.secrets["gcp_service_account"]),
+        scopes=[
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ],
+    )
+    s = gspread.authorize(creds).open_by_key(sheet_id()).sheet1
+    try:
+        if not s.row_values(1) or s.cell(1, 1).value != COLS[0]:
+            s.insert_row(COLS, 1)
+    except Exception:
+        s.insert_row(COLS, 1)
+    return s
+
+
+def save_row(d: dict):
+    ws().append_row(
+        [d.get(k, "") for k in [
+            "timestamp_input", "supplier",  "booking_id", "booked_on",
+            "issued_on",       "hotel",     "checkin",    "qty",
+            "room",            "checkout",  "name",       "card",
+            "issuer",          "pic",       "no_bc",      "nama_kegiatan",
+            "notes",
+        ]],
+        value_input_option="USER_ENTERED",
+    )
+
+
+def load_rows() -> list:
+    return ws().get_all_records()
+
+
+# =============================================================================
+#  DUPLICATE CHECK
+# =============================================================================
+def _norm_str(v) -> str:
+    return str(v or "").strip().lower()
+
+
+def _norm_int(v) -> int:
+    try:
+        return int(float(str(v).replace(",", "").replace(".", "") or 0))
+    except Exception:
+        return 0
+
+
+def check_duplicate(new: dict, rows: list) -> tuple:
+    bid   = _norm_str(new.get("booking_id"))
+    hotel = _norm_str(new.get("hotel"))
+    ci    = _norm_str(new.get("checkin"))
+    name  = _norm_str(new.get("name"))
+    amt   = _norm_int(new.get("room"))
+
+    for r in rows:
+        if bid and bid == _norm_str(r.get("Booking ID")):
+            return True, "Booking ID sudah terdaftar", r
+        score = sum([
+            hotel == _norm_str(r.get("Hotel")),
+            ci    == _norm_str(r.get("Check-in")),
+            name  == _norm_str(r.get("Guest Name")),
+            amt   == _norm_int(r.get("Total (Rp)")),
+        ])
+        if score >= 3:
+            return True, "Kemungkinan duplikat (kesamaan tinggi)", r
+    return False, "", None
+
+
+# =============================================================================
+#  PDF HELPERS
+# =============================================================================
+def pdf_images(data: bytes) -> list:
+    if not _PDF_OK:
+        raise RuntimeError("pypdfium2 not installed — run: pip install pypdfium2==4.30.0")
+    doc = _pdfium.PdfDocument(data)
+    return [doc[i].render(scale=2.0).to_pil() for i in range(len(doc))]
+
+
+def pdf_text(data: bytes) -> str:
+    if not _PDF_OK or not data:
+        return ""
+    try:
+        doc, parts = _pdfium.PdfDocument(data), []
+        for i in range(len(doc)):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                parts.append(doc[i].get_textpage().get_text_bounded())
+        return "\n".join(parts).strip()
+    except Exception:
+        return ""
+
+
+def to_b64(img: Image.Image) -> tuple:
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=92)
+    return base64.b64encode(buf.getvalue()).decode(), "image/jpeg"
+
+
+# =============================================================================
+#  AI PARSER
+# =============================================================================
+_SYS = """You are a corporate hotel expense AI parser for credit card reporting.
+Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice,
+screenshot, or free text.
+Return ONLY a valid JSON object — no markdown, no explanation.
+
+Keys:
+- supplier   : string  — platform from document header
+                         e.g. "Expedia TAAP", "Mitra Tours & Travel"
+                         If both appear → "Mitra Tours & Travel / Expedia TAAP"
+- booking_id : string  — TAAP itinerary number / Itinerary # / Booking ID
+- booked_on  : string  — booking date YYYY-MM-DD  (Booked on)
+- issued_on  : string  — issued date YYYY-MM-DD   (Issued on)
+- hotel      : string  — full hotel name as written
+- checkin    : string  — check-in YYYY-MM-DD
+- checkout   : string  — check-out YYYY-MM-DD
+- qty        : string  — rooms and nights e.g. "1 room x 3 nights"
+- room       : integer — IDR amount from "Subtotal paid to Expedia" line.
+                         "Subtotal paid to Expedia  IDR 34,493,666.00" → 34493666
+                         This is the amount charged to the credit card.
+                         IGNORE "Room" line, per-night lines, and resort fee.
+- name       : string  — guest name (Traveller information / Reserved for)
+- card       : string  — e.g. "MasterCard •••• 4467", empty string if absent
+- notes      : string  — room type, nights, resort fee, confirmation #, other details
+
+Rules:
+1. Dates: any format → YYYY-MM-DD.
+   "Wed 06 May 2026" → "2026-05-06"   |   "30 Apr 2026" → "2026-04-30"
+2. Amounts: strip IDR/Rp/USD/$/commas/dots → plain integer, no decimals.
+3. room = "Subtotal paid to Expedia" line only.
+4. Missing field → "" for strings, 0 for integers."""
+
+
+def ai_parse(text: str = "", images: list = None) -> tuple:
+    key = oai_key()
+    if not key:
+        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
+
+    content = []
+    if images:
+        for b64, mime in images:
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime};base64,{b64}", "detail": "high"},
+            })
+    content.append({
+        "type": "text",
+        "text": text if text else "Extract all structured data from this document.",
+    })
+
+    # FIX: "Client.__init__() got an unexpected keyword argument 'proxies'"
+    # httpx >= 0.28.0 menghapus parameter 'proxies'. Kita inject httpx client
+    # tanpa proxies agar kompatibel dengan semua versi httpx.
+    import httpx
+    _http_client = httpx.Client()
+    resp = openai.OpenAI(api_key=key, http_client=_http_client).chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": _SYS},
+            {"role": "user",   "content": content},
+        ],
+        temperature=0.0,
+        max_tokens=800,
+    )
+
+    raw = resp.choices[0].message.content
+    m   = re.search(r"\{[\s\S]*\}", raw)
+    if not m:
+        raise ValueError("Format AI tidak valid — JSON tidak ditemukan.")
+    return json.loads(m.group()), raw
+
+
+# =============================================================================
+#  UI UTILITIES
+# =============================================================================
+def fmt(v) -> str:
+    try:    return "Rp {:,}".format(int(float(v or 0))).replace(",", ".")
+    except: return str(v) if v else "—"
+
+
+def now_ts() -> str:
+    return datetime.now().strftime("%d/%m/%Y %H:%M")
+
+
+def notice(kind: str, msg: str):
+    icons = {"ok": "✓", "err": "✕", "info": "ℹ", "warn": "⚠"}
+    cls   = {"ok": "nok", "err": "nerr", "info": "ninfo", "warn": "nwarn"}
+    st.markdown(
+        f'<div class="notice {cls[kind]}"><b>{icons[kind]}</b>&ensp;{msg}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def field_row(lbl: str, val: str, color: str = "#9CA3AF"):
+    st.markdown(
+        f'<div class="frow"><div class="fdot" style="background:{color}"></div>'
+        f'<div class="fbody"><div class="fk">{lbl}</div>'
+        f'<div class="fv">{val or "—"}</div></div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def card_list_open():
+    st.markdown(
+        '<div style="background:#fff;border:1px solid #E5E7EB;'
+        'border-radius:14px;overflow:hidden;margin-bottom:12px">',
+        unsafe_allow_html=True,
+    )
+
+
+def card_list_close():
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# =============================================================================
+#  SESSION STATE
+# =============================================================================
+# FIX BUG #2 & #3: semua key pakai dict-style konsisten
+_DEF = {
+    "tab":              "input",
+    "bulk_results":     [],
+    "bulk_saved_count": 0,
+    "oai_key":          "",
+    "sheet_id":         "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
+    "last_issuer":      "",
+    "last_pic":         "",
 }
 
-/* ── FOOTER ── */
-.footer { text-align:center; padding:20px 0 32px; font-size:11px; color:#bbb; letter-spacing:0.3px; }
-.footer span { color:var(--c1); font-weight:700; }
+for _k, _v in _DEF.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
 
-/* ── SPACING OVERRIDES ── */
-div[data-testid="stVerticalBlock"] { gap: 6px !important; }
 
-/* Tujuan toggle rows — zero gap between HTML card and invisible button */
-div[data-testid="stButton"]:has(button[data-testid^="tuj_"]) + div[data-testid="stButton"]:has(button[data-testid^="tuj_"]) {
-  margin-top: 0 !important;
+def reset_bulk():
+    st.session_state["bulk_results"]     = []
+    st.session_state["bulk_saved_count"] = 0
+
+
+# =============================================================================
+#  HEADER  +  NAV
+# =============================================================================
+st.markdown("""
+<div class="top-bar">
+  <span class="mark">CC</span>
+  <span class="sub">AI Reporting System</span>
+  <span class="live">LIVE</span>
+</div>""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+div[data-testid="stRadio"] > label { display:none }
+div[data-testid="stRadio"] > div[role="radiogroup"] {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    margin-bottom: 14px !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 42px !important;
+    border-radius: 10px !important;
+    border: 1.5px solid #E5E7EB !important;
+    background: #fff !important;
+    cursor: pointer !important;
+    transition: all .15s !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
+    background: #F9FAFB !important;
+    border-color: #D1D5DB !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] {
+    background: #111 !important;
+    border-color: #111 !important;
+    color: #fff !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] span:last-child {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] span:last-child {
+    color: #fff !important;
+}
+div[data-testid="stRadio"] label[data-baseweb="radio"] span:first-child {
+    display: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ── COMPONENT HELPERS ──────────────────────────────────────────────────────────
-def render_topbar():
-    st.markdown("""
-<div class="topbar">
-  <div class="topbar-logo">
-    <img src="https://mitratour.com/wp-content/uploads/2019/09/LOGO-MITRA-Converted-Copy-min.png"
-         alt="Mitra Tours & Travel"
-         style="height:36px;width:auto;object-fit:contain;display:block;" />
-  </div>
-  <div class="topbar-live">
-    <div class="pulse-dot"></div>
-    Sistem Aktif
-  </div>
-</div>""", unsafe_allow_html=True)
+_NAV_OPTIONS = ["Input", "Dashboard", "Riwayat", "Pengaturan"]
+_NAV_KEYS    = {"Input": "input", "Dashboard": "dashboard",
+                "Riwayat": "log", "Pengaturan": "settings"}
+_NAV_REV     = {v: k for k, v in _NAV_KEYS.items()}
 
-STEP_META = {
-    1: ("📅", "Pilih Jadwal",  "Tentukan tanggal & sesi kunjungan"),
-    2: ("🏨", "Data Hotel",    "Informasi properti yang dikunjungi"),
-    3: ("👤", "Data Kontak",   "PIC & tujuan kunjungan"),
-    4: ("✅", "Review & Kirim","Periksa & konfirmasi permohonan"),
-    5: ("🎉", "Selesai",       "Permohonan berhasil terkirim"),
-}
+_nav_sel = st.radio(
+    "nav", _NAV_OPTIONS,
+    index=_NAV_OPTIONS.index(_NAV_REV.get(st.session_state["tab"], "Input")),
+    horizontal=True,
+    label_visibility="collapsed",
+    key="nav_radio",
+)
+if _NAV_KEYS[_nav_sel] != st.session_state["tab"]:
+    st.session_state["tab"] = _NAV_KEYS[_nav_sel]
+    st.rerun()
 
-def render_hero(step):
-    icon, title, sub = STEP_META.get(step, ("📅","Kunjungan",""))
-    step_labels = ["Jadwal","Hotel","Kontak","Kirim"]
-    tag_label   = step_labels[step-1] if step <= 4 else "Selesai"
-    st.markdown(f"""
-<div class="hero">
-  <div class="hero-step-tag">
-    <span>{icon}</span>
-    Langkah {min(step,4)} dari 4 · {tag_label}
-  </div>
-  <div class="hero-title">{title}</div>
-  <div class="hero-sub">{sub}</div>
-</div>""", unsafe_allow_html=True)
 
-def render_step_tracker(cur):
-    labels = ["Jadwal","Hotel","Kontak","Kirim"]
-    items  = ""
-    for i, lbl in enumerate(labels, 1):
-        if   i < cur:  cls = "done";   dot_content = "✓"
-        elif i == cur: cls = "active";  dot_content = str(i)
-        else:          cls = "";        dot_content = str(i)
-        items += f"""
-<div class="st-item {cls}">
-  <div class="st-dot">{dot_content}</div>
-  <div class="st-label">{lbl}</div>
-</div>"""
-    st.markdown(f'<div class="step-track">{items}</div>', unsafe_allow_html=True)
+# =============================================================================
+#  TAB — INPUT
+# =============================================================================
+if st.session_state["tab"] == "input":
 
-def sel_banner():
-    if st.session_state.sel_date_key and st.session_state.sel_sess_value:
-        st.markdown(f"""
-<div class="sel-banner">
-  <div class="sb-info">
-    <div class="sb-tag">📅 Jadwal Dipilih</div>
-    <div class="sb-val">{st.session_state.sel_date_label} &nbsp;·&nbsp; {st.session_state.sel_sess_label}</div>
-  </div>
-  <div class="sb-check">✓</div>
-</div>""", unsafe_allow_html=True)
+    if not oai_key():
+        notice("err", "OpenAI API key belum diisi — buka tab <b>Pengaturan</b>.")
+        st.stop()
 
-def ibox(txt):
-    st.markdown(f"""
-<div class="ibox">
-  <span class="ibox-icon">ℹ️</span>
-  <div>{txt}</div>
-</div>""", unsafe_allow_html=True)
+    if not _PDF_OK:
+        notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
+               "Jalankan: <code>pip install pypdfium2==4.30.0</code>")
 
-def alert(msg, kind="warn", icon="⚠️"):
-    st.markdown(f"""
-<div class="alert alert-{kind}">
-  <span style="font-size:14px;flex-shrink:0">{icon}</span>
-  <div>{msg}</div>
-</div>""", unsafe_allow_html=True)
+    # ── Issuer & PIC ──────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-lbl">Issuer &amp; PIC</div>', unsafe_allow_html=True)
 
-def sec(txt):
-    st.markdown(f'<div class="sec-head">{txt}</div>', unsafe_allow_html=True)
+    _ISSUERS = [
+        "", "Ade Puspitasari", "Farras Mahmud", "Meijika",
+        "Muhammad Geraldi Jagaddhita", "Nur Anissa Firda Aulia",
+        "Riega Wisudhantara", "Rifyal Tumber", "Selvy Anggraini",
+        "Shaiful Baldy", "Veronica Novi Heri",
+    ]
+    _li = st.session_state.get("last_issuer", "")
+    _bi = _ISSUERS.index(_li) if _li in _ISSUERS else 0
 
-# ── STEP 1 ─────────────────────────────────────────────────────────────────────
-def render_step1():
-    booked = fetch_booked()
-
-    st.markdown('<div class="content">', unsafe_allow_html=True)
-    ibox("Kunjungan dilakukan setiap <strong>Selasa</strong> · 1 hotel per sesi · Pilih tanggal lalu pilih jam")
-
-    # ── Conflict alerts
-    if st.session_state.conflict_type == "blocking":
-        alert(f"<strong>Jadwal penuh!</strong> {st.session_state.conflict_msg}", kind="error", icon="❌")
-        if st.session_state.alternatives:
-            st.caption("Jadwal alternatif tersedia:")
-            for alt in st.session_state.alternatives:
-                if st.button(
-                    f"→ {alt['date_label']} · {alt['sess_label']}",
-                    key=f"alt_{alt['date_key']}_{alt['sess_value']}",
-                ):
-                    st.session_state.sel_date_key   = alt["date_key"]
-                    st.session_state.sel_date_label = alt["date_label"]
-                    st.session_state.sel_sess_value = alt["sess_value"]
-                    st.session_state.sel_sess_label = alt["sess_label"]
-                    st.session_state.conflict_type  = "ok"
-                    st.session_state.conflict_msg   = f"{alt['date_label']} · {alt['sess_label']} tersedia."
-                    st.rerun()
-
-    elif st.session_state.conflict_type == "ok":
-        alert(st.session_state.conflict_msg, kind="success", icon="✅")
-
-    # ── Date selector ──
-    sec("Pilih Tanggal Kunjungan")
-
-    date_opts = ["— Pilih tanggal —"]
-    date_map  = {}
-    for dt in DATES:
-        free = sum(1 for s in SESSIONS if not is_booked(booked, dt["key"], s["value"]))
-        suf  = " ✕ Penuh" if free == 0 else (f" · {free} sesi" if free < len(SESSIONS) else "")
-        opt  = dt["label"] + suf
-        date_opts.append(opt)
-        date_map[opt] = dt
-
-    # Find current selection index
-    cur_opt = None
-    if st.session_state.sel_date_key:
-        for lbl, dt in date_map.items():
-            if dt["key"] == st.session_state.sel_date_key:
-                cur_opt = lbl; break
-    cur_idx = date_opts.index(cur_opt) if cur_opt in date_opts else 0
-
-    chosen_label = st.selectbox(
-        "Tanggal", options=date_opts, index=cur_idx,
-        label_visibility="collapsed", key="dd_tanggal"
+    _c1, _c2 = st.columns(2)
+    bulk_issuer = _c1.selectbox(
+        "Issuer *", options=_ISSUERS, index=_bi,
+        format_func=lambda x: "— Pilih Issuer —" if x == "" else x,
+        key="bulk_issuer",
     )
-    chosen_dt = date_map.get(chosen_label)
+    bulk_pic = _c2.text_input(
+        "PIC *",
+        value=st.session_state.get("last_pic", ""),
+        placeholder="Nama penanggung jawab",
+        key="bulk_pic",
+    )
 
-    # ── FIX BUG 2: Date change detection without rerun loop ──
-    # Only update state if user picked a DIFFERENT date; don't rerun just for sync
-    if chosen_dt:
-        if chosen_dt["key"] != st.session_state.sel_date_key:
-            # Date changed — reset session selection
-            st.session_state.sel_date_key   = chosen_dt["key"]
-            st.session_state.sel_date_label = chosen_dt["label"]
-            st.session_state.sel_sess_value = None
-            st.session_state.sel_sess_label = None
-            st.session_state.conflict_type  = None
-            st.rerun()
-    else:
-        # Placeholder selected — clear date if one was previously set
-        if st.session_state.sel_date_key is not None:
-            st.session_state.sel_date_key   = None
-            st.session_state.sel_date_label = None
-            st.session_state.sel_sess_value = None
-            st.session_state.sel_sess_label = None
-            st.session_state.conflict_type  = None
-            st.rerun()
+    # ── Logo Expedia + file uploader ─────────────────────────────────────────
+    st.markdown("""
+<div class="expedia-banner">
+  <img
+    src="https://www.expedia.com/newsroom/wp-content/uploads/2023/07/BEX_Logo_Horizontal_CMYK_FullColorDarkBlue--1024x199.jpg"
+    alt="Expedia TAAP"
+    onerror="this.parentElement.style.display='none'"
+  >
+  <span class="taap-pill">TAAP · Mitra Tours</span>
+</div>
+""", unsafe_allow_html=True)
 
-    # ── Session slots ──
-    if chosen_dt:
-        dk = chosen_dt["key"]
-        sec("Pilih Sesi Waktu")
+    _ftypes = ["jpg", "jpeg", "png", "webp"] + (["pdf"] if _PDF_OK else [])
+    bulk_files = st.file_uploader(
+        "Drag & drop semua file — JPG · PNG · PDF",
+        type=_ftypes,
+        accept_multiple_files=True,
+        label_visibility="visible",
+        key="bulk_uf",
+    )
 
-        # ── Session rendering: HTML card + invisible overlapping button ──
-        # All cards rendered first as a group, then buttons overlap via CSS
-        # Each card uses a wrapper container with consistent height
+    _n = len(bulk_files) if bulk_files else 0
+    if _n:
+        notice("info", f"<b>{_n} file</b> dipilih dan siap diproses.")
 
-        CARD_H = 52  # px — fixed height for card + button alignment
+    skip_dup = st.checkbox(
+        "Lewati duplikat — jangan simpan jika booking sudah ada",
+        value=True, key="bulk_skip_dup",
+    )
 
-        # One-time CSS for this render
-        sess_css = "<style>"
-        for sess in SESSIONS:
-            sid = f"sb_{dk}_{sess['id']}"
-            sess_css += (
-                f"div[data-testid='stButton']:has(>button[data-testid='{sid}']){{"
-                f"margin-top:-{CARD_H}px!important;"
-                f"margin-bottom:6px!important;"
-                f"position:relative!important;z-index:10!important;}}"
-                f"div[data-testid='stButton']>button[data-testid='{sid}']{{"
-                f"opacity:0!important;height:{CARD_H}px!important;"
-                f"min-height:{CARD_H}px!important;width:100%!important;"
-                f"border:none!important;background:transparent!important;"
-                f"box-shadow:none!important;padding:0!important;"
-                f"border-radius:10px!important;"
-                f"cursor:{'not-allowed' if is_booked(booked, dk, sess['value']) else 'pointer'}!important;"
-                f"pointer-events:{'none' if is_booked(booked, dk, sess['value']) else 'auto'}!important;"
-                f"outline:none!important;box-shadow:none!important;}}"
-                f"div[data-testid='stButton']>button[data-testid='{sid}']:focus{{"
-                f"outline:none!important;box-shadow:none!important;background:transparent!important;}}"
-                f"div[data-testid='stButton']>button[data-testid='{sid}']:active{{"
-                f"outline:none!important;box-shadow:none!important;background:transparent!important;transform:none!important;}}"
-                f"div[data-testid='stButton']>button[data-testid='{sid}']:focus-visible{{"
-                f"outline:none!important;box-shadow:none!important;}}"
-            )
-        sess_css += "</style>"
-        st.markdown(sess_css, unsafe_allow_html=True)
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-        for i, sess in enumerate(SESSIONS):
-            taken    = is_booked(booked, dk, sess["value"])
-            selected = (
-                st.session_state.sel_sess_value == sess["value"]
-                and st.session_state.sel_date_key == dk
-            )
-            sid = f"sb_{dk}_{sess['id']}"
+    # ── Tombol ────────────────────────────────────────────────────────────────
+    st.markdown('<div class="bulk-btn-wrap">', unsafe_allow_html=True)
+    _bta, _btb = st.columns([3, 1])
+    _run_bulk = _bta.button(
+        "⚡  Proses & Simpan Semua", type="primary",
+        use_container_width=True,
+        disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
+        key="bulk_run",
+    )
+    _clear_bulk = _btb.button(
+        "Hapus", type="secondary",
+        use_container_width=True,
+        key="bulk_clear",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-            radio_bg   = "#1BA0E2" if selected else "#ffffff"
-            radio_brd  = "#1BA0E2" if selected else "#DEDEDE"
-            period_bg  = "#1BA0E2" if selected else ("#fee2e2" if taken else "#F0F0F0")
-            period_col = "#ffffff" if selected else ("#ef4444" if taken else "#6b7280")
-            period_lbl = "Penuh"   if taken else sess["period"]
-            time_col   = "#185FA5" if selected else ("#9ca3af" if taken else "#1a1f2e")
-            time_dec   = "line-through" if taken else "none"
-            status_txt = "Penuh"   if taken else ("Dipilih" if selected else "Tersedia")
-            status_col = "#ef4444" if taken else ("#1BA0E2" if selected else "#9ca3af")
-            row_border = "#1BA0E2" if selected else "#DEDEDE"
-            row_bg     = "rgba(27,160,226,0.07)" if selected else ("#F7F7F7" if taken else "#ffffff")
-            op_val     = "0.42" if taken else "1"
-            radio_inner = "<div style='width:7px;height:7px;border-radius:50%;background:#fff;'></div>" if selected else ""
+    if _clear_bulk:
+        reset_bulk()
+        st.rerun()
 
-            # Visual card — fixed height, margin-bottom negative pulls button up
-            st.markdown(
-                f"<div style='display:flex;align-items:center;gap:12px;"
-                f"padding:0 14px;height:{CARD_H}px;"
-                f"border-radius:10px;border:1.5px solid {row_border};"
-                f"background:{row_bg};opacity:{op_val};"
-                f"margin-bottom:-{CARD_H}px;position:relative;z-index:1;"
-                f"pointer-events:none;box-sizing:border-box;'>"
-                f"<div style='width:18px;height:18px;border-radius:50%;flex-shrink:0;"
-                f"border:1.5px solid {radio_brd};background:{radio_bg};"
-                f"display:flex;align-items:center;justify-content:center;'>"
-                f"{radio_inner}</div>"
-                f"<span style='font-size:10px;font-weight:600;padding:2px 9px;"
-                f"border-radius:20px;background:{period_bg};color:{period_col};"
-                f"white-space:nowrap;flex-shrink:0;'>{period_lbl}</span>"
-                f"<span style='font-size:14px;font-weight:600;color:{time_col};"
-                f"flex:1;text-decoration:{time_dec};'>{sess['label']}</span>"
-                f"<span style='font-size:11px;font-weight:500;color:{status_col};'>"
-                f"{status_txt}</span>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
+    # ── Proses ────────────────────────────────────────────────────────────────
+    if _run_bulk:
+        if not bulk_issuer:
+            notice("err", "Pilih Issuer terlebih dahulu.")
+        elif not bulk_pic.strip():
+            notice("err", "Isi PIC terlebih dahulu.")
+        else:
+            st.session_state["last_issuer"] = bulk_issuer
+            st.session_state["last_pic"]    = bulk_pic
+            reset_bulk()
 
-            # Invisible button exactly same height as card
-            clicked = st.button("​", key=sid, disabled=taken)
+            try:
+                _existing = load_rows()
+            except Exception:
+                _existing = []
 
-            if clicked and not taken:
-                _fetch_cached.clear()
-                fresh = fetch_booked()
-                if is_booked(fresh, dk, sess["value"]):
-                    alts = get_alts(fresh, dk, sess["value"])
-                    st.session_state.conflict_type = "blocking"
-                    st.session_state.conflict_msg  = "Jadwal ini baru saja terisi hotel lain."
-                    st.session_state.alternatives  = alts
-                else:
-                    st.session_state.sel_date_key   = dk
-                    st.session_state.sel_date_label = chosen_dt["label"]
-                    st.session_state.sel_sess_value = sess["value"]
-                    st.session_state.sel_sess_label = sess["label"]
-                    st.session_state.conflict_type  = "ok"
-                    st.session_state.conflict_msg   = (
-                        chosen_dt["label"] + " · " + sess["label"] + " siap di-booking."
+            _all_res   = []
+            _saved_run = 0
+            _prog_slot = st.empty()
+
+            for _idx, _uf in enumerate(bulk_files):
+                _pct = int(_idx / _n * 100)
+                _prog_slot.markdown(
+                    '<div class="bulk-prog">'
+                    + '<div class="bulk-prog-f" style="width:' + str(_pct) + '%"></div>'
+                    + '</div>'
+                    + '<div class="bulk-prog-lbl">Memproses '
+                    + str(_idx + 1) + ' / ' + str(_n)
+                    + ' &nbsp;&middot;&nbsp; ' + _uf.name + '</div>',
+                    unsafe_allow_html=True,
+                )
+
+                _res = {"file": _uf.name, "status": "error", "parsed": {}, "err": ""}
+
+                try:
+                    _raw    = _uf.read()
+                    _imgs_b = []
+                    _ptxt_b = ""
+
+                    if _uf.name.lower().endswith(".pdf"):
+                        if not _PDF_OK:
+                            raise RuntimeError("pypdfium2 tidak terinstall")
+                        _pages  = pdf_images(_raw)
+                        _imgs_b = [to_b64(pg) for pg in _pages]
+                        _ptxt_b = pdf_text(_raw)
+                    else:
+                        _img_obj    = Image.open(io.BytesIO(_raw)).convert("RGB")
+                        _b64, _mime = to_b64(_img_obj)
+                        _imgs_b     = [(_b64, _mime)]
+
+                    _comb = ""
+                    if _ptxt_b:
+                        _comb = (
+                            "EXTRACTED PDF TEXT "
+                            "(authoritative — use for all numbers and dates):\n"
+                            + _ptxt_b
+                        )
+
+                    _parsed, _ = ai_parse(_comb, _imgs_b or None)
+                    _parsed["timestamp_input"] = now_ts()
+
+                    _is_dup, _dup_reason, _ = check_duplicate(
+                        {
+                            "booking_id": _parsed.get("booking_id"),
+                            "hotel":      _parsed.get("hotel"),
+                            "checkin":    _parsed.get("checkin"),
+                            "name":       _parsed.get("name"),
+                            "room":       _parsed.get("room"),
+                        },
+                        _existing,
                     )
-                    st.session_state.alternatives   = []
-                st.rerun()
 
-    # ── CTA ──
-    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+                    if _is_dup and skip_dup:
+                        _res["status"] = "skipped"
+                        _res["parsed"] = _parsed
+                        _res["err"]    = _dup_reason
+                    else:
+                        _row = {
+                            "timestamp_input": _parsed.get("timestamp_input", ""),
+                            "supplier":        _parsed.get("supplier",      ""),
+                            "booking_id":      _parsed.get("booking_id",    ""),
+                            "booked_on":       _parsed.get("booked_on",     ""),
+                            "issued_on":       _parsed.get("issued_on",     ""),
+                            "hotel":           _parsed.get("hotel",         ""),
+                            "checkin":         _parsed.get("checkin",       ""),
+                            "qty":             _parsed.get("qty",           ""),
+                            "room":            _parsed.get("room",          0),
+                            "checkout":        _parsed.get("checkout",      ""),
+                            "name":            _parsed.get("name",          ""),
+                            "card":            _parsed.get("card",          ""),
+                            "issuer":          bulk_issuer,
+                            "pic":             bulk_pic,
+                            "no_bc":           _parsed.get("no_bc",        ""),
+                            "nama_kegiatan":   _parsed.get("nama_kegiatan",""),
+                            "notes":           _parsed.get("notes",        ""),
+                        }
+                        save_row(_row)
+                        _res["status"] = "success"
+                        _res["parsed"] = _parsed
+                        _saved_run    += 1
+                        _existing.append({
+                            "Booking ID": _parsed.get("booking_id", ""),
+                            "Hotel":      _parsed.get("hotel",      ""),
+                            "Check-in":   _parsed.get("checkin",    ""),
+                            "Guest Name": _parsed.get("name",       ""),
+                            "Total (Rp)": _parsed.get("room",       0),
+                        })
 
-    if st.session_state.sel_date_key and st.session_state.sel_sess_value:
-        c1, c2 = st.columns([1, 2])
-        with c1:
-            if st.button("Batal", key="clear_jadwal"):
-                for k in ("sel_date_key","sel_date_label","sel_sess_value","sel_sess_label"):
-                    st.session_state[k] = None
-                st.session_state.conflict_type = None
-                st.rerun()
-        with c2:
-            if st.button("Lanjut →", type="primary", key="btn1_next"):
-                st.session_state.step = 2
-                st.rerun()
-    else:
-        if chosen_dt:
-            alert("Pilih sesi waktu di atas untuk melanjutkan.", kind="warn", icon="👆")
-        else:
-            alert("Pilih tanggal kunjungan terlebih dahulu.", kind="warn", icon="📅")
+                except Exception as _exc:
+                    _res["status"] = "error"
+                    _res["err"]    = str(_exc)[:120]
 
-    st.markdown('</div>', unsafe_allow_html=True)
+                _all_res.append(_res)
 
-# ── STEP 2 ─────────────────────────────────────────────────────────────────────
-def render_step2():
-    st.markdown('<div class="content">', unsafe_allow_html=True)
-    sel_banner()
+            _prog_slot.empty()
+            # FIX BUG #1: assignment dict-style (bukan .get()= yang invalid)
+            st.session_state["bulk_results"]     = _all_res
+            st.session_state["bulk_saved_count"] = _saved_run
+            st.rerun()
 
-    st.session_state.nama_hotel = st.text_input(
-        "Nama Hotel / Property *",
-        value=st.session_state.nama_hotel,
-        placeholder="Contoh: Grand Hyatt Jakarta",
-        key="inp_nama_hotel",
-    )
-    st.session_state.alamat_hotel = st.text_area(
-        "Alamat Lengkap *",
-        value=st.session_state.alamat_hotel,
-        placeholder="Jl. ..., Kelurahan, Kecamatan, Kota",
-        height=90, key="inp_alamat",
-    )
-    opts = HOTEL_BRANDS
-    idx  = opts.index(st.session_state.brand_hotel) if st.session_state.brand_hotel in opts else 0
-    st.session_state.brand_hotel = st.selectbox(
-        "Brand / Chain Hotel (opsional)", options=opts, index=idx, key="inp_brand",
-        format_func=lambda x: "— Pilih brand / chain —" if x == "" else x,
-    )
+    # ── Hasil ─────────────────────────────────────────────────────────────────
+    _results = st.session_state.get("bulk_results", [])
 
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        if st.button("← Kembali", key="btn2_back"):
-            st.session_state.step = 1; st.rerun()
-    with c2:
-        if st.button("Lanjut →", type="primary", key="btn2_next"):
-            errs = []
-            if not st.session_state.nama_hotel.strip():   errs.append("Nama hotel wajib diisi.")
-            if not st.session_state.alamat_hotel.strip(): errs.append("Alamat hotel wajib diisi.")
-            if errs:
-                [st.error(e) for e in errs]
-            else:
-                st.session_state.step = 3; st.rerun()
+    if _results:
+        _n_ok   = sum(1 for r in _results if r["status"] == "success")
+        _n_err  = sum(1 for r in _results if r["status"] == "error")
+        _n_skip = sum(1 for r in _results if r["status"] == "skipped")
+        _n_tot  = len(_results)
+        _pct_ok = int(_n_ok / _n_tot * 100) if _n_tot else 0
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ── STEP 3 ─────────────────────────────────────────────────────────────────────
-def render_step3():
-    st.markdown('<div class="content">', unsafe_allow_html=True)
-    sel_banner()
-
-    sec("Identitas PIC")
-    st.session_state.nama_pic = st.text_input("Nama PIC Utama *",
-        value=st.session_state.nama_pic, placeholder="Nama lengkap", key="inp_nama_pic")
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.session_state.jabatan = st.text_input("Jabatan *",
-            value=st.session_state.jabatan, placeholder="Sales Manager, GM...", key="inp_jabatan")
-    with c2:
-        st.session_state.no_hp = st.text_input("WhatsApp *",
-            value=st.session_state.no_hp, placeholder="08xx-xxxx-xxxx", key="inp_no_hp")
-
-    st.session_state.email = st.text_input("Email *",
-        value=st.session_state.email, placeholder="nama@hotel.com", key="inp_email")
-
-    sec("Jumlah Peserta")
-    p_opts = ["1 orang","2 orang","3 orang","4 orang","5 orang"]
-    cur_p  = p_opts.index(st.session_state.peserta) if st.session_state.peserta in p_opts else 0
-    st.session_state.peserta = st.radio("Peserta", options=p_opts, index=cur_p,
-        horizontal=True, label_visibility="collapsed", key="inp_peserta")
-
-    sec("Tujuan Kunjungan")
-
-    # Render tujuan as styled st.button rows — single element, no overlay trick
-    # CSS makes each button look like the Opsi C card row
-    # Tujuan — st.checkbox hidden, replaced visually with custom card row
-    st.markdown("""
-<style>
-/* Hide native checkbox widget completely */
-div[data-testid="stCheckbox"] { all: unset !important; display: block !important; margin-bottom: 6px !important; }
-div[data-testid="stCheckbox"] > label {
-  all: unset !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-  padding: 11px 14px !important;
-  border-radius: 8px !important;
-  border: 1.5px solid #DEDEDE !important;
-  background: #ffffff !important;
-  cursor: pointer !important;
-  box-sizing: border-box !important;
-  transition: border-color 0.15s !important;
-  min-height: 46px !important;
-}
-div[data-testid="stCheckbox"] > label:hover {
-  border-color: #1BA0E2 !important;
-}
-div[data-testid="stCheckbox"]:has(input:checked) > label {
-  border-color: #1BA0E2 !important;
-  background: rgba(27,160,226,0.07) !important;
-}
-/* Hide the native checkbox square */
-div[data-testid="stCheckbox"] > label > div:first-child {
-  display: none !important;
-}
-/* The text part — make it fill space */
-div[data-testid="stCheckbox"] > label > div:last-child {
-  display: contents !important;
-}
-div[data-testid="stCheckbox"] > label > div:last-child > p {
-  display: none !important;
-}
-</style>""", unsafe_allow_html=True)
-
-    TUJUAN_BADGE_MAP = {
-        "Perkenalan Hotel":              "Intro",
-        "Presentasi Produk / Fasilitas": "Produk",
-        "Corporate Rate / Contract Rate":"Rate",
-        "Promo / Special Offer":         "Promo",
-        "Kerja Sama Partnership":        "Partner",
-        "Follow Up Existing Business":   "Follow Up",
-    }
-
-    tujuan_sel = []
-    for i, tuj in enumerate(TUJUAN_OPTIONS):
-        is_on   = tuj in st.session_state.tujuan
-        badge   = TUJUAN_BADGE_MAP.get(tuj, "")
-        chk_bg  = "#1BA0E2" if is_on else "#ffffff"
-        chk_brd = "#1BA0E2" if is_on else "#DEDEDE"
-        lbl_col = "#185FA5" if is_on else "#1a1f2e"
-        tag_bg  = "#1BA0E2" if is_on else "#F0F0F0"
-        tag_col = "#ffffff" if is_on else "#9ca3af"
-        svg_chk = "<svg viewBox='0 0 24 24' style='width:10px;height:10px;stroke:#fff;stroke-width:2.5;fill:none;display:block'><polyline points='20 6 9 17 4 12'/></svg>" if is_on else ""
-
-        st.markdown(f"""
-<div style="display:flex;align-items:center;justify-content:space-between;
-  padding:11px 14px;border-radius:8px;
-  border:1.5px solid {'#1BA0E2' if is_on else '#DEDEDE'};
-  background:{'rgba(27,160,226,0.07)' if is_on else '#ffffff'};
-  margin-bottom:0px;pointer-events:none;">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <div style="width:18px;height:18px;border-radius:4px;
-      border:1.5px solid {chk_brd};background:{chk_bg};
-      display:flex;align-items:center;justify-content:center;flex-shrink:0;">{svg_chk}</div>
-    <span style="font-size:13px;font-weight:600;color:{lbl_col};">{tuj}</span>
-  </div>
-  <span style="font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;
-    background:{tag_bg};color:{tag_col};white-space:nowrap;">{badge}</span>
-</div>""", unsafe_allow_html=True)
-
-        # Real (invisible) checkbox for interactivity — sits right below the visual card
-        st.markdown("""<style>
-div[data-testid="stCheckbox"]:last-of-type {
-  margin-top: -46px !important;
-  opacity: 0 !important;
-  position: relative !important;
-  z-index: 10 !important;
-  height: 46px !important;
-  overflow: hidden !important;
-}
-div[data-testid="stCheckbox"]:last-of-type > label {
-  height: 46px !important;
-  min-height: 46px !important;
-  border: none !important;
-  background: transparent !important;
-  cursor: pointer !important;
-}
-</style>""", unsafe_allow_html=True)
-
-        checked = st.checkbox(" ", value=is_on, key=f"tuj_{i}", label_visibility="hidden")
-        if checked:
-            tujuan_sel.append(tuj)
-
-    # Sync state if changed
-    if set(tujuan_sel) != set(st.session_state.tujuan):
-        st.session_state.tujuan = tujuan_sel
-        st.rerun()
-    sec("Estimasi Durasi")
-    d_opts = ["15 Menit","30 Menit","45 Menit"]
-    cur_d  = d_opts.index(st.session_state.durasi) if st.session_state.durasi in d_opts else 1
-    st.session_state.durasi = st.radio("Durasi", options=d_opts, index=cur_d,
-        horizontal=True, label_visibility="collapsed", key="inp_durasi")
-
-    sec("Catatan Tambahan (Opsional)")
-    st.session_state.catatan = st.text_area("Catatan", value=st.session_state.catatan,
-        placeholder="Informasi tambahan...", height=75,
-        label_visibility="collapsed", key="inp_catatan")
-
-    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        if st.button("← Kembali", key="btn3_back"):
-            st.session_state.step = 2; st.rerun()
-    with c2:
-        if st.button("Review →", type="primary", key="btn3_next"):
-            errs = []
-            if not st.session_state.nama_pic.strip():  errs.append("Nama PIC wajib diisi.")
-            if not st.session_state.jabatan.strip():   errs.append("Jabatan wajib diisi.")
-            if not st.session_state.no_hp.strip():     errs.append("Nomor WhatsApp wajib diisi.")
-            elif not valid_phone(st.session_state.no_hp): errs.append("Format nomor WA tidak valid.")
-            if not st.session_state.email.strip():     errs.append("Email wajib diisi.")
-            elif not valid_email(st.session_state.email): errs.append("Format email tidak valid.")
-            if not st.session_state.tujuan:            errs.append("Pilih minimal satu tujuan kunjungan.")
-            if errs:
-                [st.error(e) for e in errs]
-            else:
-                st.session_state.step = 4; st.rerun()
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# ── STEP 4 ─────────────────────────────────────────────────────────────────────
-def render_step4():
-    st.markdown('<div class="content">', unsafe_allow_html=True)
-
-    def row(lbl, val, hl=False):
-        vcls = "rev-val hl" if hl else "rev-val"
-        return f'<div class="rev-row"><div class="rev-lbl">{lbl}</div><div class="{vcls}">{val}</div></div>'
-
-    html = (
-        '<div class="rev-card">'
-        '<div class="rev-group-head">📅 Jadwal</div>'
-        + row("Tanggal", st.session_state.sel_date_label or "—", hl=True)
-        + row("Sesi",    st.session_state.sel_sess_label  or "—", hl=True)
-        + '<div class="rev-group-head">🏨 Hotel</div>'
-        + row("Hotel",   st.session_state.nama_hotel)
-        + row("Alamat",  st.session_state.alamat_hotel)
-        + row("Brand",   st.session_state.brand_hotel or "—")
-        + '<div class="rev-group-head">👤 Kontak</div>'
-        + row("Nama PIC", st.session_state.nama_pic)
-        + row("Jabatan",  st.session_state.jabatan)
-        + row("WA",       st.session_state.no_hp)
-        + row("Email",    st.session_state.email)
-        + row("Peserta",  st.session_state.peserta)
-        + row("Durasi",   st.session_state.durasi)
-        + row("Tujuan",   ", ".join(st.session_state.tujuan) or "—")
-        + (row("Catatan", st.session_state.catatan) if st.session_state.catatan.strip() else "")
-        + '</div>'
-    )
-    st.markdown(html, unsafe_allow_html=True)
-
-    ibox("Dengan mengirim, Anda bersedia dihubungi via WhatsApp atau Email untuk konfirmasi jadwal.")
-
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        if st.button("← Edit", key="btn4_back"):
-            st.session_state.step = 3; st.rerun()
-    with c2:
-        if st.session_state.get("submitting"):
-            st.info("Sedang mengirim, mohon tunggu...")
-        else:
-            st.markdown('<div class="submit-accent-wrap">', unsafe_allow_html=True)
-            if st.button("Kirim", key="btn4_submit", type="primary"):
-                st.session_state.submitting = True
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    # Execute submission after flag is set (on next rerun)
-    if st.session_state.get("submitting"):
-        _do_submit()
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-def _do_submit():
-    # Guard against double submit
-    if st.session_state.get("submitted_ref"):
-        st.session_state.submitting = False
-        st.session_state.step = 5
-        st.rerun()
-        return
-
-    _fetch_cached.clear()
-    fresh = fetch_booked()
-    dk = st.session_state.sel_date_key
-    sv = st.session_state.sel_sess_value
-
-    if is_booked(fresh, dk, sv):
-        alts = get_alts(fresh, dk, sv)
-        st.session_state.conflict_type = "blocking"
-        st.session_state.conflict_msg  = (
-            f"Jadwal {st.session_state.sel_sess_label} pada "
-            f"{st.session_state.sel_date_label} baru saja dipesan hotel lain.")
-        st.session_state.alternatives = alts
-        for k in ("sel_date_key","sel_date_label","sel_sess_value","sel_sess_label"):
-            st.session_state[k] = None
-        st.session_state.submitting = False
-        st.session_state.step = 1
-        st.rerun()
-        return
-
-    wib = datetime.now(ZoneInfo("Asia/Jakarta"))
-    ref = gen_ref()
-    payload = {
-        "ref": ref, "timestamp": wib.strftime("%d/%m/%Y %H:%M:%S"),
-        "namaHotel":   st.session_state.nama_hotel.strip(),
-        "alamatHotel": st.session_state.alamat_hotel.strip(),
-        "brand":       st.session_state.brand_hotel or "—",
-        "namaPIC":     st.session_state.nama_pic.strip(),
-        "jabatan":     st.session_state.jabatan.strip(),
-        "noHP":        st.session_state.no_hp.strip(),
-        "email":       st.session_state.email.strip(),
-        "peserta":     st.session_state.peserta,
-        "tujuan":      ", ".join(st.session_state.tujuan),
-        "tanggal":     dk + " (Selasa)", "slot": sv,
-        "durasi":      st.session_state.durasi,
-        "catatan":     st.session_state.catatan or "",
-    }
-    with st.spinner("Menyimpan & mengirim notifikasi..."):
-        ok, result = save_to_gas(payload)
-
-    st.session_state.submitting = False
-
-    if ok:
-        st.session_state.ref_number    = result or ref
-        st.session_state.submitted_ref = result or ref
-        st.session_state.step = 5
-        _fetch_cached.clear()
-        st.rerun()
-    elif result == "Jadwal_TAKEN":
-        _fetch_cached.clear()
-        fresh2 = fetch_booked()
-        alts = get_alts(fresh2, dk, sv)
-        st.session_state.conflict_type = "blocking"
-        st.session_state.conflict_msg  = f"Jadwal {st.session_state.sel_sess_label} baru saja dipesan saat Anda submit."
-        st.session_state.alternatives  = alts
-        for k in ("sel_date_key","sel_date_label","sel_sess_value","sel_sess_label"):
-            st.session_state[k] = None
-        st.session_state.step = 1
-        st.rerun()
-    else:
-        st.error(f"Gagal menyimpan: {result}. Silakan coba lagi.")
-
-# ── STEP 5 ─────────────────────────────────────────────────────────────────────
-def render_success():
-    import streamlit.components.v1 as components
-
-    ref      = st.session_state.ref_number
-    hotel    = st.session_state.nama_hotel
-    pic      = st.session_state.nama_pic
-    tanggal  = st.session_state.sel_date_label
-    sesi     = st.session_state.sel_sess_label
-    sesi_jam = sesi.split("\u2013")[0].strip() if sesi else "\u2014"
-
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-* {{ box-sizing: border-box; margin: 0; padding: 0; }}
-body {{ background: transparent; font-family: 'Nunito Sans', sans-serif; padding: 0 16px; }}
-.gpass {{
-  background: #fff;
-  border: 1.5px solid #DEDEDE;
-  border-radius: 14px;
-  overflow: hidden;
-  max-width: 420px;
-  margin: 0 auto;
-}}
-.gpass-top {{
-  background: #1BA0E2;
-  padding: 20px 22px 18px;
-}}
-.gpass-co {{
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.6);
-  margin-bottom: 10px;
-}}
-.gpass-top-row {{
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}}
-.gpass-time-lbl {{
-  font-size: 10px;
-  color: rgba(255,255,255,0.6);
-  margin-bottom: 4px;
-}}
-.gpass-time {{
-  font-size: 30px;
-  font-weight: 900;
-  color: #fff;
-  font-family: 'Nunito', sans-serif;
-  letter-spacing: 1px;
-  line-height: 1;
-}}
-.gpass-right {{ text-align: right; }}
-.gpass-right-lbl {{
-  font-size: 10px;
-  color: rgba(255,255,255,0.6);
-  margin-bottom: 2px;
-  margin-top: 8px;
-}}
-.gpass-right-val {{ font-size: 13px; font-weight: 600; color: #fff; }}
-.gpass-status {{
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 20px;
-  padding: 3px 10px;
-  font-size: 11px;
-  color: #fff;
-  font-weight: 700;
-  margin-top: 4px;
-}}
-.gpass-tear {{
-  height: 1px;
-  background: repeating-linear-gradient(90deg,#DEDEDE 0,#DEDEDE 6px,transparent 6px,transparent 12px);
-  position: relative;
-}}
-.gpass-tear::before, .gpass-tear::after {{
-  content: '';
-  position: absolute;
-  top: -9px;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #F0F0F0;
-  border: 1.5px solid #DEDEDE;
-}}
-.gpass-tear::before {{ left: -9px; }}
-.gpass-tear::after  {{ right: -9px; }}
-.gpass-body {{ padding: 18px 22px 16px; }}
-.gpass-fields {{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 20px;
-  margin-bottom: 14px;
-}}
-.gpass-flbl {{
-  font-size: 9px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-bottom: 3px;
-}}
-.gpass-fval {{ font-size: 13px; font-weight: 600; color: #1a1f2e; }}
-.gpass-ref-row {{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 11px 14px;
-  background: #F7F9FC;
-  border-radius: 8px;
-  border: 1px solid #EDEDEE;
-}}
-.gpass-ref-lbl {{
-  font-size: 9px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-bottom: 3px;
-}}
-.gpass-ref-val {{
-  font-size: 16px;
-  font-weight: 900;
-  color: #1a1f2e;
-  letter-spacing: 2.5px;
-  font-family: 'Nunito', sans-serif;
-}}
-.gpass-ref-hint {{ font-size: 11px; color: #9ca3af; }}
-.gpass-foot {{
-  padding: 12px 22px;
-  border-top: 1px solid #EDEDEE;
-  background: #F7F9FC;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}}
-.gpass-note {{ font-size: 11px; color: #9ca3af; }}
-.gpass-savebtn {{
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #1BA0E2;
-  background: none;
-  border: 1.5px solid #1BA0E2;
-  border-radius: 7px;
-  padding: 7px 14px;
-  cursor: pointer;
-  font-family: 'Nunito Sans', sans-serif;
-  transition: background 0.15s, opacity 0.15s;
-}}
-.gpass-savebtn:hover {{ background: rgba(27,160,226,0.07); }}
-.gpass-savebtn:disabled {{ opacity: 0.5; cursor: not-allowed; }}
-.gpass-savebtn svg {{
-  width: 13px; height: 13px;
-  stroke: #1BA0E2; stroke-width: 2.2;
-  fill: none; display: block;
-}}
-
-.logo-bar {{
-  max-width: 420px;
-  margin: 0 auto 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0 0;
-}}
-.logo-bar img {{
-  height: 34px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}}
-.logo-live {{
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #059669;
-}}
-.pulse-dot {{
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #10b981;
-  animation: pulse 2s ease-in-out infinite;
-}}
-@keyframes pulse {{
-  0%,100% {{ opacity:1; transform:scale(1); }}
-  50%      {{ opacity:.4; transform:scale(.8); }}
-}}
-.page-footer {{
-  max-width: 420px;
-  margin: 12px auto 0;
-  text-align: center;
-  font-size: 11px;
-  color: #bbb;
-  letter-spacing: 0.3px;
-  padding-bottom: 20px;
-}}
-.page-footer span {{ color: #1BA0E2; font-weight: 700; }}
-</style>
-</head>
-<body>
-<div class="logo-bar">
-  <img src="https://mitratour.com/wp-content/uploads/2019/09/LOGO-MITRA-Converted-Copy-min.png" alt="Mitra Tours & Travel" />
-  <div class="logo-live"><div class="pulse-dot"></div>Sistem Aktif</div>
-</div>
-<div id="gpass-capture">
-<div class="gpass">
-  <div class="gpass-top">
-    <div class="gpass-co">Kunjungan Sales &nbsp;&middot;&nbsp; Mitra Tours &amp; Travel</div>
-    <div class="gpass-top-row">
-      <div>
-        <div class="gpass-time-lbl">Waktu sesi</div>
-        <div class="gpass-time">{sesi_jam}</div>
-      </div>
-      <div class="gpass-right">
-        <div class="gpass-right-lbl">Tanggal</div>
-        <div class="gpass-right-val">{tanggal}</div>
-        <div class="gpass-status">&#10003; Terkirim</div>
-      </div>
-    </div>
-  </div>
-  <div class="gpass-tear"></div>
-  <div class="gpass-body">
-    <div class="gpass-fields">
-      <div><div class="gpass-flbl">Hotel</div><div class="gpass-fval">{hotel}</div></div>
-      <div><div class="gpass-flbl">PIC</div><div class="gpass-fval">{pic}</div></div>
-      <div><div class="gpass-flbl">Sesi</div><div class="gpass-fval">{sesi}</div></div>
-      <div><div class="gpass-flbl">Notifikasi</div><div class="gpass-fval" style="font-size:11px;word-break:break-all">{NOTIF_EMAIL}</div></div>
-    </div>
-    <div class="gpass-ref-row">
-      <div>
-        <div class="gpass-ref-lbl">Nomor Referensi</div>
-        <div class="gpass-ref-val">{ref}</div>
-      </div>
-      <div class="gpass-ref-hint">Simpan kode ini</div>
-    </div>
-  </div>
-  <div class="gpass-foot">
-    <span class="gpass-note">Booking System v2.0</span>
-    <button class="gpass-savebtn" id="savebtn" onclick="saveAsJpg()">
-      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Simpan JPG
-    </button>
-  </div>
-</div>
-</div>
-
-<div class="page-footer">Mitra Tours and Travel &nbsp;&middot;&nbsp; <span>Booking System</span> &nbsp;&middot;&nbsp; v2.0</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script>
-function saveAsJpg() {{
-  var btn = document.getElementById('savebtn');
-  btn.disabled = true;
-  btn.innerHTML = 'Menyimpan...';
-  var el = document.getElementById('gpass-capture');
-  html2canvas(el, {{
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: '#ffffff',
-    logging: false,
-    onclone: function(doc) {{
-      doc.getElementById('gpass-capture').style.padding = '12px';
-    }}
-  }}).then(function(canvas) {{
-    var a = document.createElement('a');
-    a.download = 'konfirmasi-{ref}.jpg';
-    a.href = canvas.toDataURL('image/jpeg', 0.95);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    btn.disabled = false;
-    btn.innerHTML = '<svg viewBox=\"0 0 24 24\" style=\"width:13px;height:13px;stroke:#1BA0E2;stroke-width:2.2;fill:none;display:block\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> Tersimpan \u2713';
-  }}).catch(function(e) {{
-    console.error(e);
-    btn.disabled = false;
-    btn.innerHTML = 'Coba lagi';
-  }});
-}}
-
-</script>
-</body>
-</html>"""
-
-    components.html(html, height=560, scrolling=False)
-
-# ── MAIN ───────────────────────────────────────────────────────────────────────
-def main():
-    init_state()
-    inject_css()
-
-    s = st.session_state.step
-
-    if s != 5:
-        render_topbar()
-
-    if s <= 4:
-        render_hero(s)
-        render_step_tracker(s)
-
-    if   s == 1: render_step1()
-    elif s == 2: render_step2()
-    elif s == 3: render_step3()
-    elif s == 4: render_step4()
-    elif s == 5: render_success()
-
-    if s != 5:
         st.markdown(
-            '<div class="footer">Mitra Tours and Travel &nbsp;·&nbsp; '
-            '<span>Booking System</span> &nbsp;·&nbsp; v2.0</div>',
-            unsafe_allow_html=True
+            '<div class="bulk-sum">'
+            '<div class="bulk-sum-ttl">Hasil Proses Batch</div>'
+            '<div class="bulk-stats">'
+            + '<div><div class="bs-val">'     + str(_n_tot) + '</div><div class="bs-lbl">Total</div></div>'
+            + '<div><div class="bs-val bs-g">'+ str(_n_ok)  + '</div><div class="bs-lbl">Tersimpan</div></div>'
+            + '<div><div class="bs-val bs-r">'+ str(_n_err) + '</div><div class="bs-lbl">Gagal</div></div>'
+            + '<div><div class="bs-val bs-y">'+ str(_n_skip)+ '</div><div class="bs-lbl">Duplikat</div></div>'
+            + '</div>'
+            + '<div class="bulk-bar"><div class="bulk-bar-f" style="width:' + str(_pct_ok) + '%"></div></div>'
+            + '<div style="font-size:10px;color:#9CA3AF;text-align:right;margin-top:4px">'
+            + str(_pct_ok) + '% berhasil tersimpan</div>'
+            + '</div>',
+            unsafe_allow_html=True,
         )
 
-if __name__ == "__main__":
-    main()
+        st.markdown('<div class="sec-lbl">Detail per file</div>', unsafe_allow_html=True)
+
+        for _r in _results:
+            _s     = _r["status"]
+            _p     = _r.get("parsed", {})
+            _fname = _r["file"]
+            _ficon = "&#128196;" if _fname.lower().endswith(".pdf") else "&#128247;"
+
+            _icls = {"success": "ic-ok",      "error": "ic-err",   "skipped": "ic-skip"}.get(_s, "ic-n")
+            _bcls = {"success": "fb-ok",       "error": "fb-err",   "skipped": "fb-sk"}.get(_s, "fb-ok")
+            _isym = {"success": "&#10003;",    "error": "&#10005;", "skipped": "&#9888;"}.get(_s, "")
+            _lbl  = {"success": "Tersimpan",   "error": "Gagal",    "skipped": "Duplikat"}.get(_s, _s)
+            _wcls = {"success": "fi-success",  "error": "fi-error", "skipped": "fi-skipped"}.get(_s, "")
+
+            if _p and _s in ("success", "skipped"):
+                _dw = (
+                    '<div style="margin-top:6px;font-size:11px;color:#92400E;'
+                    'background:#FEF9C3;padding:5px 8px;border-radius:6px">&#9888; '
+                    + _r.get("err", "Duplikat") + '</div>'
+                ) if _s == "skipped" else ""
+                _det = (
+                    '<div class="fi-grid">'
+                    + '<div class="fi-kv"><span class="fi-k">Hotel</span><span class="fi-v">'     + (_p.get("hotel")       or "—") + '</span></div>'
+                    + '<div class="fi-kv"><span class="fi-k">Total</span><span class="fi-v">'     + fmt(_p.get("room", 0))         + '</span></div>'
+                    + '<div class="fi-kv"><span class="fi-k">Tamu</span><span class="fi-v">'      + (_p.get("name")        or "—") + '</span></div>'
+                    + '<div class="fi-kv"><span class="fi-k">Booking ID</span><span class="fi-v">'+ (_p.get("booking_id") or "—") + '</span></div>'
+                    + '<div class="fi-kv"><span class="fi-k">Check-in</span><span class="fi-v">'  + (_p.get("checkin")     or "—") + '</span></div>'
+                    + '<div class="fi-kv"><span class="fi-k">Supplier</span><span class="fi-v">'  + (_p.get("supplier")    or "—") + '</span></div>'
+                    + '</div>' + _dw
+                )
+            elif _r.get("err"):
+                _det = (
+                    '<div class="fi-grid" style="grid-template-columns:1fr">'
+                    + '<div class="fi-kv"><span class="fi-k">Error</span>'
+                    + '<span class="fi-v" style="color:#EF4444;white-space:normal">'
+                    + _r["err"] + '</span></div></div>'
+                )
+            else:
+                _det = ""
+
+            st.markdown(
+                '<div class="file-item ' + _wcls + '">'
+                + '<div class="fi-top">'
+                + '<div class="fi-icon ' + _icls + '">' + _ficon + '</div>'
+                + '<div class="fi-name">' + _fname + '</div>'
+                + '<span class="fi-badge ' + _bcls + '">' + _isym + ' ' + _lbl + '</span>'
+                + '</div>' + _det + '</div>',
+                unsafe_allow_html=True,
+            )
+
+        _sid = sheet_id()
+        if _sid and _n_ok:
+            st.link_button(
+                f"&#128202;  Buka Google Sheets &#8594; ({_n_ok} baris baru tersimpan)",
+                f"https://docs.google.com/spreadsheets/d/{_sid}",
+                use_container_width=True,
+            )
+        if _n_err:
+            notice("warn", f"{_n_err} file gagal diproses. Periksa kualitas file dan coba lagi.")
+
+
+# =============================================================================
+#  TAB — DASHBOARD
+# =============================================================================
+elif st.session_state["tab"] == "dashboard":
+    import pandas as pd
+
+    st.markdown('<div class="sec-lbl">Ringkasan</div>', unsafe_allow_html=True)
+
+    if st.button("↻  Refresh", type="secondary", use_container_width=True, key="ref"):
+        st.cache_resource.clear()
+        st.rerun()
+
+    try:
+        with st.spinner("Memuat..."):
+            rows = load_rows()
+
+        if not rows:
+            notice("info", "Belum ada transaksi. Tambahkan melalui tab Input.")
+        else:
+            df = pd.DataFrame(rows)
+            if "Total (Rp)" in df.columns:
+                df["Total (Rp)"] = pd.to_numeric(df["Total (Rp)"], errors="coerce").fillna(0)
+
+            tn  = len(df)
+            tr  = df["Total (Rp)"].sum() if "Total (Rp)" in df.columns else 0
+            avg = tr / tn if tn else 0
+            tds = datetime.now().strftime("%d/%m/%Y")
+            tdc = int(
+                df["Timestamp Input"].astype(str).str.startswith(tds).sum()
+            ) if "Timestamp Input" in df.columns else 0
+
+            st.markdown(f"""
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-val">{tn}</div><div class="stat-lbl">Total transaksi</div></div>
+  <div class="stat-card"><div class="stat-val" style="font-size:15px">{fmt(tr)}</div><div class="stat-lbl">Total</div></div>
+  <div class="stat-card"><div class="stat-val" style="font-size:15px">{fmt(avg)}</div><div class="stat-lbl">Rata-rata</div></div>
+  <div class="stat-card"><div class="stat-val">{tdc}</div><div class="stat-lbl">Input hari ini</div></div>
+</div>""", unsafe_allow_html=True)
+
+            if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
+                _cc_df = df[df["Kartu Kredit"].astype(str).str.strip().ne("")]
+                if not _cc_df.empty:
+                    st.markdown('<div class="sec-lbl">Kartu Kredit</div>', unsafe_allow_html=True)
+                    _cc_grp = (
+                        _cc_df.groupby("Kartu Kredit")["Total (Rp)"]
+                        .sum().sort_values(ascending=False).reset_index()
+                    )
+                    _cc_grp.columns = ["label", "val"]
+                    _total_cc  = _cc_grp["val"].sum()
+                    _cc_counts = _cc_df.groupby("Kartu Kredit").size()
+
+                    _rows_html = ""
+                    for _i, _r in _cc_grp.iterrows():
+                        _pct   = _r["val"] / _total_cc * 100 if _total_cc else 0
+                        _amt   = "Rp {:,.0f}".format(_r["val"]).replace(",", ".")
+                        _cnt   = int(_cc_counts.get(_r["label"], 0))
+                        _bar_w = int(_pct)
+                        _rows_html += (
+                            f'<div style="padding:10px 0;border-bottom:1px solid #F3F4F6">'
+                            f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">'
+                            f'<span style="font-size:12px;font-weight:600;color:#111">{_r["label"]}</span>'
+                            f'<span style="font-size:12px;font-weight:600;color:#111">{_amt}</span>'
+                            f'</div>'
+                            f'<div style="display:flex;align-items:center;gap:8px">'
+                            f'<div style="flex:1;background:#F3F4F6;border-radius:4px;height:4px">'
+                            f'<div style="width:{_bar_w}%;background:#111;border-radius:4px;height:4px"></div>'
+                            f'</div>'
+                            f'<span style="font-size:11px;color:#9CA3AF;white-space:nowrap">{_pct:.1f}% · {_cnt} transaksi</span>'
+                            f'</div></div>'
+                        )
+                    st.markdown(
+                        f'<div style="background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:4px 14px">'
+                        f'{_rows_html}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            st.markdown('<div class="sec-lbl" style="margin-top:14px">Data transaksi</div>',
+                        unsafe_allow_html=True)
+
+            srch = st.text_input(
+                "", placeholder="🔍  Cari hotel / tamu / booking ID...",
+                label_visibility="collapsed", key="srch",
+            )
+            if srch:
+                df = df[df.apply(
+                    lambda r: r.astype(str).str.contains(srch, case=False, na=False).any(),
+                    axis=1,
+                )]
+
+            display_df = df.iloc[::-1].reset_index(drop=True).copy()
+            if "Booking ID" in display_df.columns:
+                display_df["Booking ID"] = display_df["Booking ID"].astype(str)
+
+            col_cfg = {}
+            if "Booking ID"      in display_df.columns:
+                col_cfg["Booking ID"]      = st.column_config.TextColumn("Booking ID", help="Nomor booking")
+            if "Total (Rp)"      in display_df.columns:
+                col_cfg["Total (Rp)"]      = st.column_config.NumberColumn("Total (Rp)", format="Rp %d")
+            if "Room x Night"    in display_df.columns:
+                col_cfg["Room x Night"]    = st.column_config.TextColumn("Room × Night")
+            if "Timestamp Input" in display_df.columns:
+                col_cfg["Timestamp Input"] = st.column_config.TextColumn("Timestamp")
+
+            st.dataframe(
+                display_df,
+                use_container_width=True,
+                height=360,
+                column_config=col_cfg,
+                hide_index=True,
+            )
+
+    except Exception as e:
+        notice("err", str(e))
+        notice("info", "Konfigurasi Google Sheets di tab Pengaturan.")
+
+
+# =============================================================================
+#  TAB — RIWAYAT
+# =============================================================================
+elif st.session_state["tab"] == "log":
+
+    try:
+        with st.spinner("Memuat..."):
+            rows = load_rows()
+
+        if not rows:
+            notice("info", "Belum ada data transaksi.")
+        else:
+            import pandas as pd
+
+            df_log = pd.DataFrame(rows)
+
+            def _parse_ts(v):
+                try:    return pd.to_datetime(str(v), dayfirst=True)
+                except: return pd.NaT
+
+            df_log["_ts"] = df_log["Timestamp Input"].apply(_parse_ts)
+            df_log = df_log.sort_values("_ts", ascending=False).reset_index(drop=True)
+
+            total = len(df_log)
+            st.markdown(
+                f'<div class="sec-lbl">Riwayat — {total} transaksi</div>',
+                unsafe_allow_html=True,
+            )
+
+            display_log = df_log[["Timestamp Input", "Booking ID", "Issuer"]].copy()
+            display_log["Booking ID"] = display_log["Booking ID"].astype(str)
+
+            st.dataframe(
+                display_log,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Timestamp Input": st.column_config.TextColumn("Timestamp", width="medium"),
+                    "Booking ID":      st.column_config.TextColumn("Booking ID", width="medium"),
+                    "Issuer":          st.column_config.TextColumn("Issuer", width="medium"),
+                },
+            )
+
+    except Exception as e:
+        notice("err", str(e))
+
+
+# =============================================================================
+#  TAB — PENGATURAN
+# =============================================================================
+elif st.session_state["tab"] == "settings":
+
+    st.markdown('<div class="sec-lbl">OpenAI API Key</div>', unsafe_allow_html=True)
+    oai_ok = False
+    try:
+        k = st.secrets["openai"]["api_key"]
+        if k and len(k) > 20 and "GANTI" not in k and "PASTE" not in k:
+            oai_ok = True
+    except Exception:
+        pass
+
+    if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
+        _res_list = []
+        _oai_live = bool(oai_key())
+        _res_list.append((_oai_live, "OpenAI", "Terhubung" if _oai_live else "Key tidak ditemukan"))
+        _sh_check = False
+        try:
+            s2  = st.secrets["google_sheets"]["sheet_id"]
+            em2 = st.secrets["gcp_service_account"]["client_email"]
+            if s2 and em2 and "GANTI" not in s2:
+                _sh_check = True
+        except Exception:
+            pass
+        if _sh_check:
+            try:
+                ws()
+                _res_list.append((True, "Google Sheets", "Terhubung"))
+            except Exception as e:
+                _res_list.append((False, "Google Sheets", str(e)[:60]))
+        else:
+            _res_list.append((False, "Google Sheets", "Belum dikonfigurasi"))
+        _res_list.append((_PDF_OK, "PDF Upload",
+            "pypdfium2 aktif" if _PDF_OK else "pypdfium2 tidak terinstall"))
+
+        _items = ""
+        for _ok2, _svc, _msg in _res_list:
+            _clr = "#22C55E" if _ok2 else "#EF4444"
+            _sym = "✓" if _ok2 else "✕"
+            _items += (
+                f'<div class="conn-item">'
+                f'<div class="cdot" style="background:{_clr}"></div>'
+                f'<span style="font-weight:600;color:{_clr}">{_sym} {_svc}</span>'
+                f'&ensp;<span style="color:#6B7280">{_msg}</span></div>'
+            )
+        st.markdown(f'<div class="conn-list">{_items}</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+    st.markdown('<div class="sec-lbl">Status Sistem</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+<style>
+.st-row{display:flex;align-items:center;gap:10px;background:#fff;
+    border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.st-icon{width:32px;height:32px;border-radius:8px;display:flex;
+    align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.si-g{background:#F0FDF4} .si-r{background:#FFF1F2}
+.si-b{background:#EFF6FF} .si-y{background:#FFFBEB}
+.st-body{flex:1;min-width:0}
+.st-title{font-size:13px;font-weight:600;color:#111;line-height:1}
+.st-sub{font-size:11px;color:#9CA3AF;margin-top:2px}
+.st-badge{display:inline-flex;align-items:center;font-size:11px;
+    font-weight:600;padding:3px 10px;border-radius:20px;flex-shrink:0;white-space:nowrap}
+.bg{background:#F0FDF4;color:#166534;border:1px solid #86EFAC}
+.br{background:#FFF1F2;color:#9F1239;border:1px solid #FECDD3}
+.by{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+.conn-list{background:#fff;border:1px solid #E5E7EB;border-radius:10px;
+    overflow:hidden;margin-bottom:12px}
+.conn-item{display:flex;align-items:center;gap:8px;padding:9px 14px;
+    border-bottom:1px solid #F9FAFB;font-size:12px}
+.conn-item:last-child{border-bottom:none}
+.cdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.about-box{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px 16px}
+.about-ttl{font-size:13px;font-weight:700;color:#111;margin-bottom:10px}
+.about-r{display:flex;gap:8px;margin-bottom:5px}
+.about-k{font-size:11px;font-weight:600;color:#374151;width:65px;flex-shrink:0}
+.about-v{font-size:11px;color:#6B7280}
+</style>
+""", unsafe_allow_html=True)
+
+    if oai_ok:
+        st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
+<div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
+<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
+<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
+<div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
+<div class="st-sub">API key belum dikonfigurasi</div></div>
+<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+        # FIX BUG #2: dict-style, bukan .oai_key attribute
+        nk = st.text_input("OpenAI API Key",
+            value=st.session_state.get("oai_key", ""),
+            type="password", placeholder="sk-proj-...", label_visibility="collapsed")
+        if nk != st.session_state.get("oai_key", ""):
+            st.session_state["oai_key"] = nk
+            st.rerun()
+        if st.session_state.get("oai_key", ""):
+            notice("ok", "Key aktif untuk sesi ini.")
+
+    sh_ok = False
+    try:
+        s  = st.secrets["google_sheets"]["sheet_id"]
+        em = st.secrets["gcp_service_account"]["client_email"]
+        if s and em and "GANTI" not in s:
+            sh_ok = True
+    except Exception:
+        pass
+
+    if sh_ok:
+        st.markdown("""<div class="st-row"><div class="st-icon si-g">📊</div>
+<div class="st-body"><div class="st-title">Google Sheets</div>
+<div class="st-sub">Terhubung via secrets.toml</div></div>
+<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""<div class="st-row"><div class="st-icon si-y">📊</div>
+<div class="st-body"><div class="st-title">Google Sheets</div>
+<div class="st-sub">Belum dikonfigurasi</div></div>
+<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+        notice("warn", "Isi <code>.streamlit/secrets.toml</code> sesuai README.")
+        # FIX BUG #3: dict-style, bukan .sheet_id attribute
+        ns = st.text_input("Sheet ID",
+            value=st.session_state.get("sheet_id", ""),
+            label_visibility="collapsed", placeholder="1nvgMCmo...")
+        if ns != st.session_state.get("sheet_id", ""):
+            st.session_state["sheet_id"] = ns
+
+    if _PDF_OK:
+        st.markdown("""<div class="st-row"><div class="st-icon si-b">📄</div>
+<div class="st-body"><div class="st-title">PDF Upload</div>
+<div class="st-sub">pypdfium2 terinstall</div></div>
+<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""<div class="st-row"><div class="st-icon si-r">📄</div>
+<div class="st-body"><div class="st-title">PDF Upload</div>
+<div class="st-sub">pypdfium2 tidak terinstall</div></div>
+<span class="st-badge br">✕ Nonaktif</span></div>""", unsafe_allow_html=True)
+        notice("err", "Jalankan: <code>pip install pypdfium2==4.30.0</code>")
+
+    st.markdown('<div class="sec-lbl" style="margin-top:14px">Tentang Aplikasi</div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+<div class="about-box">
+  <div class="about-ttl">AI CC Reporting System v5</div>
+  <div class="about-r"><div class="about-k">Input</div>
+    <div class="about-v">PDF · JPG · PNG · Bulk upload</div></div>
+  <div class="about-r"><div class="about-k">Output</div>
+    <div class="about-v">Google Sheets — 15 kolom</div></div>
+  <div class="about-r"><div class="about-k">Dokumen</div>
+    <div class="about-v">Expedia TAAP · Mitra Tours · Invoice hotel</div></div>
+  <div class="about-r"><div class="about-k">Model AI</div>
+    <div class="about-v">GPT-4o (OpenAI)</div></div>
+</div>""", unsafe_allow_html=True)
+
+
+# =============================================================================
+#  FOOTER
+# =============================================================================
+st.markdown("""
+<div style="
+    margin-top:32px;
+    padding:16px 0 8px;
+    border-top:1px solid #E5E7EB;
+    text-align:center;
+    font-size:11px;
+    color:#9CA3AF;
+    line-height:1.8;
+">
+  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v5<br>
+  <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
+     style="color:#0A66C2;font-weight:600;text-decoration:none;
+            display:inline-flex;align-items:center;gap:4px;margin-top:4px">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="#0A66C2">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
+               -1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046
+               c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z
+               M5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1
+               2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/>
+    </svg>
+    Rifyal Tumber
+  </a>
+</div>
+""", unsafe_allow_html=True)
