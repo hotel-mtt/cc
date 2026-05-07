@@ -477,13 +477,15 @@ def card_list_close():
 # =============================================================================
 # FIX BUG #2 & #3: semua key pakai dict-style konsisten
 _DEF = {
-    "tab":              "input",
-    "bulk_results":     [],
-    "bulk_saved_count": 0,
-    "oai_key":          "",
-    "sheet_id":         "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
-    "last_issuer":      "",
-    "last_pic":         "",
+    "tab":                  "input",
+    "bulk_results":         [],
+    "bulk_saved_count":     0,
+    "oai_key":              "",
+    "sheet_id":             "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
+    "last_issuer":          "",
+    "last_pic":             "",
+    "last_no_bc":           "",
+    "last_nama_kegiatan":   "",
 }
 
 for _k, _v in _DEF.items():
@@ -608,6 +610,20 @@ if st.session_state["tab"] == "input":
         key="bulk_pic",
     )
 
+    _c3, _c4 = st.columns(2)
+    bulk_no_bc = _c3.text_input(
+        "No. BC",
+        value=st.session_state.get("last_no_bc", ""),
+        placeholder="Nomor BC (opsional)",
+        key="bulk_no_bc",
+    )
+    bulk_nama_kegiatan = _c4.text_input(
+        "Nama Kegiatan",
+        value=st.session_state.get("last_nama_kegiatan", ""),
+        placeholder="Nama kegiatan (opsional)",
+        key="bulk_nama_kegiatan",
+    )
+
     # ── Logo Expedia + file uploader ─────────────────────────────────────────
     st.markdown("""
 <div class="expedia-banner">
@@ -667,8 +683,10 @@ if st.session_state["tab"] == "input":
         elif not bulk_pic.strip():
             notice("err", "Isi PIC terlebih dahulu.")
         else:
-            st.session_state["last_issuer"] = bulk_issuer
-            st.session_state["last_pic"]    = bulk_pic
+            st.session_state["last_issuer"]        = bulk_issuer
+            st.session_state["last_pic"]           = bulk_pic
+            st.session_state["last_no_bc"]         = bulk_no_bc
+            st.session_state["last_nama_kegiatan"] = bulk_nama_kegiatan
             reset_bulk()
 
             try:
@@ -752,8 +770,8 @@ if st.session_state["tab"] == "input":
                             "card":            _parsed.get("card",          ""),
                             "issuer":          bulk_issuer,
                             "pic":             bulk_pic,
-                            "no_bc":           _parsed.get("no_bc",        ""),
-                            "nama_kegiatan":   _parsed.get("nama_kegiatan",""),
+                            "no_bc":           bulk_no_bc.strip() or _parsed.get("no_bc", ""),
+                            "nama_kegiatan":   bulk_nama_kegiatan.strip() or _parsed.get("nama_kegiatan", ""),
                             "notes":           _parsed.get("notes",        ""),
                         }
                         save_row(_row)
