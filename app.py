@@ -112,11 +112,6 @@ label[data-testid="stWidgetLabel"]{
 .stButton>button[kind="secondary"]:hover{
     background:#F9FAFB !important;border-color:#D1D5DB !important}
 
-[data-testid="stFileUploader"]>div:first-child{
-    border:1.5px dashed #D1D5DB !important;border-radius:11px !important;
-    background:#FAFAFA !important}
-[data-testid="stFileUploader"]>div:first-child:hover{
-    border-color:#111 !important;background:#F3F4F6 !important}
 .stExpander{border:1px solid #E5E7EB !important;
     border-radius:10px !important;margin-bottom:10px !important}
 details>summary{font-size:12px !important;color:#6B7280 !important}
@@ -213,10 +208,23 @@ details>summary{font-size:12px !important;color:#6B7280 !important}
 .expedia-banner .taap-pill{
     font-size:10px;font-weight:700;letter-spacing:.8px;color:#003580;
     background:#EEF4FF;border:1px solid #BFDBFE;padding:3px 9px;border-radius:20px}
-[data-testid="stFileUploader"]>div:first-child{
-    border-radius:0 0 11px 11px !important;
+
+/* ── File uploader: sambung ke bawah banner ── */
+[data-testid="stFileUploader"] {margin-top:0 !important}
+[data-testid="stFileUploader"] > div:first-child {
+    border:1.5px dashed #D1D5DB !important;
     border-top:none !important;
-    margin-top:0 !important}
+    border-radius:0 0 11px 11px !important;
+    background:#FAFAFA !important;
+    margin-top:0 !important;
+    padding-top:14px !important}
+[data-testid="stFileUploader"] > div:first-child:hover{
+    border-color:#111 !important;background:#F3F4F6 !important}
+
+/* ── Sembunyikan label uploader (cegah double text) ── */
+[data-testid="stFileUploader"] label {
+    display: none !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -510,47 +518,65 @@ st.markdown("""
 
 st.markdown("""
 <style>
-div[data-testid="stRadio"] > label { display:none }
+/* ── Nav radio: sembunyikan label utama ── */
+div[data-testid="stRadio"] > label { display:none !important }
+
+/* ── Grid layout ── */
 div[data-testid="stRadio"] > div[role="radiogroup"] {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 6px !important;
     margin-bottom: 14px !important;
 }
-div[data-testid="stRadio"] label[data-baseweb="radio"] {
+
+/* ── Setiap opsi radio jadi tombol pill ── */
+div[data-testid="stRadio"] div[role="radiogroup"] > label {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    height: 42px !important;
+    height: 40px !important;
     border-radius: 10px !important;
     border: 1.5px solid #E5E7EB !important;
     background: #fff !important;
     cursor: pointer !important;
-    transition: all .15s !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
+    transition: all .15s !important;
 }
-div[data-testid="stRadio"] label[data-baseweb="radio"]:hover {
+div[data-testid="stRadio"] div[role="radiogroup"] > label:hover {
     background: #F9FAFB !important;
     border-color: #D1D5DB !important;
 }
-div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] {
+
+/* ── Opsi yang dipilih: hitam ── */
+div[data-testid="stRadio"] div[role="radiogroup"] > label[data-baseweb="radio"][aria-checked="true"],
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) {
     background: #111 !important;
     border-color: #111 !important;
-    color: #fff !important;
 }
-div[data-testid="stRadio"] label[data-baseweb="radio"] span:last-child {
+
+/* ── Sembunyikan dot radio asli ── */
+div[data-testid="stRadio"] div[role="radiogroup"] > label > div:first-child,
+div[data-testid="stRadio"] div[role="radiogroup"] > label input[type="radio"],
+div[data-testid="stRadio"] div[role="radiogroup"] > label > div[data-baseweb="radio"] {
+    display: none !important;
+}
+
+/* ── Teks label ── */
+div[data-testid="stRadio"] div[role="radiogroup"] > label > div:last-child,
+div[data-testid="stRadio"] div[role="radiogroup"] > label span {
     font-size: 13px !important;
     font-weight: 600 !important;
     color: #374151 !important;
     font-family: 'Inter', sans-serif !important;
+    pointer-events: none !important;
 }
-div[data-testid="stRadio"] label[data-baseweb="radio"][aria-checked="true"] span:last-child {
+
+/* ── Teks saat dipilih: putih ── */
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) span,
+div[data-testid="stRadio"] div[role="radiogroup"] > label:has(input:checked) > div:last-child {
     color: #fff !important;
-}
-div[data-testid="stRadio"] label[data-baseweb="radio"] span:first-child {
-    display: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -641,7 +667,7 @@ if st.session_state["tab"] == "input":
         "Drag & drop semua file — JPG · PNG · PDF",
         type=_ftypes,
         accept_multiple_files=True,
-        label_visibility="visible",
+        label_visibility="collapsed",
         key="bulk_uf",
     )
 
