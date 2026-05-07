@@ -547,30 +547,25 @@ def card_list_close():
 # =============================================================================
 #  SESSION STATE
 # =============================================================================
-_DEF = {
-    "tab":      "input",
-    "step":     1,
-    "parsed":   {},
-    "raw":      "",
-    "mode":     "photo",
-    "saved":    None,
-    "imgs":     [],
-    "pdfraw":   b"",
-    "oai_key":  "",
+
+DEFAULT_SESSION = {
+    "tab": "input",
+    "bulk_results": [],
+    "bulk_saved_count": 0,
+    "oai_key": "",
     "sheet_id": "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
+    "last_issuer": "",
+    "last_pic": "",
 }
 
-for k, v in _DEF.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+for key, value in DEFAULT_SESSION.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 
-def reset():
-    for k in list(st.session_state.keys()):
-        if k != "tab":
-            del st.session_state[k]
-    for k, v in _DEF.items():
-        st.session_state[k] = v
+def reset_bulk():
+    st.session_state["bulk_results"] = []
+    st.session_state["bulk_saved_count"] = 0
 
 
 # =============================================================================
@@ -888,12 +883,12 @@ if st.session_state.tab == "input":
                 _all_res.append(_res)
 
             _prog_slot.empty()
-            st.session_state.bulk_results     = _all_res
-            st.session_state.bulk_saved_count = _saved_run
+            st.session_state.get("bulk_results", [])     = _all_res
+            st.session_state["bulk_saved_count"] = _saved_run
             st.rerun()
 
     # ── Hasil ─────────────────────────────────────────────────────────────────
-    _results = st.session_state.bulk_results
+    _results = st.session_state.get("bulk_results", [])
 
     if _results:
         _n_ok   = sum(1 for r in _results if r["status"] == "success")
