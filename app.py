@@ -408,7 +408,12 @@ def ai_parse(text: str = "", images: list = None) -> tuple:
         "text": text if text else "Extract all structured data from this document.",
     })
 
-    resp = openai.OpenAI(api_key=key).chat.completions.create(
+    # FIX: "Client.__init__() got an unexpected keyword argument 'proxies'"
+    # httpx >= 0.28.0 menghapus parameter 'proxies'. Kita inject httpx client
+    # tanpa proxies agar kompatibel dengan semua versi httpx.
+    import httpx
+    _http_client = httpx.Client()
+    resp = openai.OpenAI(api_key=key, http_client=_http_client).chat.completions.create(
         model="gpt-4o",
         messages=[
             {"role": "system", "content": _SYS},
