@@ -24,7 +24,7 @@ st.set_page_config(
 )
 
 # ─── CSS ─────────────────────────────────────────────────────────────────────
-# Palette: #1f1f1f · #fddb32 · #ededed · #e8f0fe · #6398c8 · #616161 · #ffc744
+# Palette: #191d3a · #fddb32 · #ededed · #e8f0fe · #6398c8 · #616161 · #ffc744
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -44,7 +44,7 @@ html,body,[data-testid="stAppViewContainer"],
 
 /* ── app header ── */
 .app-header{
-    background:#1f1f1f;border-radius:20px;
+    background:#191d3a;border-radius:20px;
     padding:16px 18px;
     display:flex;align-items:center;gap:13px;margin-bottom:12px}
 .ah-icon{
@@ -81,10 +81,10 @@ html,body,[data-testid="stAppViewContainer"],
 .nb-wrap button:hover{
     border-color:#6398c8 !important;
     background:#e8f0fe !important;
-    color:#1f1f1f !important}
+    color:#191d3a !important}
 .nb-wrap button[kind="primary"]{
-    background:#1f1f1f !important;
-    border-color:#1f1f1f !important;
+    background:#191d3a !important;
+    border-color:#191d3a !important;
     color:#fddb32 !important;
     box-shadow:0 3px 10px rgba(0,0,0,.22) !important}
 .nb-wrap button[kind="primary"]:hover{
@@ -102,60 +102,21 @@ html,body,[data-testid="stAppViewContainer"],
 label[data-testid="stWidgetLabel"] p,
 label[data-testid="stWidgetLabel"]{
     font-size:12px !important;font-weight:600 !important;
-    color:#1f1f1f !important;text-transform:none !important;
-    letter-spacing:0 !important;margin-bottom:6px !important;
-    display:block !important;line-height:1.4 !important}
+    color:#191d3a !important;text-transform:none !important;
+    letter-spacing:0 !important;margin-bottom:4px !important}
 
-/* ── inputs — unified height ── */
+/* ── inputs ── */
 .stTextInput input,.stNumberInput input,.stTextArea textarea{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:15px !important;
-    color:#1f1f1f !important;padding:0 14px !important;
-    height:50px !important;line-height:50px !important;
-    width:100% !important;display:block !important}
+    color:#191d3a !important;padding:12px 14px !important;height:50px !important}
 .stTextInput input:focus,.stTextArea textarea:focus,.stNumberInput input:focus{
     border-color:#6398c8 !important;background:#fff !important;
     box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}
 [data-testid="stSelectbox"]>div>div{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:15px !important;
-    color:#1f1f1f !important;height:50px !important;
-    min-height:50px !important;max-height:50px !important;
-    display:flex !important;align-items:center !important}
-
-/* ── form-row wrapper ── */
-.form-row{width:100% !important;margin-bottom:0}
-
-/* ── column layout: airtight equal split ── */
-[data-testid="stHorizontalBlock"]{
-    gap:0 !important;
-    align-items:flex-start !important;
-    flex-wrap:nowrap !important;
-    width:100% !important;
-    margin:0 !important;
-    padding:0 !important}
-[data-testid="stHorizontalBlock"]>[data-testid="column"]{
-    flex:1 1 0% !important;
-    width:50% !important;
-    min-width:0 !important;
-    max-width:calc(50% - 6px) !important;
-    overflow:visible !important;
-    padding:0 !important;
-    box-sizing:border-box !important}
-[data-testid="stHorizontalBlock"]>[data-testid="column"]:first-child{
-    margin-right:12px !important}
-/* Force all inner widgets to fill column width */
-[data-testid="stHorizontalBlock"] .stTextInput,
-[data-testid="stHorizontalBlock"] [data-testid="stSelectbox"],
-[data-testid="stHorizontalBlock"] .element-container,
-[data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"]{
-    width:100% !important;min-width:0 !important}
-[data-testid="stHorizontalBlock"] .stTextInput input{
-    width:100% !important;box-sizing:border-box !important}
-[data-testid="stHorizontalBlock"] [data-testid="stSelectbox"]>div{
-    width:100% !important}
-[data-testid="stHorizontalBlock"] [data-testid="stSelectbox"]>div>div{
-    width:100% !important;box-sizing:border-box !important}
+    color:#191d3a !important;min-height:50px !important}
 
 /* ── global action button (non-nav) ── */
 .stButton>button{
@@ -163,7 +124,7 @@ label[data-testid="stWidgetLabel"]{
     height:50px !important;font-size:14px !important;
     font-weight:700 !important;border:none !important}
 .stButton>button[kind="primary"]{
-    background:#ffc744 !important;color:#1f1f1f !important;
+    background:#ffc744 !important;color:#191d3a !important;
     box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
 .stButton>button[kind="primary"]:hover{
     background:#fddb32 !important;
@@ -172,14 +133,14 @@ label[data-testid="stWidgetLabel"]{
     background:#fff !important;border:1.5px solid #ddd !important;
     color:#616161 !important}
 .stButton>button[kind="secondary"]:hover{
-    border-color:#6398c8 !important;background:#e8f0fe !important;color:#1f1f1f !important}
+    border-color:#6398c8 !important;background:#e8f0fe !important;color:#191d3a !important}
 
 /* ── bulk action buttons: override height for proses + hapus row ── */
 .bb-wrap div[data-testid="stHorizontalBlock"] button{
     height:52px !important;border-radius:13px !important;
     font-size:14px !important;font-weight:700 !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]{
-    background:#ffc744 !important;color:#1f1f1f !important;border:none !important;
+    background:#ffc744 !important;color:#191d3a !important;border:none !important;
     box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]:hover{
     background:#fddb32 !important}
@@ -229,23 +190,12 @@ label[data-testid="stWidgetLabel"]{
     margin-top:0 !important;padding:24px 20px !important;min-height:130px !important}
 [data-testid="stFileUploader"]>div:first-child:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important}
-/* hide every possible label surface — belt + suspenders */
-[data-testid="stFileUploader"] label,
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"],
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] p,
-[data-testid="stFileUploaderDropInstructions"] ~ label,
-.stFileUploader label{
-    display:none !important;
-    visibility:hidden !important;
-    height:0 !important;
-    overflow:hidden !important;
-    margin:0 !important;
-    padding:0 !important}
+[data-testid="stFileUploader"] label{display:none !important}
 
 /* ── stat cards ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .stat-card{background:#fff;border:1.5px solid #ddd;border-radius:18px;padding:16px 15px}
-.stat-val{font-size:22px;font-weight:800;color:#1f1f1f;line-height:1.1}
+.stat-val{font-size:22px;font-weight:800;color:#191d3a;line-height:1.1}
 .stat-lbl{font-size:11px;color:#9e9e9e;margin-top:5px;font-weight:500}
 
 /* ── progress bar ── */
@@ -263,7 +213,7 @@ label[data-testid="stWidgetLabel"]{
 .bulk-stats{
     display:grid;grid-template-columns:repeat(4,1fr);
     gap:8px;text-align:center;margin-bottom:14px}
-.bs-val{font-size:24px;font-weight:800;color:#1f1f1f;line-height:1}
+.bs-val{font-size:24px;font-weight:800;color:#191d3a;line-height:1}
 .bs-lbl{font-size:10px;color:#9e9e9e;margin-top:4px;font-weight:500}
 .bs-g{color:#1e9e5a} .bs-r{color:#e53935} .bs-y{color:#e68900}
 .bulk-bar{background:#e8e8e8;border-radius:99px;height:5px;overflow:hidden}
@@ -285,7 +235,7 @@ label[data-testid="stWidgetLabel"]{
 .ic-ok  {background:#dcfce7} .ic-err{background:#ffe4e6}
 .ic-skip{background:#fef9c3} .ic-n  {background:#ededed}
 .fi-name{
-    font-size:13px;font-weight:600;color:#1f1f1f;flex:1;
+    font-size:13px;font-weight:600;color:#191d3a;flex:1;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fi-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
 .fb-ok  {background:#dcfce7;color:#166534}
@@ -299,7 +249,7 @@ label[data-testid="stWidgetLabel"]{
     font-size:10px;font-weight:700;color:#9e9e9e;min-width:52px;
     flex-shrink:0;text-transform:uppercase;letter-spacing:.3px}
 .fi-v  {
-    font-size:12px;font-weight:500;color:#1f1f1f;
+    font-size:12px;font-weight:500;color:#191d3a;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── settings status rows ── */
@@ -313,7 +263,7 @@ label[data-testid="stWidgetLabel"]{
 .si-g{background:#f0fdf4} .si-r{background:#fff1f2}
 .si-b{background:#e8f0fe} .si-y{background:#fffde7}
 .st-body{flex:1;min-width:0}
-.st-title{font-size:14px;font-weight:700;color:#1f1f1f;line-height:1}
+.st-title{font-size:14px;font-weight:700;color:#191d3a;line-height:1}
 .st-sub  {font-size:12px;color:#9e9e9e;margin-top:3px}
 .st-badge{
     display:inline-flex;align-items:center;font-size:11px;
@@ -330,9 +280,9 @@ label[data-testid="stWidgetLabel"]{
 .conn-item:last-child{border-bottom:none}
 .cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .about-box{background:#fff;border:1.5px solid #ddd;border-radius:18px;padding:16px 18px}
-.about-ttl{font-size:15px;font-weight:800;color:#1f1f1f;margin-bottom:13px}
+.about-ttl{font-size:15px;font-weight:800;color:#191d3a;margin-bottom:13px}
 .about-r{display:flex;gap:10px;margin-bottom:7px}
-.about-k{font-size:12px;font-weight:700;color:#1f1f1f;width:70px;flex-shrink:0}
+.about-k{font-size:12px;font-weight:700;color:#191d3a;width:70px;flex-shrink:0}
 .about-v{font-size:12px;color:#616161;line-height:1.5}
 
 /* ── dataframe ── */
@@ -346,7 +296,7 @@ label[data-testid="stWidgetLabel"]{
     text-transform:uppercase !important;letter-spacing:.5px !important;
     border-bottom:1.5px solid #ddd !important;padding:11px 13px !important}
 [data-testid="stDataFrame"] td{
-    font-size:13px !important;color:#1f1f1f !important;
+    font-size:13px !important;color:#191d3a !important;
     padding:10px 13px !important;border-bottom:1px solid #ededed !important}
 [data-testid="stDataFrame"] tr:hover td{background:#f5f8fc !important}
 
@@ -358,7 +308,7 @@ label[data-testid="stWidgetLabel"]{
     font-size:11px !important;font-weight:700 !important;
     color:#9e9e9e !important;text-transform:uppercase !important;letter-spacing:.6px !important}
 [data-testid="stMetricValue"]{
-    font-size:15px !important;font-weight:800 !important;color:#1f1f1f !important}
+    font-size:15px !important;font-weight:800 !important;color:#191d3a !important}
 
 /* ── misc ── */
 .stSpinner>div{border-top-color:#6398c8 !important}
@@ -633,32 +583,22 @@ if st.session_state["tab"] == "input":
     _li = st.session_state.get("last_issuer","")
     _bi = _ISSUERS.index(_li) if _li in _ISSUERS else 0
 
-    # Row 1: Issuer + PIC — gunakan [1,1] dengan gap seimbang
-    st.markdown('<div class="form-row">', unsafe_allow_html=True)
-    _ca, _cb = st.columns([1, 1], gap="medium")
-    with _ca:
-        bulk_issuer = st.selectbox(
-            "Issuer *", options=_ISSUERS, index=_bi,
-            format_func=lambda x: "— Pilih Issuer —" if x == "" else x,
-            key="bulk_issuer")
-    with _cb:
-        bulk_pic = st.text_input(
-            "PIC *", value=st.session_state.get("last_pic",""),
-            placeholder="Nama penanggung jawab", key="bulk_pic")
-    st.markdown('</div>', unsafe_allow_html=True)
+    _ca, _cb = st.columns(2)
+    bulk_issuer = _ca.selectbox(
+        "Issuer *", options=_ISSUERS, index=_bi,
+        format_func=lambda x: "— Pilih Issuer —" if x == "" else x,
+        key="bulk_issuer")
+    bulk_pic = _cb.text_input(
+        "PIC *", value=st.session_state.get("last_pic",""),
+        placeholder="Nama penanggung jawab", key="bulk_pic")
 
-    # Row 2: No.BC + Nama Kegiatan
-    st.markdown('<div class="form-row">', unsafe_allow_html=True)
-    _cc, _cd = st.columns([1, 1], gap="medium")
-    with _cc:
-        bulk_no_bc = st.text_input(
-            "No. BC", value=st.session_state.get("last_no_bc",""),
-            placeholder="Nomor BC (opsional)", key="bulk_no_bc")
-    with _cd:
-        bulk_nama_kegiatan = st.text_input(
-            "Nama Kegiatan", value=st.session_state.get("last_nama_kegiatan",""),
-            placeholder="Nama kegiatan (opsional)", key="bulk_nama_kegiatan")
-    st.markdown('</div>', unsafe_allow_html=True)
+    _cc, _cd = st.columns(2)
+    bulk_no_bc = _cc.text_input(
+        "No. BC", value=st.session_state.get("last_no_bc",""),
+        placeholder="Nomor BC (opsional)", key="bulk_no_bc")
+    bulk_nama_kegiatan = _cd.text_input(
+        "Nama Kegiatan", value=st.session_state.get("last_nama_kegiatan",""),
+        placeholder="Nama kegiatan (opsional)", key="bulk_nama_kegiatan")
 
     # Expedia banner + uploader ────────────────────────────────────────────────
     st.markdown("""
@@ -671,8 +611,8 @@ if st.session_state["tab"] == "input":
 
     _ftypes = ["jpg","jpeg","png","webp"] + (["pdf"] if _PDF_OK else [])
     bulk_files = st.file_uploader(
-        " ", type=_ftypes, accept_multiple_files=True,
-        label_visibility="hidden", key="bulk_uf")
+        "Upload", type=_ftypes, accept_multiple_files=True,
+        label_visibility="collapsed", key="bulk_uf")
 
     _n = len(bulk_files) if bulk_files else 0
     if _n:
@@ -932,8 +872,8 @@ elif st.session_state["tab"] == "dashboard":
                         _h += (
                             f'<div style="padding:12px 0;border-bottom:1.5px solid #ededed">'
                             f'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
-                            f'<span style="font-size:14px;font-weight:600;color:#1f1f1f">{_row["label"]}</span>'
-                            f'<span style="font-size:14px;font-weight:700;color:#1f1f1f">{_a}</span></div>'
+                            f'<span style="font-size:14px;font-weight:600;color:#191d3a">{_row["label"]}</span>'
+                            f'<span style="font-size:14px;font-weight:700;color:#191d3a">{_a}</span></div>'
                             f'<div style="display:flex;align-items:center;gap:10px">'
                             f'<div style="flex:1;background:#e8e8e8;border-radius:4px;height:4px">'
                             f'<div style="width:{int(_p)}%;background:#6398c8;border-radius:4px;height:4px"></div></div>'
