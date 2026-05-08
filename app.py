@@ -24,12 +24,11 @@ st.set_page_config(
 )
 
 # ─── CSS ─────────────────────────────────────────────────────────────────────
-# Palette: #191d3a · #fddb32 · #ededed · #e8f0fe · #6398c8 · #616161 · #ffc744
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* reset */
+/* ── reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,[data-testid="stAppViewContainer"],
 [data-testid="stAppViewBlockContainer"],.main{
@@ -44,59 +43,43 @@ html,body,[data-testid="stAppViewContainer"],
 
 /* ── app header ── */
 .app-header{
-    background:#191d3a;border-radius:20px;
-    padding:16px 18px;
+    background:#191d3a;border-radius:20px;padding:16px 18px;
     display:flex;align-items:center;gap:13px;margin-bottom:12px}
 .ah-icon{
     width:46px;height:46px;border-radius:13px;background:#fddb32;
     display:flex;align-items:center;justify-content:center;
     font-size:22px;flex-shrink:0}
 .ah-title{font-size:18px;font-weight:800;color:#fff;line-height:1.2}
-.ah-sub  {font-size:12px;color:#9e9e9e;margin-top:1px}
+.ah-sub{font-size:12px;color:#9e9e9e;margin-top:1px}
 .ah-live{
     margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.5px;
     background:#0f2310;color:#4ade80;border:1px solid #1e4620;
     padding:5px 11px;border-radius:20px;
     display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0}
 .ah-live::before{
-    content:'';width:6px;height:6px;border-radius:50%;background:#4ade80;display:block}
+    content:'';width:6px;height:6px;border-radius:50%;
+    background:#4ade80;display:block}
 
-/* ── nav buttons ──
-   Key: scope ALL button overrides under .nb-wrap so they don't bleed
-   into action buttons below ── */
+/* ── nav ── */
 .nb-wrap div[data-testid="stHorizontalBlock"]{gap:8px !important}
 .nb-wrap button{
-    height:76px !important;
-    border-radius:16px !important;
-    border:1.5px solid #d8d8d8 !important;
-    background:#fff !important;
-    color:#616161 !important;
-    font-size:11px !important;
-    font-weight:600 !important;
-    padding:0 4px !important;
-    white-space:pre-line !important;
-    line-height:1.7 !important;
-    box-shadow:none !important;
-    width:100% !important}
+    height:76px !important;border-radius:16px !important;
+    border:1.5px solid #d8d8d8 !important;background:#fff !important;
+    color:#616161 !important;font-size:11px !important;font-weight:600 !important;
+    padding:0 4px !important;white-space:pre-line !important;
+    line-height:1.7 !important;box-shadow:none !important;width:100% !important}
 .nb-wrap button:hover{
-    border-color:#6398c8 !important;
-    background:#e8f0fe !important;
-    color:#191d3a !important}
+    border-color:#6398c8 !important;background:#e8f0fe !important;color:#191d3a !important}
 .nb-wrap button[kind="primary"]{
-    background:#191d3a !important;
-    border-color:#191d3a !important;
-    color:#fddb32 !important;
-    box-shadow:0 3px 10px rgba(0,0,0,.22) !important}
-.nb-wrap button[kind="primary"]:hover{
-    background:#333 !important;border-color:#333 !important}
+    background:#191d3a !important;border-color:#191d3a !important;
+    color:#fddb32 !important;box-shadow:0 3px 10px rgba(0,0,0,.22) !important}
+.nb-wrap button[kind="primary"]:hover{background:#333 !important;border-color:#333 !important}
 
 /* ── section label ── */
 .sec-lbl{
     font-size:11px;font-weight:700;text-transform:uppercase;
-    letter-spacing:.9px;color:#9e9e9e;
-    margin:16px 0 10px;
+    letter-spacing:.9px;color:#9e9e9e;margin:16px 0 10px;
     padding-bottom:8px;border-bottom:1.5px solid #ddd}
-.sec-lbl:first-child{margin-top:4px}
 
 /* ── form labels ── */
 label[data-testid="stWidgetLabel"] p,
@@ -118,7 +101,13 @@ label[data-testid="stWidgetLabel"]{
     background:#fff !important;font-size:15px !important;
     color:#191d3a !important;min-height:50px !important}
 
-/* ── global action button (non-nav) ── */
+/* ── column layout — equal split, no clipping ── */
+[data-testid="stHorizontalBlock"]{
+    gap:12px !important;align-items:flex-start !important;flex-wrap:nowrap !important}
+[data-testid="stHorizontalBlock"]>[data-testid="column"]{
+    min-width:0 !important;flex:1 1 0% !important;overflow:visible !important}
+
+/* ── global buttons ── */
 .stButton>button{
     width:100% !important;border-radius:13px !important;
     height:50px !important;font-size:14px !important;
@@ -127,15 +116,13 @@ label[data-testid="stWidgetLabel"]{
     background:#ffc744 !important;color:#191d3a !important;
     box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
 .stButton>button[kind="primary"]:hover{
-    background:#fddb32 !important;
-    box-shadow:0 4px 14px rgba(255,199,68,.4) !important}
+    background:#fddb32 !important;box-shadow:0 4px 14px rgba(255,199,68,.4) !important}
 .stButton>button[kind="secondary"]{
-    background:#fff !important;border:1.5px solid #ddd !important;
-    color:#616161 !important}
+    background:#fff !important;border:1.5px solid #ddd !important;color:#616161 !important}
 .stButton>button[kind="secondary"]:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important;color:#191d3a !important}
 
-/* ── bulk action buttons: override height for proses + hapus row ── */
+/* ── bulk action buttons ── */
 .bb-wrap div[data-testid="stHorizontalBlock"] button{
     height:52px !important;border-radius:13px !important;
     font-size:14px !important;font-weight:700 !important}
@@ -161,8 +148,7 @@ label[data-testid="stWidgetLabel"]{
     font-size:14px !important;color:#616161 !important;font-weight:500 !important}
 
 /* ── notices ── */
-.notice{
-    border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;
+.notice{border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;
     display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
 .nok  {background:#f0fdf4;border:1px solid #86efac;color:#166534}
 .nerr {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
@@ -173,15 +159,34 @@ label[data-testid="stWidgetLabel"]{
 .expedia-banner{
     background:#fff;border:1.5px solid #ddd;border-bottom:none;
     border-radius:16px 16px 0 0;padding:13px 16px;
-    display:flex;align-items:center;justify-content:space-between;
-    margin-top:16px}
+    display:flex;align-items:center;justify-content:space-between;margin-top:16px}
 .expedia-banner img{height:24px;width:auto;object-fit:contain}
 .taap-pill{
     font-size:11px;font-weight:700;letter-spacing:.3px;
     color:#1e3a6e;background:#e8f0fe;border:1px solid #6398c8;
     padding:4px 11px;border-radius:20px;white-space:nowrap}
 
-/* ── file uploader ── */
+/* ── file uploader: hide label completely ──
+   Streamlit renders the label in multiple DOM locations depending on version.
+   We target ALL of them to guarantee the "Upload" text never shows. ── */
+[data-testid="stFileUploader"] label,
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"],
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] p,
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] span,
+[data-testid="stFileUploader"] > label,
+[data-testid="stFileUploader"] > div > label,
+[data-testid="stFileUploader"] + label,
+[data-testid="stFileUploader"] ~ label,
+.uploadedFileData ~ label,
+section[data-testid="stFileUploaderDropArea"] + label{
+    display:none !important;
+    visibility:hidden !important;
+    width:0 !important;height:0 !important;
+    overflow:hidden !important;
+    position:absolute !important;
+    pointer-events:none !important}
+
+/* ── file uploader zone ── */
 [data-testid="stFileUploader"]{margin-top:0 !important}
 [data-testid="stFileUploader"]>div:first-child{
     border:1.5px dashed #b8cde0 !important;border-top:none !important;
@@ -190,7 +195,6 @@ label[data-testid="stWidgetLabel"]{
     margin-top:0 !important;padding:24px 20px !important;min-height:130px !important}
 [data-testid="stFileUploader"]>div:first-child:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important}
-[data-testid="stFileUploader"] label{display:none !important}
 
 /* ── stat cards ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
@@ -204,79 +208,63 @@ label[data-testid="stWidgetLabel"]{
 .bulk-prog-lbl{font-size:12px;color:#9e9e9e;text-align:center;margin-bottom:14px;font-weight:500}
 
 /* ── summary card ── */
-.bulk-sum{
-    background:#fff;border:1.5px solid #ddd;border-radius:18px;
+.bulk-sum{background:#fff;border:1.5px solid #ddd;border-radius:18px;
     padding:18px 16px;margin-bottom:16px}
-.bulk-sum-ttl{
-    font-size:11px;font-weight:700;text-transform:uppercase;
+.bulk-sum-ttl{font-size:11px;font-weight:700;text-transform:uppercase;
     letter-spacing:.9px;color:#9e9e9e;margin-bottom:14px}
-.bulk-stats{
-    display:grid;grid-template-columns:repeat(4,1fr);
+.bulk-stats{display:grid;grid-template-columns:repeat(4,1fr);
     gap:8px;text-align:center;margin-bottom:14px}
 .bs-val{font-size:24px;font-weight:800;color:#191d3a;line-height:1}
 .bs-lbl{font-size:10px;color:#9e9e9e;margin-top:4px;font-weight:500}
-.bs-g{color:#1e9e5a} .bs-r{color:#e53935} .bs-y{color:#e68900}
+.bs-g{color:#1e9e5a}.bs-r{color:#e53935}.bs-y{color:#e68900}
 .bulk-bar{background:#e8e8e8;border-radius:99px;height:5px;overflow:hidden}
 .bulk-bar-f{height:100%;background:#1e9e5a;border-radius:99px}
 .bulk-pct{font-size:11px;color:#9e9e9e;text-align:right;margin-top:5px}
 
 /* ── file result cards ── */
-.file-item{
-    background:#fff;border:1.5px solid #ddd;border-radius:15px;
+.file-item{background:#fff;border:1.5px solid #ddd;border-radius:15px;
     padding:13px 15px;margin-bottom:8px}
 .fi-success{border-color:#6ee7b7 !important;background:#f0fdf4 !important}
 .fi-error  {border-color:#fca5a5 !important;background:#fff1f2 !important}
 .fi-skipped{border-color:#fcd34d !important;background:#fffde7 !important}
 .fi-top{display:flex;align-items:center;gap:10px}
-.fi-icon{
-    width:36px;height:36px;border-radius:10px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:17px;flex-shrink:0}
-.ic-ok  {background:#dcfce7} .ic-err{background:#ffe4e6}
-.ic-skip{background:#fef9c3} .ic-n  {background:#ededed}
-.fi-name{
-    font-size:13px;font-weight:600;color:#191d3a;flex:1;
+.fi-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;font-size:17px;flex-shrink:0}
+.ic-ok{background:#dcfce7}.ic-err{background:#ffe4e6}
+.ic-skip{background:#fef9c3}.ic-n{background:#ededed}
+.fi-name{font-size:13px;font-weight:600;color:#191d3a;flex:1;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fi-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
-.fb-ok  {background:#dcfce7;color:#166534}
-.fb-err {background:#ffe4e6;color:#9f1239}
-.fb-sk  {background:#fef9c3;color:#7a5c00}
-.fi-grid{
-    margin-top:10px;padding-top:9px;border-top:1.5px solid #ededed;
+.fb-ok{background:#dcfce7;color:#166534}
+.fb-err{background:#ffe4e6;color:#9f1239}
+.fb-sk{background:#fef9c3;color:#7a5c00}
+.fi-grid{margin-top:10px;padding-top:9px;border-top:1.5px solid #ededed;
     display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}
-.fi-kv {display:flex;gap:5px;align-items:baseline}
-.fi-k  {
-    font-size:10px;font-weight:700;color:#9e9e9e;min-width:52px;
+.fi-kv{display:flex;gap:5px;align-items:baseline}
+.fi-k{font-size:10px;font-weight:700;color:#9e9e9e;min-width:52px;
     flex-shrink:0;text-transform:uppercase;letter-spacing:.3px}
-.fi-v  {
-    font-size:12px;font-weight:500;color:#191d3a;
+.fi-v{font-size:12px;font-weight:500;color:#191d3a;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── settings status rows ── */
-.st-row{
-    display:flex;align-items:center;gap:12px;background:#fff;
+/* ── settings rows ── */
+.st-row{display:flex;align-items:center;gap:12px;background:#fff;
     border:1.5px solid #ddd;border-radius:15px;padding:14px 15px;margin-bottom:10px}
-.st-icon{
-    width:38px;height:38px;border-radius:11px;
-    display:flex;align-items:center;justify-content:center;
-    font-size:18px;flex-shrink:0}
-.si-g{background:#f0fdf4} .si-r{background:#fff1f2}
-.si-b{background:#e8f0fe} .si-y{background:#fffde7}
+.st-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+    justify-content:center;font-size:18px;flex-shrink:0}
+.si-g{background:#f0fdf4}.si-r{background:#fff1f2}
+.si-b{background:#e8f0fe}.si-y{background:#fffde7}
 .st-body{flex:1;min-width:0}
 .st-title{font-size:14px;font-weight:700;color:#191d3a;line-height:1}
-.st-sub  {font-size:12px;color:#9e9e9e;margin-top:3px}
-.st-badge{
-    display:inline-flex;align-items:center;font-size:11px;
+.st-sub{font-size:12px;color:#9e9e9e;margin-top:3px}
+.st-badge{display:inline-flex;align-items:center;font-size:11px;
     font-weight:700;padding:4px 12px;border-radius:20px;flex-shrink:0}
-.bg {background:#f0fdf4;color:#166534;border:1px solid #86efac}
-.br {background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
-.by {background:#fffde7;color:#7a5c00;border:1px solid #fcd34d}
-.conn-list{
-    background:#fff;border:1.5px solid #ddd;
-    border-radius:15px;overflow:hidden;margin-bottom:16px}
-.conn-item{
-    display:flex;align-items:center;gap:9px;
-    padding:11px 15px;border-bottom:1px solid #ededed;font-size:13px}
+.bg{background:#f0fdf4;color:#166534;border:1px solid #86efac}
+.br{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
+.by{background:#fffde7;color:#7a5c00;border:1px solid #fcd34d}
+.conn-list{background:#fff;border:1.5px solid #ddd;border-radius:15px;
+    overflow:hidden;margin-bottom:16px}
+.conn-item{display:flex;align-items:center;gap:9px;padding:11px 15px;
+    border-bottom:1px solid #ededed;font-size:13px}
 .conn-item:last-child{border-bottom:none}
 .cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .about-box{background:#fff;border:1.5px solid #ddd;border-radius:18px;padding:16px 18px}
@@ -286,29 +274,23 @@ label[data-testid="stWidgetLabel"]{
 .about-v{font-size:12px;color:#616161;line-height:1.5}
 
 /* ── dataframe ── */
-[data-testid="stDataFrame"]{
-    border-radius:15px !important;border:1.5px solid #ddd !important;
+[data-testid="stDataFrame"]{border-radius:15px !important;border:1.5px solid #ddd !important;
     overflow:hidden !important;box-shadow:none !important}
 [data-testid="stDataFrame"] table{font-size:13px !important}
-[data-testid="stDataFrame"] th{
-    background:#f5f8fc !important;color:#616161 !important;
-    font-size:11px !important;font-weight:700 !important;
-    text-transform:uppercase !important;letter-spacing:.5px !important;
-    border-bottom:1.5px solid #ddd !important;padding:11px 13px !important}
-[data-testid="stDataFrame"] td{
-    font-size:13px !important;color:#191d3a !important;
+[data-testid="stDataFrame"] th{background:#f5f8fc !important;color:#616161 !important;
+    font-size:11px !important;font-weight:700 !important;text-transform:uppercase !important;
+    letter-spacing:.5px !important;border-bottom:1.5px solid #ddd !important;padding:11px 13px !important}
+[data-testid="stDataFrame"] td{font-size:13px !important;color:#191d3a !important;
     padding:10px 13px !important;border-bottom:1px solid #ededed !important}
 [data-testid="stDataFrame"] tr:hover td{background:#f5f8fc !important}
 
 /* ── metric ── */
-[data-testid="stMetric"]{
-    background:#fff !important;border:1.5px solid #ddd !important;
+[data-testid="stMetric"]{background:#fff !important;border:1.5px solid #ddd !important;
     border-radius:15px !important;padding:14px !important;margin-bottom:0 !important}
-[data-testid="stMetricLabel"]{
-    font-size:11px !important;font-weight:700 !important;
+[data-testid="stMetricLabel"]{font-size:11px !important;font-weight:700 !important;
     color:#9e9e9e !important;text-transform:uppercase !important;letter-spacing:.6px !important}
-[data-testid="stMetricValue"]{
-    font-size:15px !important;font-weight:800 !important;color:#191d3a !important}
+[data-testid="stMetricValue"]{font-size:15px !important;font-weight:800 !important;
+    color:#191d3a !important}
 
 /* ── misc ── */
 .stSpinner>div{border-top-color:#6398c8 !important}
@@ -387,9 +369,7 @@ def load_rows() -> list:
 
 
 # ─── Duplicate check ──────────────────────────────────────────────────────────
-def _ns(v) -> str:
-    return str(v or "").strip().lower()
-
+def _ns(v) -> str: return str(v or "").strip().lower()
 def _ni(v) -> int:
     try: return int(float(str(v).replace(",","").replace(".","") or 0))
     except: return 0
@@ -534,7 +514,6 @@ st.markdown("""
 
 
 # ─── Navigation ───────────────────────────────────────────────────────────────
-# Uses real st.button — guaranteed to work, no HTML onclick hacks
 _cur = st.session_state["tab"]
 _NL  = "\n"
 
@@ -571,7 +550,7 @@ if st.session_state["tab"] == "input":
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
                "Jalankan: <code>pip install pypdfium2==4.30.0</code>")
 
-    # Issuer & PIC ─────────────────────────────────────────────────────────────
+    # ── Issuer & PIC ──────────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Issuer &amp; PIC</div>', unsafe_allow_html=True)
 
     _ISSUERS = [
@@ -600,7 +579,7 @@ if st.session_state["tab"] == "input":
         "Nama Kegiatan", value=st.session_state.get("last_nama_kegiatan",""),
         placeholder="Nama kegiatan (opsional)", key="bulk_nama_kegiatan")
 
-    # Expedia banner + uploader ────────────────────────────────────────────────
+    # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
 <div class="expedia-banner">
   <img src="https://www.expedia.com/newsroom/wp-content/uploads/2023/07/BEX_Logo_Horizontal_CMYK_FullColorDarkBlue--1024x199.jpg"
@@ -609,23 +588,29 @@ if st.session_state["tab"] == "input":
 </div>
 """, unsafe_allow_html=True)
 
+    # ── File uploader ─────────────────────────────────────────────────────────
+    # label_visibility="hidden" + empty string label = most reliable way
+    # to suppress the label across all Streamlit versions
     _ftypes = ["jpg","jpeg","png","webp"] + (["pdf"] if _PDF_OK else [])
     bulk_files = st.file_uploader(
-        "Upload", type=_ftypes, accept_multiple_files=True,
-        label_visibility="collapsed", key="bulk_uf")
+        label="Drag & drop atau klik Browse",
+        type=_ftypes,
+        accept_multiple_files=True,
+        label_visibility="hidden",
+        key="bulk_uf",
+    )
 
     _n = len(bulk_files) if bulk_files else 0
     if _n:
         notice("info", f"<b>{_n} file</b> dipilih dan siap diproses.")
 
-    # Checkbox - read value before button so it's always current
     skip_dup = st.checkbox(
         "Lewati duplikat — jangan simpan jika booking sudah ada",
         value=True, key="bulk_skip_dup")
 
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    # Action buttons ───────────────────────────────────────────────────────────
+    # ── Action buttons ────────────────────────────────────────────────────────
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _ba, _bb = st.columns([4, 1])
     _run   = _ba.button(
@@ -638,10 +623,9 @@ if st.session_state["tab"] == "input":
     st.markdown('</div>', unsafe_allow_html=True)
 
     if _clear:
-        reset_bulk()
-        st.rerun()
+        reset_bulk(); st.rerun()
 
-    # Process ──────────────────────────────────────────────────────────────────
+    # ── Process ───────────────────────────────────────────────────────────────
     if _run:
         if not bulk_issuer:
             notice("err", "Pilih Issuer terlebih dahulu.")
@@ -736,7 +720,7 @@ if st.session_state["tab"] == "input":
             st.session_state["bulk_saved_count"] = _saved_run
             st.rerun()
 
-    # Results ──────────────────────────────────────────────────────────────────
+    # ── Results ───────────────────────────────────────────────────────────────
     _results = st.session_state.get("bulk_results", [])
 
     if _results:
@@ -747,8 +731,7 @@ if st.session_state["tab"] == "input":
         _pct  = int(_ok / _tot * 100) if _tot else 0
 
         st.markdown(
-            '<div class="bulk-sum">'
-            '<div class="bulk-sum-ttl">Hasil Proses Batch</div>'
+            '<div class="bulk-sum"><div class="bulk-sum-ttl">Hasil Proses Batch</div>'
             '<div class="bulk-stats">'
             + f'<div><div class="bs-val">{_tot}</div><div class="bs-lbl">Total</div></div>'
             + f'<div><div class="bs-val bs-g">{_ok}</div><div class="bs-lbl">Tersimpan</div></div>'
@@ -756,8 +739,7 @@ if st.session_state["tab"] == "input":
             + f'<div><div class="bs-val bs-y">{_skip}</div><div class="bs-lbl">Duplikat</div></div>'
             + '</div>'
             + f'<div class="bulk-bar"><div class="bulk-bar-f" style="width:{_pct}%"></div></div>'
-            + f'<div class="bulk-pct">{_pct}% berhasil tersimpan</div>'
-            + '</div>',
+            + f'<div class="bulk-pct">{_pct}% berhasil tersimpan</div></div>',
             unsafe_allow_html=True)
 
         st.markdown('<div class="sec-lbl">Detail per file</div>', unsafe_allow_html=True)
@@ -783,7 +765,7 @@ if st.session_state["tab"] == "input":
                     + '<div class="fi-kv"><span class="fi-k">Hotel</span><span class="fi-v">'      + (_p.get("hotel")       or "—") + '</span></div>'
                     + '<div class="fi-kv"><span class="fi-k">Total</span><span class="fi-v">'      + fmt(_p.get("room",0))          + '</span></div>'
                     + '<div class="fi-kv"><span class="fi-k">Tamu</span><span class="fi-v">'       + (_p.get("name")        or "—") + '</span></div>'
-                    + '<div class="fi-kv"><span class="fi-k">Booking ID</span><span class="fi-v">' + (_p.get("booking_id") or "—") + '</span></div>'
+                    + '<div class="fi-kv"><span class="fi-k">Booking ID</span><span class="fi-v">' + (_p.get("booking_id")  or "—") + '</span></div>'
                     + '<div class="fi-kv"><span class="fi-k">Check-in</span><span class="fi-v">'   + (_p.get("checkin")     or "—") + '</span></div>'
                     + '<div class="fi-kv"><span class="fi-k">Supplier</span><span class="fi-v">'   + (_p.get("supplier")    or "—") + '</span></div>'
                     + '</div>' + _dw)
@@ -854,7 +836,6 @@ elif st.session_state["tab"] == "dashboard":
                 '</div>',
                 unsafe_allow_html=True)
 
-            # Kartu Kredit breakdown
             if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
                 _cc = df[df["Kartu Kredit"].astype(str).str.strip().ne("")]
                 if not _cc.empty:
@@ -866,9 +847,9 @@ elif st.session_state["tab"] == "dashboard":
                     _cnt = _cc.groupby("Kartu Kredit").size()
                     _h = ""
                     for _, _row in _grp.iterrows():
-                        _p  = _row["val"] / _tot * 100 if _tot else 0
-                        _a  = "Rp {:,.0f}".format(_row["val"]).replace(",",".")
-                        _c  = int(_cnt.get(_row["label"],0))
+                        _p = _row["val"]/_tot*100 if _tot else 0
+                        _a = "Rp {:,.0f}".format(_row["val"]).replace(",",".")
+                        _c = int(_cnt.get(_row["label"],0))
                         _h += (
                             f'<div style="padding:12px 0;border-bottom:1.5px solid #ededed">'
                             f'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
@@ -982,7 +963,6 @@ elif st.session_state["tab"] == "settings":
 
     st.markdown('<div class="sec-lbl">Status Sistem</div>', unsafe_allow_html=True)
 
-    # OpenAI
     if oai_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
 <div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
@@ -1001,7 +981,6 @@ elif st.session_state["tab"] == "settings":
         if st.session_state.get("oai_key",""):
             notice("ok","Key aktif untuk sesi ini.")
 
-    # Google Sheets
     sh_ok = False
     try:
         if st.secrets["google_sheets"]["sheet_id"] and \
@@ -1024,7 +1003,6 @@ elif st.session_state["tab"] == "settings":
         if ns != st.session_state.get("sheet_id",""):
             st.session_state["sheet_id"] = ns
 
-    # PDF
     if _PDF_OK:
         st.markdown("""<div class="st-row"><div class="st-icon si-b">📄</div>
 <div class="st-body"><div class="st-title">PDF Upload</div>
