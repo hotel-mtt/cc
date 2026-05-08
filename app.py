@@ -106,7 +106,7 @@ label[data-testid="stWidgetLabel"]{
     letter-spacing:0 !important;margin-bottom:4px !important}
 
 /* ── inputs ── */
-.stTextInput input,.stNumberInput input,.stTextArea textarea{
+
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:15px !important;
     color:#191d3a !important;padding:12px 14px !important;height:50px !important}
