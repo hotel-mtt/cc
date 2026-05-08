@@ -106,10 +106,39 @@ label[data-testid="stWidgetLabel"]{
     letter-spacing:0 !important;margin-bottom:4px !important}
 
 /* ── inputs ── */
-.stTextInput input,.stNumberInput input,.stTextArea textarea{
-    border-radius:12px !important;border:1.5px solid #ddd !important;
-    background:#fff !important;font-size:15px !important;
-    color:#191d3a !important;padding:12px 14px !important;height:50px !important}
+/* ── inputs refined ── */
+.stTextInput input,
+.stNumberInput input,
+.stTextArea textarea{
+    border-radius:10px !important;
+    border:1.5px solid #d9d9d9 !important;
+    background:#ffffff !important;
+
+    font-size:14px !important;
+    font-weight:500 !important;
+    color:#191d3a !important;
+
+    padding:0 14px !important;
+    height:46px !important;
+
+    transition:all .2s ease !important;
+}
+
+/* focus */
+.stTextInput input:focus,
+.stNumberInput input:focus,
+.stTextArea textarea:focus{
+    border-color:#6398c8 !important;
+    box-shadow:0 0 0 3px rgba(99,152,200,.15) !important;
+}
+
+/* placeholder */
+.stTextInput input::placeholder,
+.stTextArea textarea::placeholder{
+    color:#9e9e9e !important;
+    font-size:14px !important;
+    font-weight:400 !important;
+}
 .stTextInput input:focus,.stTextArea textarea:focus,.stNumberInput input:focus{
     border-color:#6398c8 !important;background:#fff !important;
     box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}
