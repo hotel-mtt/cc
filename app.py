@@ -89,23 +89,47 @@ label[data-testid="stWidgetLabel"]{
     letter-spacing:0 !important;margin-bottom:4px !important}
 
 /* ── inputs ── */
-.stTextInput input,.stNumberInput input,.stTextArea textarea{
+.stTextInput input,.stNumberInput input{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:15px !important;
-    color:#191d3a !important;padding:12px 14px !important;height:50px !important}
-.stTextInput input:focus,.stTextArea textarea:focus,.stNumberInput input:focus{
+    color:#191d3a !important;padding:0 14px !important;
+    height:48px !important;line-height:48px !important;
+    box-sizing:border-box !important;width:100% !important}
+.stTextInput input:focus,.stNumberInput input:focus{
     border-color:#6398c8 !important;background:#fff !important;
     box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}
 [data-testid="stSelectbox"]>div>div{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:15px !important;
-    color:#191d3a !important;min-height:50px !important}
+    color:#191d3a !important;
+    height:48px !important;min-height:48px !important;
+    display:flex !important;align-items:center !important;
+    box-sizing:border-box !important}
 
-/* ── column layout — equal split, no clipping ── */
+/* ── widget wrappers: no clipping, no extra padding ── */
+.stTextInput,.stSelectbox,[data-testid="stSelectbox"]{
+    width:100% !important;min-width:0 !important}
+div[data-testid="stWidgetLabel"]{
+    overflow:visible !important}
+
+/* ── column layout — pixel-perfect equal split ── */
 [data-testid="stHorizontalBlock"]{
-    gap:12px !important;align-items:flex-start !important;flex-wrap:nowrap !important}
+    gap:12px !important;
+    align-items:flex-start !important;
+    flex-wrap:nowrap !important;
+    overflow:visible !important}
 [data-testid="stHorizontalBlock"]>[data-testid="column"]{
-    min-width:0 !important;flex:1 1 0% !important;overflow:visible !important}
+    flex:1 1 0% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    overflow:visible !important;
+    padding-bottom:4px !important}
+
+/* make inner stVerticalBlock never clip its children */
+[data-testid="stHorizontalBlock"]>[data-testid="column"]>div,
+[data-testid="stHorizontalBlock"]>[data-testid="column"] [data-testid="stVerticalBlock"]{
+    overflow:visible !important;
+    width:100% !important;min-width:0 !important}
 
 /* ── global buttons ── */
 .stButton>button{
@@ -166,35 +190,63 @@ label[data-testid="stWidgetLabel"]{
     color:#1e3a6e;background:#e8f0fe;border:1px solid #6398c8;
     padding:4px 11px;border-radius:20px;white-space:nowrap}
 
-/* ── file uploader: hide label completely ──
-   Streamlit renders the label in multiple DOM locations depending on version.
-   We target ALL of them to guarantee the "Upload" text never shows. ── */
-[data-testid="stFileUploader"] label,
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"],
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] p,
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] span,
-[data-testid="stFileUploader"] > label,
-[data-testid="stFileUploader"] > div > label,
-[data-testid="stFileUploader"] + label,
-[data-testid="stFileUploader"] ~ label,
-.uploadedFileData ~ label,
-section[data-testid="stFileUploaderDropArea"] + label{
-    display:none !important;
-    visibility:hidden !important;
-    width:0 !important;height:0 !important;
-    overflow:hidden !important;
-    position:absolute !important;
-    pointer-events:none !important}
+/* ── file uploader ──
+   Strategy: sembunyikan label via CSS lapis demi lapis,
+   gunakan label="" + label_visibility="collapsed" di Python.
+   Tombol "Browse files" tetap muncul normal (tidak perlu dihide). ── */
 
-/* ── file uploader zone ── */
+/* Sembunyikan widget label (teks di atas komponen) */
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"],
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] *{
+    display:none !important}
+
+/* Sembunyikan label HTML yang mungkin muncul di berbagai versi Streamlit */
+[data-testid="stFileUploaderDropzoneInput"] + label,
+[data-testid="stFileUploader"] > section > label,
+[data-testid="stFileUploader"] label[for]{
+    display:none !important;visibility:hidden !important;
+    height:0 !important;overflow:hidden !important}
+
+/* ── file uploader zone: sambung ke bawah banner, 
+   tampilkan konten default Streamlit (drag&drop text + browse button) ── */
 [data-testid="stFileUploader"]{margin-top:0 !important}
-[data-testid="stFileUploader"]>div:first-child{
-    border:1.5px dashed #b8cde0 !important;border-top:none !important;
+[data-testid="stFileUploader"]>div:first-child,
+[data-testid="stFileUploader"] section{
+    border:1.5px dashed #b8cde0 !important;
+    border-top:none !important;
     border-radius:0 0 16px 16px !important;
     background:#f5f8fc !important;
-    margin-top:0 !important;padding:24px 20px !important;min-height:130px !important}
-[data-testid="stFileUploader"]>div:first-child:hover{
+    margin-top:0 !important;
+    padding:28px 20px !important;
+    min-height:120px !important}
+[data-testid="stFileUploader"]>div:first-child:hover,
+[data-testid="stFileUploader"] section:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important}
+
+/* Style tombol Browse agar konsisten */
+[data-testid="stFileUploader"] button{
+    border-radius:10px !important;
+    border:1.5px solid #ddd !important;
+    background:#fff !important;
+    color:#191d3a !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    padding:8px 18px !important;
+    height:auto !important}
+[data-testid="stFileUploader"] button:hover{
+    border-color:#6398c8 !important;
+    background:#e8f0fe !important}
+
+/* Teks drag & drop */
+[data-testid="stFileUploaderDropInstructions"]{
+    font-size:14px !important;
+    font-weight:600 !important;
+    color:#191d3a !important}
+[data-testid="stFileUploaderDropInstructions"] small,
+[data-testid="stFileUploaderDropInstructions"] span{
+    font-size:12px !important;
+    color:#9e9e9e !important;
+    font-weight:400 !important}
 
 /* ── stat cards ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
@@ -415,30 +467,43 @@ def to_b64(img: Image.Image) -> tuple:
 
 # ─── AI parser ────────────────────────────────────────────────────────────────
 _SYS = """You are a corporate hotel expense AI parser for credit card reporting.
-Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice,
-screenshot, or free text.
+Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice
+(IHG, Marriott, Hilton, etc.), screenshot, or free text.
 Return ONLY a valid JSON object — no markdown, no explanation.
 
 Keys:
-- supplier   : string  — platform from document header
-- booking_id : string  — TAAP itinerary number / Itinerary # / Booking ID
+- supplier   : string  — platform/OTA/hotel brand from document header
+                         e.g. "Expedia TAAP", "Mitra Tours & Travel", "IHG", "Marriott"
+- booking_id : string  — itinerary/booking/confirmation number
 - booked_on  : string  — booking date YYYY-MM-DD
-- issued_on  : string  — issued date YYYY-MM-DD
+- issued_on  : string  — issued/receipt date YYYY-MM-DD
 - hotel      : string  — full hotel name as written
-- checkin    : string  — check-in YYYY-MM-DD
-- checkout   : string  — check-out YYYY-MM-DD
-- qty        : string  — rooms and nights e.g. "1 room x 3 nights"
-- room       : integer — IDR amount from "Subtotal paid to Expedia" line only.
-                         IGNORE Room line, per-night lines, resort fee.
-- name       : string  — guest name
-- card       : string  — e.g. "MasterCard •••• 4467", empty if absent
-- notes      : string  — room type, resort fee, confirmation #, other details
+- checkin    : string  — check-in date YYYY-MM-DD
+- checkout   : string  — check-out date YYYY-MM-DD
+- qty        : string  — rooms and nights e.g. "2 rooms x 2 nights"
+- room       : integer — TOTAL amount charged to the credit card (IDR/Rp).
+                         Priority order for finding this value:
+                         1. "Subtotal paid to Expedia" line  → use that amount
+                         2. Grand "Total" line (bottom of document)
+                         3. Sum of all "Total Room 1" + "Total Room 2" + ... lines
+                         4. Sum of all "Room 1" + "Room 2" + ... subtotal lines
+                         NEVER use per-night rates, Miscellaneous Tax alone, or
+                         resort fee alone — always use the final billed total.
+- name       : string  — primary guest name (first traveller listed)
+- card       : string  — e.g. "Visa •••• 0191" or "MasterCard •••• 4467", empty if absent
+- notes      : string  — room type(s), number of rooms, tax details, confirmation #
 
 Rules:
 1. Dates: any format → YYYY-MM-DD.
-2. Amounts: strip IDR/Rp/USD/$/commas/dots → plain integer, no decimals.
-3. room = "Subtotal paid to Expedia" line only.
-4. Missing field → "" for strings, 0 for integers."""
+   "Mon, 11 May 2026" → "2026-05-11"  |  "13 May 2026" → "2026-05-13"
+2. Amounts: strip IDR/Rp/USD/$/commas → plain integer, no decimals.
+   "IDR 24,007,312.00" → 24007312
+3. room = the single final total the credit card was charged.
+   For multi-room hotel invoices: use the grand Total at the bottom.
+   For Expedia TAAP: use "Subtotal paid to Expedia" line.
+4. qty: count distinct rooms × nights.
+   "2 rooms x 2 nights" if 2 rooms checked in same dates.
+5. Missing field → "" for strings, 0 for integers."""
 
 def ai_parse(text: str = "", images: list = None) -> tuple:
     key = oai_key()
@@ -589,14 +654,15 @@ if st.session_state["tab"] == "input":
 """, unsafe_allow_html=True)
 
     # ── File uploader ─────────────────────────────────────────────────────────
-    # label_visibility="hidden" + empty string label = most reliable way
-    # to suppress the label across all Streamlit versions
+    # label="" + label_visibility="collapsed" adalah kombinasi paling aman.
+    # Jangan beri teks pada label karena Streamlit bisa render teks itu
+    # sebagai teks di dalam tombol "Browse files" pada versi tertentu.
     _ftypes = ["jpg","jpeg","png","webp"] + (["pdf"] if _PDF_OK else [])
     bulk_files = st.file_uploader(
-        label="Drag & drop atau klik Browse",
+        label="",
         type=_ftypes,
         accept_multiple_files=True,
-        label_visibility="hidden",
+        label_visibility="collapsed",
         key="bulk_uf",
     )
 
