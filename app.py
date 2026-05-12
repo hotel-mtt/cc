@@ -719,6 +719,8 @@ for _k, _v in _DEF.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
+# ─── Login wall — harus dipanggil sebelum render apapun ──────────────────────
+require_login()
 
 # ─── Header ───────────────────────────────────────────────────────────────────
 _prov      = get_ai_provider()
