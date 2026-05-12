@@ -678,7 +678,7 @@ def ai_parse(text: str = "", images: list = None) -> tuple:
                     "text": text if text else "Extract all structured data from this document."})
     _client = httpx.Client()
     resp = openai.OpenAI(api_key=key, http_client=_client).chat.completions.create(
-        model="gpt-4o-mini-mini",
+        model="gpt-4o-mini",
         messages=[{"role":"system","content":_SYS},{"role":"user","content":content}],
         temperature=0.0, max_tokens=800,
     )
