@@ -137,24 +137,34 @@ def _dashboard_login_wall() -> bool:
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
 
-    # ── Tampilkan form login inline di dalam dashboard ────────────────────────
-    st.markdown("""
-<div style="background:#fff;border:1.5px solid #ddd;border-radius:20px;
-    padding:32px 24px;text-align:center;max-width:380px;margin:24px auto">
-  <div style="width:52px;height:52px;border-radius:14px;background:#191d3a;
-      display:flex;align-items:center;justify-content:center;
-      font-size:24px;margin:0 auto 14px">🔒</div>
-  <div style="font-size:17px;font-weight:800;color:#191d3a;margin-bottom:6px">
-    Dashboard Terkunci</div>
-  <div style="font-size:13px;color:#9e9e9e;margin-bottom:20px">
-    Masukkan password untuk melihat data</div>
+    # ── Form login minimalist ────────────────────────────────────────────────
+    ttl = _ttl_hours()
+    st.markdown(f"""
+<div style="display:flex;align-items:center;justify-content:center;
+    padding:48px 16px;min-height:320px;">
+  <div style="width:100%;max-width:300px;text-align:center;">
+    <div style="width:44px;height:44px;border-radius:12px;
+        background:#fff;border:1px solid #e0e0e0;
+        display:flex;align-items:center;justify-content:center;
+        margin:0 auto 20px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="#191d3a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <div style="font-size:15px;font-weight:600;color:#191d3a;margin-bottom:6px;">Dashboard</div>
+    <div style="font-size:12px;color:#9e9e9e;margin-bottom:0;">
+      Masukkan password untuk melanjutkan</div>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-    pw = st.text_input("Password Dashboard", type="password",
-                       placeholder="••••••••", label_visibility="collapsed",
+    pw = st.text_input("Password", type="password",
+                       placeholder="Password", label_visibility="collapsed",
                        key="_dash_pw_input")
-    if st.button("🔓 Buka Dashboard", type="primary",
+
+    if st.button("Buka Dashboard", type="primary",
                  use_container_width=True, key="_dash_login_btn"):
         if _check_pw(pw):
             st.session_state["_auth_ok"]         = True
@@ -168,14 +178,14 @@ def _dashboard_login_wall() -> bool:
                     pass
             st.rerun()
         else:
-            st.markdown('<div style="background:#fff1f2;border:1px solid #fecdd3;' +
-                'color:#9f1239;border-radius:12px;padding:10px 14px;' +
-                'font-size:13px;font-weight:600;text-align:center;margin-top:8px">' +
-                '✕ Password salah. Coba lagi.</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div style="font-size:12px;color:#e53935;text-align:center;' +
+                'margin-top:8px;">Password salah. Coba lagi.</div>',
+                unsafe_allow_html=True)
 
-    ttl = _ttl_hours()
-    st.markdown(f'<div style="font-size:11px;color:#bbb;text-align:center;margin-top:12px">' +
-        f'Sesi aktif {int(ttl)} jam · Tab lain (Input, Riwayat, Pengaturan) bebas diakses</div>',
+    st.markdown(
+        f'<div style="font-size:11px;color:#bbb;text-align:center;margin-top:16px;">' +
+        f'Sesi aktif {int(ttl)} jam &nbsp;·&nbsp; Tab lain bebas diakses</div>',
         unsafe_allow_html=True)
     return False
 
@@ -374,6 +384,11 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
 .stButton>button[kind="primary"]:hover{
     background:#fddb32 !important;box-shadow:0 4px 14px rgba(255,199,68,.4) !important}
+
+/* ── Dashboard login button — dark navy style ── */
+[data-testid="stButton"] button[data-testid="baseButton-primary"][kind="primary"]#_dash_login_btn{
+    background:#191d3a !important;color:#fddb32 !important;
+    box-shadow:none !important}
 .stButton>button[kind="secondary"]{
     background:#fff !important;border:1.5px solid #ddd !important;color:#616161 !important}
 .stButton>button[kind="secondary"]:hover{
