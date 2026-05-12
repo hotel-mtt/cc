@@ -401,27 +401,34 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 [data-testid="stCheckbox"] label{
     font-size:14px !important;color:#616161 !important;font-weight:500 !important}
 
-/* ── AI provider selector cards ── */
-.ai-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
-.ai-card{
-    background:#fff;border:2px solid #ddd;border-radius:16px;
-    padding:16px 14px;cursor:pointer;transition:all .15s ease;text-align:center}
-.ai-card:hover{border-color:#6398c8;background:#e8f0fe}
-.ai-card-active-openai{
-    border-color:#10b981 !important;background:#f0fdf4 !important;
-    box-shadow:0 0 0 3px rgba(16,185,129,.15) !important}
-.ai-card-active-claude{
-    border-color:#a855f7 !important;background:#faf5ff !important;
-    box-shadow:0 0 0 3px rgba(168,85,247,.15) !important}
-.ai-card-logo{font-size:28px;margin-bottom:6px}
-.ai-card-name{font-size:13px;font-weight:800;color:#191d3a;margin-bottom:2px}
-.ai-card-model{font-size:11px;color:#9e9e9e;font-weight:500}
-.ai-card-check{
-    display:inline-block;margin-top:8px;font-size:10px;font-weight:700;
-    padding:3px 10px;border-radius:20px}
-.ai-openai-check{background:#dcfce7;color:#166534}
-.ai-claude-check{background:#f3e8ff;color:#6b21a8}
-.ai-inactive-check{background:#ededed;color:#9e9e9e}
+/* ── AI provider selector cards — minimalist ── */
+.ai-sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.ai-card-min{
+    background:#fff;border:1px solid #e0e0e0;border-radius:14px;
+    padding:12px 14px;cursor:pointer;transition:border-color .12s,background .12s;
+    display:flex;align-items:center;gap:10px}
+.ai-card-min:hover{border-color:#9e9e9e}
+.ai-card-min.active{border:1.5px solid #1D9E75;background:#f0fdf4}
+.ai-card-icon{width:30px;height:30px;border-radius:8px;background:#f5f5f5;
+    border:1px solid #e8e8e8;display:flex;align-items:center;
+    justify-content:center;flex-shrink:0;font-size:14px}
+.ai-card-info{flex:1;min-width:0}
+.ai-card-info b{font-size:13px;font-weight:600;color:#191d3a;display:block}
+.ai-card-info span{font-size:11px;color:#9e9e9e}
+.ai-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#e0e0e0}
+.ai-dot.on{background:#1D9E75}
+.ai-status-bar{display:flex;align-items:center;gap:8px;padding:9px 13px;
+    border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;margin-bottom:18px}
+.ai-status-dot{width:6px;height:6px;border-radius:50%;background:#1D9E75;flex-shrink:0}
+.ai-status-txt{font-size:12px;color:#166534}
+.ai-key-row{display:flex;align-items:center;justify-content:space-between;
+    padding:9px 13px;border-radius:10px;background:#fff;
+    border:1px solid #e8e8e8;margin-bottom:6px}
+.ai-key-left{display:flex;align-items:center;gap:9px}
+.ai-key-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ai-key-name{font-size:13px;color:#191d3a}
+.ai-key-ok{font-size:11px;color:#1D9E75}
+.ai-key-warn{font-size:11px;color:#e68900}
 
 .notice{border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;
     display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
@@ -1283,62 +1290,56 @@ elif st.session_state["tab"] == "log":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
-    # ── ① AI Provider Selector ────────────────────────────────────────────────
-    st.markdown('<div class="sec-lbl" style="margin-top:6px">Pilih Provider AI</div>',
+    # ── ① AI Provider Selector — minimalist ─────────────────────────────────
+    st.markdown('<div class="sec-lbl" style="margin-top:6px">AI Provider</div>',
                 unsafe_allow_html=True)
 
     _cur_prov = get_ai_provider()
     _oai_has  = bool(get_openai_key())
     _cla_has  = bool(get_claude_key())
 
-    # Render 2 card pilihan provider
-    _card_oai_cls = "ai-card ai-card-active-openai" if _cur_prov == "openai" else "ai-card"
-    _card_cla_cls = "ai-card ai-card-active-claude"  if _cur_prov == "claude"  else "ai-card"
-    _oai_chk_cls  = "ai-openai-check" if _cur_prov == "openai" else "ai-inactive-check"
-    _cla_chk_cls  = "ai-claude-check"  if _cur_prov == "claude"  else "ai-inactive-check"
-    _oai_chk_lbl  = "✓ Aktif" if _cur_prov == "openai" else ("Key OK" if _oai_has else "Belum ada key")
-    _cla_chk_lbl  = "✓ Aktif" if _cur_prov == "claude"  else ("Key OK" if _cla_has else "Belum ada key")
+    _oai_active = "active" if _cur_prov == "openai" else ""
+    _cla_active = "active" if _cur_prov == "claude"  else ""
+    _oai_dot    = "on"     if _cur_prov == "openai" else ""
+    _cla_dot    = "on"     if _cur_prov == "claude"  else ""
+    _active_lbl = "OpenAI gpt-4o-mini" if _cur_prov == "openai" else "Claude claude-sonnet-4-5"
 
-    st.markdown(f"""
-<div class="ai-selector">
-  <div class="{_card_oai_cls}">
-    <div class="ai-card-logo">🤖</div>
-    <div class="ai-card-name">OpenAI</div>
-    <div class="ai-card-model">gpt-4o-mini</div>
-    <span class="ai-card-check {_oai_chk_cls}">{_oai_chk_lbl}</span>
+    st.markdown(
+        f'''<div class="ai-sel">
+  <div class="ai-card-min {_oai_active}">
+    <div class="ai-card-icon">🤖</div>
+    <div class="ai-card-info"><b>OpenAI</b><span>gpt-4o-mini</span></div>
+    <div class="ai-dot {_oai_dot}"></div>
   </div>
-  <div class="{_card_cla_cls}">
-    <div class="ai-card-logo">🟣</div>
-    <div class="ai-card-name">Claude AI</div>
-    <div class="ai-card-model">claude-sonnet-4-5</div>
-    <span class="ai-card-check {_cla_chk_cls}">{_cla_chk_lbl}</span>
+  <div class="ai-card-min {_cla_active}">
+    <div class="ai-card-icon">🟣</div>
+    <div class="ai-card-info"><b>Claude AI</b><span>claude-sonnet-4-5</span></div>
+    <div class="ai-dot {_cla_dot}"></div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+<div class="ai-status-bar">
+  <div class="ai-status-dot"></div>
+  <span class="ai-status-txt">Active: {_active_lbl}</span>
+</div>''',
+        unsafe_allow_html=True)
 
-    # Tombol pilih provider
     _pa, _pb = st.columns(2)
     with _pa:
-        _oai_btn_type = "primary" if _cur_prov == "openai" else "secondary"
-        if st.button("Gunakan OpenAI", type=_oai_btn_type,
+        if st.button("Gunakan OpenAI",
+                     type="primary" if _cur_prov == "openai" else "secondary",
                      use_container_width=True, key="sel_openai"):
             st.session_state["ai_provider"] = "openai"
             st.rerun()
     with _pb:
-        _cla_btn_type = "primary" if _cur_prov == "claude" else "secondary"
-        if st.button("Gunakan Claude AI", type=_cla_btn_type,
+        if st.button("Gunakan Claude AI",
+                     type="primary" if _cur_prov == "claude" else "secondary",
                      use_container_width=True, key="sel_claude"):
             st.session_state["ai_provider"] = "claude"
             st.rerun()
 
-    # Konfirmasi provider aktif
-    if _cur_prov == "openai":
-        notice("info", "Provider aktif: <b>OpenAI gpt-4o-mini</b>")
-    else:
-        notice("violet", "Provider aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic)")
-
-    # ── ② API Keys ────────────────────────────────────────────────────────────
-    st.markdown('<div class="sec-lbl">API Keys</div>', unsafe_allow_html=True)
+    # ── ② API Keys — hanya tampilkan status, tanpa nilai key ─────────────────
+    st.markdown('<div class="sec-lbl" style="margin-top:18px">API Keys</div>',
+                unsafe_allow_html=True)
 
     # — OpenAI key —
     _oai_secrets_ok = False
@@ -1348,25 +1349,24 @@ elif st.session_state["tab"] == "settings":
             _oai_secrets_ok = True
     except: pass
 
-    if _oai_secrets_ok:
-        st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
-<div class="st-body"><div class="st-title">OpenAI — gpt-4o-mini</div>
-<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
-<span class="st-badge bg">✓ Siap</span></div>""", unsafe_allow_html=True)
-    else:
-        st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
-<div class="st-body"><div class="st-title">OpenAI — gpt-4o-mini</div>
-<div class="st-sub">Masukkan key manual untuk sesi ini</div></div>
-<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+    _oai_ready = _oai_secrets_ok or bool(st.session_state.get("openai_key_manual",""))
+    _oai_dot_c = "#1D9E75" if _oai_ready else "#e68900"
+    _oai_lbl   = "ready" if _oai_ready else "belum dikonfigurasi"
+    _oai_lcls  = "ai-key-ok" if _oai_ready else "ai-key-warn"
+
+    st.markdown(
+        f'<div class="ai-key-row"><div class="ai-key-left">' +
+        f'<div class="ai-key-dot" style="background:{_oai_dot_c}"></div>' +
+        f'<span class="ai-key-name">OpenAI</span></div>' +
+        f'<span class="{_oai_lcls}">{_oai_lbl}</span></div>',
+        unsafe_allow_html=True)
+    if not _oai_ready:
         _nk_oai = st.text_input(
-            "OpenAI API Key",
-            value=st.session_state.get("openai_key_manual",""),
+            "OpenAI API Key", value=st.session_state.get("openai_key_manual",""),
             type="password", placeholder="sk-proj-...",
             label_visibility="collapsed", key="inp_oai_key")
         if _nk_oai != st.session_state.get("openai_key_manual",""):
             st.session_state["openai_key_manual"] = _nk_oai; st.rerun()
-        if st.session_state.get("openai_key_manual",""):
-            notice("ok","OpenAI key aktif untuk sesi ini.")
 
     # — Claude key —
     _cla_secrets_ok = False
@@ -1376,25 +1376,24 @@ elif st.session_state["tab"] == "settings":
             _cla_secrets_ok = True
     except: pass
 
-    if _cla_secrets_ok:
-        st.markdown("""<div class="st-row"><div class="st-icon si-v">🟣</div>
-<div class="st-body"><div class="st-title">Claude AI — claude-sonnet-4-5</div>
-<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
-<span class="st-badge bv">✓ Siap</span></div>""", unsafe_allow_html=True)
-    else:
-        st.markdown("""<div class="st-row"><div class="st-icon si-y">🟣</div>
-<div class="st-body"><div class="st-title">Claude AI — claude-sonnet-4-5</div>
-<div class="st-sub">Masukkan key manual untuk sesi ini</div></div>
-<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+    _cla_ready = _cla_secrets_ok or bool(st.session_state.get("claude_key_manual",""))
+    _cla_dot_c = "#1D9E75" if _cla_ready else "#e68900"
+    _cla_lbl   = "ready" if _cla_ready else "belum dikonfigurasi"
+    _cla_lcls  = "ai-key-ok" if _cla_ready else "ai-key-warn"
+
+    st.markdown(
+        f'<div class="ai-key-row"><div class="ai-key-left">' +
+        f'<div class="ai-key-dot" style="background:{_cla_dot_c}"></div>' +
+        f'<span class="ai-key-name">Claude AI</span></div>' +
+        f'<span class="{_cla_lcls}">{_cla_lbl}</span></div>',
+        unsafe_allow_html=True)
+    if not _cla_ready:
         _nk_cla = st.text_input(
-            "Anthropic API Key",
-            value=st.session_state.get("claude_key_manual",""),
+            "Anthropic API Key", value=st.session_state.get("claude_key_manual",""),
             type="password", placeholder="sk-ant-api03-...",
             label_visibility="collapsed", key="inp_cla_key")
         if _nk_cla != st.session_state.get("claude_key_manual",""):
             st.session_state["claude_key_manual"] = _nk_cla; st.rerun()
-        if st.session_state.get("claude_key_manual",""):
-            notice("ok","Claude key aktif untuk sesi ini.")
 
     # ── ③ Cek Koneksi ─────────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Cek Koneksi</div>', unsafe_allow_html=True)
