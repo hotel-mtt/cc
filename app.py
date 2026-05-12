@@ -26,7 +26,17 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── Cookie-based auth helpers ─────────────────────────────────────────────────
+# Login persist setelah refresh menggunakan browser cookie (HMAC token).
+# Tambahkan ke requirements.txt:  streamlit-cookies-controller>=0.0.4
+try:
+    from streamlit_cookies_controller import CookieController
+    _COOKIE_OK = True
+except ImportError:
+    _COOKIE_OK = False
+
+_COOKIE_NAME = "cc_report_auth"
+
 def _get_password() -> str:
     try:
         p = st.secrets["auth"]["password"]
@@ -51,19 +61,66 @@ def _check_pw(candidate: str) -> bool:
         hashlib.sha256(correct.encode()).digest(),
     )
 
-def _is_session_valid() -> bool:
-    login_time = st.session_state.get("_auth_login_time", 0)
-    ttl = _ttl_hours() * 3600
-    return (time.time() - login_time) < ttl
+def _make_token() -> str:
+    """Buat signed token: timestamp:HMAC — disimpan di browser cookie."""
+    pw  = _get_password()
+    ts  = str(int(time.time()))
+    sig = hmac.new(pw.encode(), (pw + ts).encode(), hashlib.sha256).hexdigest()
+    return f"{ts}:{sig}"
+
+def _verify_token(token: str) -> bool:
+    """Verifikasi token dari cookie, termasuk cek TTL."""
+    if not token or ":" not in token:
+        return False
+    try:
+        ts_str, sig = token.split(":", 1)
+        ts  = int(ts_str)
+        if (time.time() - ts) > _ttl_hours() * 3600:
+            return False
+        pw       = _get_password()
+        expected = hmac.new(pw.encode(), (pw + ts_str).encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(sig, expected)
+    except Exception:
+        return False
+
+def _get_cookie_ctrl():
+    if not _COOKIE_OK:
+        return None
+    if "_cookie_ctrl" not in st.session_state:
+        st.session_state["_cookie_ctrl"] = CookieController()
+    return st.session_state["_cookie_ctrl"]
 
 # ── login wall ────────────────────────────────────────────────────────────────
 def require_login():
-    if st.session_state.get("_auth_ok") and _is_session_valid():
-        _render_logout_button()
-        return
-    if st.session_state.get("_auth_ok") and not _is_session_valid():
+    """
+    1. Cek session state → sudah login & belum expired → lanjut.
+    2. Jika session kosong (setelah refresh), baca cookie → restore login.
+    3. Jika tidak ada / invalid → tampilkan halaman login.
+    """
+    ctrl = _get_cookie_ctrl()
+
+    # Restore dari cookie jika session belum ada
+    if not st.session_state.get("_auth_ok") and ctrl:
+        try:
+            token = ctrl.get(_COOKIE_NAME)
+            if token and _verify_token(token):
+                st.session_state["_auth_ok"]         = True
+                st.session_state["_auth_login_time"] = time.time()
+        except Exception:
+            pass
+
+    # Cek apakah sudah login & masih dalam TTL
+    if st.session_state.get("_auth_ok"):
+        elapsed = time.time() - st.session_state.get("_auth_login_time", 0)
+        if elapsed < _ttl_hours() * 3600:
+            _render_logout_button()
+            return
+        # Sesi expired
         st.session_state["_auth_ok"] = False
-        st.session_state["_auth_login_time"] = 0
+        if ctrl:
+            try: ctrl.remove(_COOKIE_NAME)
+            except: pass
+
     _render_login_page()
     st.stop()
 
@@ -71,8 +128,12 @@ def _render_logout_button():
     with st.sidebar:
         st.markdown("---")
         if st.button("🔒 Logout", use_container_width=True, key="_auth_logout_btn"):
-            st.session_state["_auth_ok"] = False
+            st.session_state["_auth_ok"]         = False
             st.session_state["_auth_login_time"] = 0
+            ctrl = _get_cookie_ctrl()
+            if ctrl:
+                try: ctrl.remove(_COOKIE_NAME)
+                except: pass
             st.rerun()
 
 def _render_login_page():
@@ -138,20 +199,29 @@ label[data-testid="stWidgetLabel"]{display:none !important}
         key="_auth_pw_input", label_visibility="collapsed")
     login_btn = st.button("Masuk →", type="primary", use_container_width=True, key="_auth_login_btn")
 
-    if login_btn or (pw_input and st.session_state.get("_auth_enter_pressed")):
+    if login_btn:
         if not _get_password():
             st.markdown('<div class="err-box">⚠ Password belum dikonfigurasi di secrets.toml</div>',
                         unsafe_allow_html=True)
         elif _check_pw(pw_input):
             st.session_state["_auth_ok"]         = True
             st.session_state["_auth_login_time"] = time.time()
+            # Simpan token ke browser cookie agar persist setelah refresh
+            ctrl = _get_cookie_ctrl()
+            if ctrl:
+                try:
+                    ctrl.set(_COOKIE_NAME, _make_token(),
+                             max_age=int(_ttl_hours() * 3600))
+                except Exception:
+                    pass
             st.rerun()
         else:
             st.markdown('<div class="err-box">✕ Password salah. Coba lagi.</div>',
                         unsafe_allow_html=True)
 
     ttl = _ttl_hours()
-    st.markdown(f'<div class="hint">Sesi aktif selama {int(ttl)} jam setelah login.</div>',
+    extra = "" if _COOKIE_OK else ' &nbsp;·&nbsp; <code>pip install streamlit-cookies-controller</code> untuk persist'
+    st.markdown(f'<div class="hint">Sesi aktif selama {int(ttl)} jam setelah login.{extra}</div>',
                 unsafe_allow_html=True)
 
 
