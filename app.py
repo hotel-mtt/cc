@@ -1290,6 +1290,8 @@ elif st.session_state["tab"] == "log":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
+    _cur_prov = get_ai_provider()   # dibutuhkan oleh Cek Koneksi dan AI Provider
+
     # ── ③ Cek Koneksi ─────────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Cek Koneksi</div>', unsafe_allow_html=True)
 
@@ -1337,7 +1339,6 @@ elif st.session_state["tab"] == "settings":
     st.markdown('<div class="sec-lbl" style="margin-top:6px">AI Provider</div>',
                 unsafe_allow_html=True)
 
-    _cur_prov = get_ai_provider()
     _oai_has  = bool(get_openai_key())
     _cla_has  = bool(get_claude_key())
 
