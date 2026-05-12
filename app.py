@@ -171,13 +171,18 @@ def _dashboard_login_wall() -> bool:
 <div class="dash-lock-err">{_err}</div>
 """, unsafe_allow_html=True)
 
-    pw = st.text_input("Password", type="password",
-                       placeholder="Password",
-                       label_visibility="collapsed",
-                       key="_dash_pw_input")
+    # Kolom tengah untuk batasi lebar input & tombol
+    _col_l, _col_c, _col_r = st.columns([1, 2, 1])
+    with _col_c:
+        pw = st.text_input("Password", type="password",
+                           placeholder="Password",
+                           label_visibility="collapsed",
+                           key="_dash_pw_input")
 
-    if st.button("Buka Dashboard", type="primary",
-                 use_container_width=True, key="_dash_login_btn"):
+        _btn = st.button("Buka Dashboard", type="primary",
+                         use_container_width=True, key="_dash_login_btn")
+
+    if _btn:
         if _check_pw(pw):
             st.session_state["_auth_ok"]         = True
             st.session_state["_auth_login_time"] = time.time()
