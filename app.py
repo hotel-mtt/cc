@@ -678,7 +678,7 @@ def ai_parse(text: str = "", images: list = None) -> tuple:
                     "text": text if text else "Extract all structured data from this document."})
     _client = httpx.Client()
     resp = openai.OpenAI(api_key=key, http_client=_client).chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini-mini",
         messages=[{"role":"system","content":_SYS},{"role":"user","content":content}],
         temperature=0.0, max_tokens=800,
     )
@@ -1165,7 +1165,7 @@ elif st.session_state["tab"] == "settings":
     if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
         _rl = []
         _ol = bool(oai_key())
-        _rl.append((_ol,"OpenAI GPT-4o","Terhubung" if _ol else "Key tidak ditemukan"))
+        _rl.append((_ol,"OpenAI gpt-4o-mini","Terhubung" if _ol else "Key tidak ditemukan"))
         _sc = False
         try:
             if st.secrets["google_sheets"]["sheet_id"] and \
@@ -1191,12 +1191,12 @@ elif st.session_state["tab"] == "settings":
 
     if oai_ok:
         st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
-<div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
+<div class="st-body"><div class="st-title">OpenAI gpt-4o-mini</div>
 <div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
 <span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
     else:
         st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
-<div class="st-body"><div class="st-title">OpenAI GPT-4o</div>
+<div class="st-body"><div class="st-title">OpenAI gpt-4o-mini</div>
 <div class="st-sub">API key belum dikonfigurasi</div></div>
 <span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
         nk = st.text_input("OpenAI API Key",
@@ -1252,7 +1252,7 @@ elif st.session_state["tab"] == "settings":
   <div class="about-r"><div class="about-k">Dokumen</div>
     <div class="about-v">Expedia TAAP · Mitra Tours · Invoice hotel</div></div>
   <div class="about-r"><div class="about-k">Model AI</div>
-    <div class="about-v">GPT-4o (OpenAI)</div></div>
+    <div class="about-v">gpt-4o-mini (OpenAI)</div></div>
 </div>""", unsafe_allow_html=True)
 
 
