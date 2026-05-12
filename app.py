@@ -98,7 +98,7 @@ def require_login():
 
 def _render_logout_button():
     """Tombol logout kecil — dipakai di dalam dashboard."""
-    if st.button("🔒 Logout ", type="secondary",
+    if st.button("🔒 Logout Dashboard", type="secondary",
                  use_container_width=True, key="_auth_logout_btn"):
         st.session_state["_auth_ok"]         = False
         st.session_state["_auth_login_time"] = 0
@@ -154,7 +154,7 @@ def _dashboard_login_wall() -> bool:
     pw = st.text_input("Password Dashboard", type="password",
                        placeholder="••••••••", label_visibility="collapsed",
                        key="_dash_pw_input")
-    if st.button("🔓 Buka ", type="primary",
+    if st.button("🔓 Buka Dashboard", type="primary",
                  use_container_width=True, key="_dash_login_btn"):
         if _check_pw(pw):
             st.session_state["_auth_ok"]         = True
@@ -1320,13 +1320,13 @@ elif st.session_state["tab"] == "settings":
     _pa, _pb = st.columns(2)
     with _pa:
         _oai_btn_type = "primary" if _cur_prov == "openai" else "secondary"
-        if st.button("OpenAI", type=_oai_btn_type,
+        if st.button("Gunakan OpenAI", type=_oai_btn_type,
                      use_container_width=True, key="sel_openai"):
             st.session_state["ai_provider"] = "openai"
             st.rerun()
     with _pb:
         _cla_btn_type = "primary" if _cur_prov == "claude" else "secondary"
-        if st.button("Claude AI", type=_cla_btn_type,
+        if st.button("Gunakan Claude AI", type=_cla_btn_type,
                      use_container_width=True, key="sel_claude"):
             st.session_state["ai_provider"] = "claude"
             st.rerun()
