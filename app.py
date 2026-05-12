@@ -1400,13 +1400,13 @@ elif st.session_state["tab"] == "settings":
 
     _pa, _pb = st.columns(2)
     with _pa:
-        if st.button("Gunakan OpenAI",
+        if st.button("OpenAI",
                      type="primary" if _cur_prov == "openai" else "secondary",
                      use_container_width=True, key="sel_openai"):
             st.session_state["ai_provider"] = "openai"
             st.rerun()
     with _pb:
-        if st.button("Gunakan Claude AI",
+        if st.button("Claude AI",
                      type="primary" if _cur_prov == "claude" else "secondary",
                      use_container_width=True, key="sel_claude"):
             st.session_state["ai_provider"] = "claude"
