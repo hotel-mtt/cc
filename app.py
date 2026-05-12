@@ -1320,13 +1320,13 @@ elif st.session_state["tab"] == "settings":
     _pa, _pb = st.columns(2)
     with _pa:
         _oai_btn_type = "primary" if _cur_prov == "openai" else "secondary"
-        if st.button("Gunakan OpenAI", type=_oai_btn_type,
+        if st.button("OpenAI", type=_oai_btn_type,
                      use_container_width=True, key="sel_openai"):
             st.session_state["ai_provider"] = "openai"
             st.rerun()
     with _pb:
         _cla_btn_type = "primary" if _cur_prov == "claude" else "secondary"
-        if st.button("Gunakan Claude AI", type=_cla_btn_type,
+        if st.button("Claude AI", type=_cla_btn_type,
                      use_container_width=True, key="sel_claude"):
             st.session_state["ai_provider"] = "claude"
             st.rerun()
