@@ -137,31 +137,43 @@ def _dashboard_login_wall() -> bool:
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
 
-    # ── Form login minimalist ────────────────────────────────────────────────
-    ttl = _ttl_hours()
+    # ── Form login — single HTML block, no Streamlit spacing gaps ──────────
+    ttl   = int(_ttl_hours())
+    _err  = st.session_state.get("_dash_err", "")
+
     st.markdown(f"""
-<div style="display:flex;align-items:center;justify-content:center;
-    padding:48px 16px;min-height:320px;">
-  <div style="width:100%;max-width:300px;text-align:center;">
-    <div style="width:44px;height:44px;border-radius:12px;
-        background:#fff;border:1px solid #e0e0e0;
-        display:flex;align-items:center;justify-content:center;
-        margin:0 auto 20px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="#191d3a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-      </svg>
-    </div>
-    <div style="font-size:15px;font-weight:600;color:#191d3a;margin-bottom:6px;">Dashboard</div>
-    <div style="font-size:12px;color:#9e9e9e;margin-bottom:0;">
-      Masukkan password untuk melanjutkan</div>
+<style>
+.dash-lock-wrap{{
+    display:flex;flex-direction:column;align-items:center;
+    padding:60px 16px 8px;text-align:center}}
+.dash-lock-icon{{
+    width:48px;height:48px;border-radius:14px;
+    background:#fff;border:1px solid #e4e4e4;
+    display:flex;align-items:center;justify-content:center;margin-bottom:18px}}
+.dash-lock-title{{font-size:16px;font-weight:600;color:#191d3a;margin-bottom:5px}}
+.dash-lock-sub{{font-size:12px;color:#aaa;margin-bottom:32px}}
+.dash-lock-err{{
+    font-size:12px;color:#e53935;margin-bottom:8px;min-height:16px;text-align:center}}
+.dash-lock-foot{{
+    font-size:11px;color:#ccc;margin-top:14px;margin-bottom:4px;text-align:center}}
+</style>
+<div class="dash-lock-wrap">
+  <div class="dash-lock-icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke="#191d3a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
   </div>
+  <div class="dash-lock-title">Dashboard</div>
+  <div class="dash-lock-sub">Masukkan password untuk melanjutkan</div>
 </div>
+<div class="dash-lock-err">{_err}</div>
 """, unsafe_allow_html=True)
 
     pw = st.text_input("Password", type="password",
-                       placeholder="Password", label_visibility="collapsed",
+                       placeholder="Password",
+                       label_visibility="collapsed",
                        key="_dash_pw_input")
 
     if st.button("Buka Dashboard", type="primary",
@@ -169,6 +181,7 @@ def _dashboard_login_wall() -> bool:
         if _check_pw(pw):
             st.session_state["_auth_ok"]         = True
             st.session_state["_auth_login_time"] = time.time()
+            st.session_state["_dash_err"]         = ""
             ctrl2 = _get_cookie_ctrl()
             if ctrl2:
                 try:
@@ -178,14 +191,12 @@ def _dashboard_login_wall() -> bool:
                     pass
             st.rerun()
         else:
-            st.markdown(
-                '<div style="font-size:12px;color:#e53935;text-align:center;' +
-                'margin-top:8px;">Password salah. Coba lagi.</div>',
-                unsafe_allow_html=True)
+            st.session_state["_dash_err"] = "Password salah. Coba lagi."
+            st.rerun()
 
     st.markdown(
-        f'<div style="font-size:11px;color:#bbb;text-align:center;margin-top:16px;">' +
-        f'Sesi aktif {int(ttl)} jam &nbsp;·&nbsp; Tab lain bebas diakses</div>',
+        f'<div class="dash-lock-foot">Sesi aktif {ttl} jam &nbsp;·&nbsp; ' +
+        'Tab lain bebas diakses</div>',
         unsafe_allow_html=True)
     return False
 
