@@ -3,7 +3,7 @@
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 #  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
-#         Pilih provider di tab Pengaturan (disimpan ke session state)
+#         Pilih provider di tab Settings (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
@@ -778,7 +778,7 @@ def _parse_openai(text: str = "", images: list = None) -> tuple:
     import openai, httpx
     key = get_openai_key()
     if not key:
-        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
+        raise ValueError("OpenAI API key belum diisi — buka tab Settings.")
     content = []
     if images:
         for b64, mime in images:
@@ -803,7 +803,7 @@ def _parse_claude(text: str = "", images: list = None) -> tuple:
     import anthropic
     key = get_claude_key()
     if not key:
-        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
+        raise ValueError("Anthropic API key belum diisi — buka tab Settings.")
     content = []
     if images:
         for b64, mime in images:
@@ -880,8 +880,8 @@ st.markdown(f"""
 <div class="app-header">
   <div class="ah-icon">💳</div>
   <div>
-    <div class="ah-title">CC Reporting</div>
-    <div class="ah-sub">AI Expense Manager</div>
+    <div class="ah-title">Credit Card Reporting</div>
+    <div class="ah-sub">OCR Automation</div>
   </div>
   <span class="ah-ai-badge {_prov_cls}">{_prov_ico} {_prov_lbl}</span>
   <div class="ah-live">LIVE</div>
@@ -906,11 +906,11 @@ with _nb:
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"🕐{_NL}Riwayat", key="nb_log", use_container_width=True,
+    if st.button(f"🕐{_NL}Activity Log", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"⚙️{_NL}Pengaturan", key="nb_set", use_container_width=True,
+    if st.button(f"⚙️{_NL}Settings", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -924,7 +924,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -963,10 +963,10 @@ if st.session_state["tab"] == "input":
     _ap = get_ai_provider()
     if _ap == "claude":
         notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
-               "Ganti di tab <b>Pengaturan</b>")
+               "Ganti di tab <b>Settings</b>")
     else:
         notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
-               "Ganti di tab <b>Pengaturan</b>")
+               "Ganti di tab <b>Settings</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
@@ -1281,11 +1281,11 @@ elif st.session_state["tab"] == "dashboard":
 
     except Exception as e:
         notice("err", str(e))
-        notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
+        notice("info","Konfigurasi Google Sheets di tab Settings.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — RIWAYAT
+#  TAB — Activity Log
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "log":
     try:
@@ -1302,7 +1302,7 @@ elif st.session_state["tab"] == "log":
             df_log["_ts"] = df_log["Timestamp Input"].apply(_pts)
             df_log = df_log.sort_values("_ts", ascending=False).reset_index(drop=True)
             st.markdown(
-                f'<div class="sec-lbl" style="margin-top:6px">Riwayat — {len(df_log)} transaksi</div>',
+                f'<div class="sec-lbl" style="margin-top:6px">Activity Log — {len(df_log)} transaksi</div>',
                 unsafe_allow_html=True)
             _log = df_log[["Timestamp Input","Booking ID","Issuer"]].copy()
             _log["Booking ID"] = _log["Booking ID"].astype(str)
@@ -1317,7 +1317,7 @@ elif st.session_state["tab"] == "log":
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — PENGATURAN
+#  TAB — Settings
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
