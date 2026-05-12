@@ -98,7 +98,7 @@ def require_login():
 
 def _render_logout_button():
     """Tombol logout kecil — dipakai di dalam dashboard."""
-    if st.button("🔒 Logout Dashboard", type="secondary",
+    if st.button("🔒 Logout ", type="secondary",
                  use_container_width=True, key="_auth_logout_btn"):
         st.session_state["_auth_ok"]         = False
         st.session_state["_auth_login_time"] = 0
