@@ -1290,6 +1290,49 @@ elif st.session_state["tab"] == "log":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
+    # ── ③ Cek Koneksi ─────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-lbl">Cek Koneksi</div>', unsafe_allow_html=True)
+
+    if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
+        _rl = []
+
+        # OpenAI check
+        _ol = bool(get_openai_key())
+        _rl.append((_ol, "OpenAI gpt-4o-mini",
+                    ("Terhubung" if _ol else "Key tidak ditemukan")
+                    + (" · Aktif" if _cur_prov == "openai" and _ol else "")))
+
+        # Claude check
+        _cl2 = bool(get_claude_key())
+        _rl.append((_cl2, "Claude claude-sonnet-4-5",
+                    ("Terhubung" if _cl2 else "Key tidak ditemukan")
+                    + (" · Aktif" if _cur_prov == "claude" and _cl2 else "")))
+
+        # Google Sheets check
+        _sc = False
+        try:
+            if st.secrets["google_sheets"]["sheet_id"] and \
+               st.secrets["gcp_service_account"]["client_email"]: _sc = True
+        except: pass
+        if _sc:
+            try: ws(); _rl.append((True,"Google Sheets","Terhubung"))
+            except Exception as e: _rl.append((False,"Google Sheets",str(e)[:55]))
+        else:
+            _rl.append((False,"Google Sheets","Belum dikonfigurasi"))
+
+        _rl.append((_PDF_OK,"PDF Upload",
+                    "pypdfium2 aktif" if _PDF_OK else "pypdfium2 tidak terinstall"))
+
+        _it = ""
+        for _ok2,_sv,_ms in _rl:
+            _cl  = "#1e9e5a" if _ok2 else "#e53935"
+            _it += (f'<div class="conn-item">'
+                    f'<div class="cdot" style="background:{_cl}"></div>'
+                    f'<span style="font-weight:700;color:{_cl}">{"✓" if _ok2 else "✕"} {_sv}</span>'
+                    f'&ensp;<span style="color:#9e9e9e">{_ms}</span></div>')
+        st.markdown(f'<div class="conn-list">{_it}</div>', unsafe_allow_html=True)
+
+
     # ── ① AI Provider Selector — minimalist ─────────────────────────────────
     st.markdown('<div class="sec-lbl" style="margin-top:6px">AI Provider</div>',
                 unsafe_allow_html=True)
@@ -1394,48 +1437,6 @@ elif st.session_state["tab"] == "settings":
             label_visibility="collapsed", key="inp_cla_key")
         if _nk_cla != st.session_state.get("claude_key_manual",""):
             st.session_state["claude_key_manual"] = _nk_cla; st.rerun()
-
-    # ── ③ Cek Koneksi ─────────────────────────────────────────────────────────
-    st.markdown('<div class="sec-lbl">Cek Koneksi</div>', unsafe_allow_html=True)
-
-    if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
-        _rl = []
-
-        # OpenAI check
-        _ol = bool(get_openai_key())
-        _rl.append((_ol, "OpenAI gpt-4o-mini",
-                    ("Terhubung" if _ol else "Key tidak ditemukan")
-                    + (" · Aktif" if _cur_prov == "openai" and _ol else "")))
-
-        # Claude check
-        _cl2 = bool(get_claude_key())
-        _rl.append((_cl2, "Claude claude-sonnet-4-5",
-                    ("Terhubung" if _cl2 else "Key tidak ditemukan")
-                    + (" · Aktif" if _cur_prov == "claude" and _cl2 else "")))
-
-        # Google Sheets check
-        _sc = False
-        try:
-            if st.secrets["google_sheets"]["sheet_id"] and \
-               st.secrets["gcp_service_account"]["client_email"]: _sc = True
-        except: pass
-        if _sc:
-            try: ws(); _rl.append((True,"Google Sheets","Terhubung"))
-            except Exception as e: _rl.append((False,"Google Sheets",str(e)[:55]))
-        else:
-            _rl.append((False,"Google Sheets","Belum dikonfigurasi"))
-
-        _rl.append((_PDF_OK,"PDF Upload",
-                    "pypdfium2 aktif" if _PDF_OK else "pypdfium2 tidak terinstall"))
-
-        _it = ""
-        for _ok2,_sv,_ms in _rl:
-            _cl  = "#1e9e5a" if _ok2 else "#e53935"
-            _it += (f'<div class="conn-item">'
-                    f'<div class="cdot" style="background:{_cl}"></div>'
-                    f'<span style="font-weight:700;color:{_cl}">{"✓" if _ok2 else "✕"} {_sv}</span>'
-                    f'&ensp;<span style="color:#9e9e9e">{_ms}</span></div>')
-        st.markdown(f'<div class="conn-list">{_it}</div>', unsafe_allow_html=True)
 
     # ── ④ Status Sistem ───────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Status Sistem</div>', unsafe_allow_html=True)
