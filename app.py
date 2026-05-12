@@ -1,13 +1,14 @@
 # =============================================================================
-#  AI CC Reporting System  v5
+#  AI CC Reporting System  v6
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
+#  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
+#         Pilih provider di tab Pengaturan (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
-import openai, gspread, json, base64, re, io, warnings, httpx
+import gspread, json, base64, re, io, warnings
 from google.oauth2.service_account import Credentials
-# from login_guard import require_login
 from datetime import datetime
 from PIL import Image
 
@@ -24,11 +25,9 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
- 
+
 # ── helpers ──────────────────────────────────────────────────────────────────
- 
 def _get_password() -> str:
-    """Ambil password dari secrets, fallback ke session state (manual input)."""
     try:
         p = st.secrets["auth"]["password"]
         if p and "GANTI" not in p:
@@ -36,61 +35,46 @@ def _get_password() -> str:
     except Exception:
         pass
     return st.session_state.get("_auth_pw_override", "")
- 
+
 def _ttl_hours() -> float:
     try:
         return float(st.secrets["auth"].get("session_ttl_hours", 8))
     except Exception:
         return 8.0
- 
+
 def _check_pw(candidate: str) -> bool:
     correct = _get_password()
     if not correct:
         return False
-    # Constant-time comparison untuk mencegah timing attack
     return hmac.compare_digest(
         hashlib.sha256(candidate.encode()).digest(),
         hashlib.sha256(correct.encode()).digest(),
     )
- 
+
 def _is_session_valid() -> bool:
     login_time = st.session_state.get("_auth_login_time", 0)
     ttl = _ttl_hours() * 3600
     return (time.time() - login_time) < ttl
- 
+
 # ── login wall ────────────────────────────────────────────────────────────────
- 
 def require_login():
-    """
-    Panggil fungsi ini di paling atas app.py.
-    Jika belum login / sesi kedaluwarsa → tampilkan form login & st.stop().
-    Jika sudah login → lanjut eksekusi app normal.
-    """
-    # Sudah login dan sesi masih valid → langsung lanjut
     if st.session_state.get("_auth_ok") and _is_session_valid():
         _render_logout_button()
         return
- 
-    # Reset flag jika sesi kedaluwarsa
     if st.session_state.get("_auth_ok") and not _is_session_valid():
         st.session_state["_auth_ok"] = False
         st.session_state["_auth_login_time"] = 0
- 
-    # Render halaman login
     _render_login_page()
     st.stop()
- 
- 
+
 def _render_logout_button():
-    """Tombol logout kecil di sidebar (tidak mengganggu layout utama)."""
     with st.sidebar:
         st.markdown("---")
         if st.button("🔒 Logout", use_container_width=True, key="_auth_logout_btn"):
             st.session_state["_auth_ok"] = False
             st.session_state["_auth_login_time"] = 0
             st.rerun()
- 
- 
+
 def _render_login_page():
     st.markdown("""
 <style>
@@ -104,7 +88,6 @@ html,body,[data-testid="stAppViewContainer"],
     max-width:420px !important;margin:0 auto !important}
 [data-testid="stSidebar"],#MainMenu,footer,header,
 [data-testid="stDecoration"]{display:none !important}
- 
 .login-card{
     background:#fff;border:1.5px solid #ddd;border-radius:24px;
     padding:36px 28px 28px;text-align:center}
@@ -114,7 +97,6 @@ html,body,[data-testid="stAppViewContainer"],
     font-size:28px;margin:0 auto 18px}
 .lc-title{font-size:22px;font-weight:800;color:#191d3a;margin-bottom:4px}
 .lc-sub  {font-size:13px;color:#9e9e9e;margin-bottom:24px}
- 
 .stTextInput input{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#f7f7f7 !important;font-size:15px !important;
@@ -125,7 +107,6 @@ html,body,[data-testid="stAppViewContainer"],
     border-color:#6398c8 !important;background:#fff !important;
     box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}
 label[data-testid="stWidgetLabel"]{display:none !important}
- 
 .stButton>button{
     width:100% !important;border-radius:13px !important;
     height:50px !important;font-size:15px !important;
@@ -135,7 +116,6 @@ label[data-testid="stWidgetLabel"]{display:none !important}
 .stButton>button:hover{
     background:#fddb32 !important;
     box-shadow:0 4px 14px rgba(255,199,68,.4) !important}
- 
 .err-box{
     background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;
     border-radius:12px;padding:11px 14px;font-size:13px;
@@ -143,7 +123,7 @@ label[data-testid="stWidgetLabel"]{display:none !important}
 .hint{font-size:12px;color:#bbb;margin-top:16px}
 </style>
 """, unsafe_allow_html=True)
- 
+
     st.markdown("""
 <div class="login-card">
   <div class="lc-icon">💳</div>
@@ -151,44 +131,34 @@ label[data-testid="stWidgetLabel"]{display:none !important}
   <div class="lc-sub">Masukkan password untuk melanjutkan</div>
 </div>
 """, unsafe_allow_html=True)
- 
-    # Spacer agar input muncul di tengah card secara visual
+
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
- 
     pw_input = st.text_input(
-        "Password", type="password",
-        placeholder="••••••••",
-        key="_auth_pw_input",
-        label_visibility="collapsed",
-    )
- 
+        "Password", type="password", placeholder="••••••••",
+        key="_auth_pw_input", label_visibility="collapsed")
     login_btn = st.button("Masuk →", type="primary", use_container_width=True, key="_auth_login_btn")
- 
+
     if login_btn or (pw_input and st.session_state.get("_auth_enter_pressed")):
         if not _get_password():
-            st.markdown(
-                '<div class="err-box">⚠ Password belum dikonfigurasi di secrets.toml</div>',
-                unsafe_allow_html=True)
+            st.markdown('<div class="err-box">⚠ Password belum dikonfigurasi di secrets.toml</div>',
+                        unsafe_allow_html=True)
         elif _check_pw(pw_input):
             st.session_state["_auth_ok"]         = True
             st.session_state["_auth_login_time"] = time.time()
             st.rerun()
         else:
-            st.markdown(
-                '<div class="err-box">✕ Password salah. Coba lagi.</div>',
-                unsafe_allow_html=True)
- 
+            st.markdown('<div class="err-box">✕ Password salah. Coba lagi.</div>',
+                        unsafe_allow_html=True)
+
     ttl = _ttl_hours()
-    st.markdown(
-        f'<div class="hint">Sesi aktif selama {int(ttl)} jam setelah login.</div>',
-        unsafe_allow_html=True)
+    st.markdown(f'<div class="hint">Sesi aktif selama {int(ttl)} jam setelah login.</div>',
+                unsafe_allow_html=True)
+
 
 # ─── CSS ─────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-/* ── reset ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,[data-testid="stAppViewContainer"],
 [data-testid="stAppViewBlockContainer"],.main{
@@ -201,7 +171,6 @@ html,body,[data-testid="stAppViewContainer"],
 [data-testid="stDecoration"]{display:none !important}
 *{font-family:'Inter',system-ui,sans-serif !important}
 
-/* ── app header ── */
 .app-header{
     background:#191d3a;border-radius:20px;padding:16px 18px;
     display:flex;align-items:center;gap:13px;margin-bottom:12px}
@@ -220,7 +189,13 @@ html,body,[data-testid="stAppViewContainer"],
     content:'';width:6px;height:6px;border-radius:50%;
     background:#4ade80;display:block}
 
-/* ── nav ── */
+/* ── AI provider badge in header ── */
+.ah-ai-badge{
+    font-size:10px;font-weight:700;letter-spacing:.4px;
+    padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-left:6px}
+.ah-ai-openai{background:#0d1f12;color:#4ade80;border:1px solid #1e4620}
+.ah-ai-claude{background:#1a1020;color:#c084fc;border:1px solid #6b21a8}
+
 .nb-wrap div[data-testid="stHorizontalBlock"]{gap:8px !important}
 .nb-wrap button{
     height:76px !important;border-radius:16px !important;
@@ -235,20 +210,17 @@ html,body,[data-testid="stAppViewContainer"],
     color:#fddb32 !important;box-shadow:0 3px 10px rgba(0,0,0,.22) !important}
 .nb-wrap button[kind="primary"]:hover{background:#333 !important;border-color:#333 !important}
 
-/* ── section label ── */
 .sec-lbl{
     font-size:11px;font-weight:700;text-transform:uppercase;
     letter-spacing:.9px;color:#9e9e9e;margin:16px 0 10px;
     padding-bottom:8px;border-bottom:1.5px solid #ddd}
 
-/* ── form labels ── */
 label[data-testid="stWidgetLabel"] p,
 label[data-testid="stWidgetLabel"]{
     font-size:12px !important;font-weight:600 !important;
     color:#191d3a !important;text-transform:none !important;
     letter-spacing:0 !important;margin-bottom:4px !important}
 
-/* ── inputs ── */
 .stTextInput input,.stNumberInput input{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:15px !important;
@@ -266,32 +238,20 @@ label[data-testid="stWidgetLabel"]{
     display:flex !important;align-items:center !important;
     box-sizing:border-box !important}
 
-/* ── widget wrappers: no clipping, no extra padding ── */
 .stTextInput,.stSelectbox,[data-testid="stSelectbox"]{
     width:100% !important;min-width:0 !important}
-div[data-testid="stWidgetLabel"]{
-    overflow:visible !important}
+div[data-testid="stWidgetLabel"]{overflow:visible !important}
 
-/* ── column layout — pixel-perfect equal split ── */
 [data-testid="stHorizontalBlock"]{
-    gap:12px !important;
-    align-items:flex-start !important;
-    flex-wrap:nowrap !important;
-    overflow:visible !important}
+    gap:12px !important;align-items:flex-start !important;
+    flex-wrap:nowrap !important;overflow:visible !important}
 [data-testid="stHorizontalBlock"]>[data-testid="column"]{
-    flex:1 1 0% !important;
-    min-width:0 !important;
-    max-width:none !important;
-    overflow:visible !important;
-    padding-bottom:4px !important}
-
-/* make inner stVerticalBlock never clip its children */
+    flex:1 1 0% !important;min-width:0 !important;
+    max-width:none !important;overflow:visible !important;padding-bottom:4px !important}
 [data-testid="stHorizontalBlock"]>[data-testid="column"]>div,
 [data-testid="stHorizontalBlock"]>[data-testid="column"] [data-testid="stVerticalBlock"]{
-    overflow:visible !important;
-    width:100% !important;min-width:0 !important}
+    overflow:visible !important;width:100% !important;min-width:0 !important}
 
-/* ── global buttons ── */
 .stButton>button{
     width:100% !important;border-radius:13px !important;
     height:50px !important;font-size:14px !important;
@@ -306,7 +266,6 @@ div[data-testid="stWidgetLabel"]{
 .stButton>button[kind="secondary"]:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important;color:#191d3a !important}
 
-/* ── bulk action buttons ── */
 .bb-wrap div[data-testid="stHorizontalBlock"] button{
     height:52px !important;border-radius:13px !important;
     font-size:14px !important;font-weight:700 !important}
@@ -319,7 +278,6 @@ div[data-testid="stWidgetLabel"]{
     background:#fff !important;border:1.5px solid #ddd !important;
     color:#616161 !important;font-size:20px !important;font-weight:400 !important}
 
-/* ── link button ── */
 [data-testid="stLinkButton"] a{
     background:#6398c8 !important;color:#fff !important;
     border-radius:13px !important;height:52px !important;
@@ -327,19 +285,39 @@ div[data-testid="stWidgetLabel"]{
     display:flex !important;align-items:center !important;
     justify-content:center !important;text-decoration:none !important}
 
-/* ── checkbox ── */
 [data-testid="stCheckbox"] label{
     font-size:14px !important;color:#616161 !important;font-weight:500 !important}
 
-/* ── notices ── */
+/* ── AI provider selector cards ── */
+.ai-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.ai-card{
+    background:#fff;border:2px solid #ddd;border-radius:16px;
+    padding:16px 14px;cursor:pointer;transition:all .15s ease;text-align:center}
+.ai-card:hover{border-color:#6398c8;background:#e8f0fe}
+.ai-card-active-openai{
+    border-color:#10b981 !important;background:#f0fdf4 !important;
+    box-shadow:0 0 0 3px rgba(16,185,129,.15) !important}
+.ai-card-active-claude{
+    border-color:#a855f7 !important;background:#faf5ff !important;
+    box-shadow:0 0 0 3px rgba(168,85,247,.15) !important}
+.ai-card-logo{font-size:28px;margin-bottom:6px}
+.ai-card-name{font-size:13px;font-weight:800;color:#191d3a;margin-bottom:2px}
+.ai-card-model{font-size:11px;color:#9e9e9e;font-weight:500}
+.ai-card-check{
+    display:inline-block;margin-top:8px;font-size:10px;font-weight:700;
+    padding:3px 10px;border-radius:20px}
+.ai-openai-check{background:#dcfce7;color:#166534}
+.ai-claude-check{background:#f3e8ff;color:#6b21a8}
+.ai-inactive-check{background:#ededed;color:#9e9e9e}
+
 .notice{border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;
     display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
 .nok  {background:#f0fdf4;border:1px solid #86efac;color:#166534}
 .nerr {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
 .ninfo{background:#e8f0fe;border:1px solid #6398c8;color:#1e3a6e}
 .nwarn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.nviolet{background:#faf5ff;border:1px solid #d8b4fe;color:#6b21a8}
 
-/* ── expedia banner ── */
 .expedia-banner{
     background:#fff;border:1.5px solid #ddd;border-bottom:none;
     border-radius:16px 16px 0 0;padding:13px 16px;
@@ -350,76 +328,44 @@ div[data-testid="stWidgetLabel"]{
     color:#1e3a6e;background:#e8f0fe;border:1px solid #6398c8;
     padding:4px 11px;border-radius:20px;white-space:nowrap}
 
-/* ── file uploader ──
-   Strategy: sembunyikan label via CSS lapis demi lapis,
-   gunakan label="" + label_visibility="collapsed" di Python.
-   Tombol "Browse files" tetap muncul normal (tidak perlu dihide). ── */
-
-/* Sembunyikan widget label (teks di atas komponen) */
 [data-testid="stFileUploader"] [data-testid="stWidgetLabel"],
-[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] *{
-    display:none !important}
-
-/* Sembunyikan label HTML yang mungkin muncul di berbagai versi Streamlit */
+[data-testid="stFileUploader"] [data-testid="stWidgetLabel"] *{display:none !important}
 [data-testid="stFileUploaderDropzoneInput"] + label,
 [data-testid="stFileUploader"] > section > label,
 [data-testid="stFileUploader"] label[for]{
     display:none !important;visibility:hidden !important;
     height:0 !important;overflow:hidden !important}
-
-/* ── file uploader zone: sambung ke bawah banner, 
-   tampilkan konten default Streamlit (drag&drop text + browse button) ── */
 [data-testid="stFileUploader"]{margin-top:0 !important}
 [data-testid="stFileUploader"]>div:first-child,
 [data-testid="stFileUploader"] section{
-    border:1.5px dashed #b8cde0 !important;
-    border-top:none !important;
-    border-radius:0 0 16px 16px !important;
-    background:#f5f8fc !important;
-    margin-top:0 !important;
-    padding:28px 20px !important;
-    min-height:120px !important}
+    border:1.5px dashed #b8cde0 !important;border-top:none !important;
+    border-radius:0 0 16px 16px !important;background:#f5f8fc !important;
+    margin-top:0 !important;padding:28px 20px !important;min-height:120px !important}
 [data-testid="stFileUploader"]>div:first-child:hover,
 [data-testid="stFileUploader"] section:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important}
-
-/* Style tombol Browse agar konsisten */
 [data-testid="stFileUploader"] button{
-    border-radius:10px !important;
-    border:1.5px solid #ddd !important;
-    background:#fff !important;
-    color:#191d3a !important;
-    font-size:13px !important;
-    font-weight:600 !important;
-    padding:8px 18px !important;
-    height:auto !important}
+    border-radius:10px !important;border:1.5px solid #ddd !important;
+    background:#fff !important;color:#191d3a !important;
+    font-size:13px !important;font-weight:600 !important;
+    padding:8px 18px !important;height:auto !important}
 [data-testid="stFileUploader"] button:hover{
-    border-color:#6398c8 !important;
-    background:#e8f0fe !important}
-
-/* Teks drag & drop */
+    border-color:#6398c8 !important;background:#e8f0fe !important}
 [data-testid="stFileUploaderDropInstructions"]{
-    font-size:14px !important;
-    font-weight:600 !important;
-    color:#191d3a !important}
+    font-size:14px !important;font-weight:600 !important;color:#191d3a !important}
 [data-testid="stFileUploaderDropInstructions"] small,
 [data-testid="stFileUploaderDropInstructions"] span{
-    font-size:12px !important;
-    color:#9e9e9e !important;
-    font-weight:400 !important}
+    font-size:12px !important;color:#9e9e9e !important;font-weight:400 !important}
 
-/* ── stat cards ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .stat-card{background:#fff;border:1.5px solid #ddd;border-radius:18px;padding:16px 15px}
 .stat-val{font-size:22px;font-weight:800;color:#191d3a;line-height:1.1}
 .stat-lbl{font-size:11px;color:#9e9e9e;margin-top:5px;font-weight:500}
 
-/* ── progress bar ── */
 .bulk-prog{background:#ddd;border-radius:99px;height:5px;overflow:hidden;margin-bottom:6px}
 .bulk-prog-f{height:100%;background:#6398c8;border-radius:99px;transition:width .3s}
 .bulk-prog-lbl{font-size:12px;color:#9e9e9e;text-align:center;margin-bottom:14px;font-weight:500}
 
-/* ── summary card ── */
 .bulk-sum{background:#fff;border:1.5px solid #ddd;border-radius:18px;
     padding:18px 16px;margin-bottom:16px}
 .bulk-sum-ttl{font-size:11px;font-weight:700;text-transform:uppercase;
@@ -433,7 +379,6 @@ div[data-testid="stWidgetLabel"]{
 .bulk-bar-f{height:100%;background:#1e9e5a;border-radius:99px}
 .bulk-pct{font-size:11px;color:#9e9e9e;text-align:right;margin-top:5px}
 
-/* ── file result cards ── */
 .file-item{background:#fff;border:1.5px solid #ddd;border-radius:15px;
     padding:13px 15px;margin-bottom:8px}
 .fi-success{border-color:#6ee7b7 !important;background:#f0fdf4 !important}
@@ -458,13 +403,12 @@ div[data-testid="stWidgetLabel"]{
 .fi-v{font-size:12px;font-weight:500;color:#191d3a;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── settings rows ── */
 .st-row{display:flex;align-items:center;gap:12px;background:#fff;
     border:1.5px solid #ddd;border-radius:15px;padding:14px 15px;margin-bottom:10px}
 .st-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
     justify-content:center;font-size:18px;flex-shrink:0}
 .si-g{background:#f0fdf4}.si-r{background:#fff1f2}
-.si-b{background:#e8f0fe}.si-y{background:#fffde7}
+.si-b{background:#e8f0fe}.si-y{background:#fffde7}.si-v{background:#faf5ff}
 .st-body{flex:1;min-width:0}
 .st-title{font-size:14px;font-weight:700;color:#191d3a;line-height:1}
 .st-sub{font-size:12px;color:#9e9e9e;margin-top:3px}
@@ -473,6 +417,7 @@ div[data-testid="stWidgetLabel"]{
 .bg{background:#f0fdf4;color:#166534;border:1px solid #86efac}
 .br{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
 .by{background:#fffde7;color:#7a5c00;border:1px solid #fcd34d}
+.bv{background:#f3e8ff;color:#6b21a8;border:1px solid #d8b4fe}
 .conn-list{background:#fff;border:1.5px solid #ddd;border-radius:15px;
     overflow:hidden;margin-bottom:16px}
 .conn-item{display:flex;align-items:center;gap:9px;padding:11px 15px;
@@ -485,7 +430,6 @@ div[data-testid="stWidgetLabel"]{
 .about-k{font-size:12px;font-weight:700;color:#191d3a;width:70px;flex-shrink:0}
 .about-v{font-size:12px;color:#616161;line-height:1.5}
 
-/* ── dataframe ── */
 [data-testid="stDataFrame"]{border-radius:15px !important;border:1.5px solid #ddd !important;
     overflow:hidden !important;box-shadow:none !important}
 [data-testid="stDataFrame"] table{font-size:13px !important}
@@ -496,7 +440,6 @@ div[data-testid="stWidgetLabel"]{
     padding:10px 13px !important;border-bottom:1px solid #ededed !important}
 [data-testid="stDataFrame"] tr:hover td{background:#f5f8fc !important}
 
-/* ── metric ── */
 [data-testid="stMetric"]{background:#fff !important;border:1.5px solid #ddd !important;
     border-radius:15px !important;padding:14px !important;margin-bottom:0 !important}
 [data-testid="stMetricLabel"]{font-size:11px !important;font-weight:700 !important;
@@ -504,35 +447,61 @@ div[data-testid="stWidgetLabel"]{
 [data-testid="stMetricValue"]{font-size:15px !important;font-weight:800 !important;
     color:#191d3a !important}
 
-/* ── misc ── */
 .stSpinner>div{border-top-color:#6398c8 !important}
 .stExpander{border:1.5px solid #ddd !important;border-radius:14px !important;
     background:#fff !important;margin-bottom:10px !important}
 details>summary{font-size:13px !important;color:#616161 !important}
 
-/* ── mobile ── */
 @media(max-width:480px){
     .main .block-container{padding:8px 8px 80px !important}
     .app-header{border-radius:16px;padding:12px 14px}
     .ah-icon{width:40px;height:40px;font-size:20px}
     .ah-title{font-size:16px}
     .nb-wrap button{height:68px !important;font-size:10px !important}
-    .bs-val{font-size:20px}
-    .stat-val{font-size:18px}}
+    .bs-val{font-size:20px}.stat-val{font-size:18px}
+    .ai-selector{grid-template-columns:1fr 1fr}}
 </style>
 """, unsafe_allow_html=True)
 
 
-# ─── Key helpers ──────────────────────────────────────────────────────────────
-def oai_key() -> str:
+# ─── AI Provider helpers ──────────────────────────────────────────────────────
+# Provider: "openai" | "claude"
+
+def get_ai_provider() -> str:
+    """Kembalikan provider aktif: 'openai' atau 'claude'."""
+    return st.session_state.get("ai_provider", "openai")
+
+def get_openai_key() -> str:
     try:
         k = st.secrets["openai"]["api_key"]
         if k and len(k) > 20 and "GANTI" not in k and "PASTE" not in k:
             return k
     except Exception:
         pass
-    return st.session_state.get("oai_key", "")
+    return st.session_state.get("openai_key_manual", "")
 
+def get_claude_key() -> str:
+    try:
+        k = st.secrets["anthropic"]["api_key"]
+        if k and len(k) > 20 and "GANTI" not in k and "PASTE" not in k:
+            return k
+    except Exception:
+        pass
+    return st.session_state.get("claude_key_manual", "")
+
+def active_ai_ready() -> bool:
+    """Apakah provider yang dipilih sudah punya API key?"""
+    if get_ai_provider() == "openai":
+        return bool(get_openai_key())
+    return bool(get_claude_key())
+
+def active_ai_label() -> str:
+    if get_ai_provider() == "openai":
+        return "OpenAI gpt-4o-mini"
+    return "Claude claude-sonnet-4-5"
+
+
+# ─── Google Sheets ────────────────────────────────────────────────────────────
 def sheet_id() -> str:
     try:
         s = st.secrets["google_sheets"]["sheet_id"]
@@ -542,8 +511,6 @@ def sheet_id() -> str:
         pass
     return st.session_state.get("sheet_id", "")
 
-
-# ─── Google Sheets ────────────────────────────────────────────────────────────
 COLS = [
     "Timestamp Input","Supplier","Booking ID","Booking Date",
     "Issued Date","Hotel","Check-in","Room x Night",
@@ -625,7 +592,7 @@ def to_b64(img: Image.Image) -> tuple:
     return base64.b64encode(buf.getvalue()).decode(), "image/jpeg"
 
 
-# ─── AI parser ────────────────────────────────────────────────────────────────
+# ─── AI System Prompt (shared) ────────────────────────────────────────────────
 _SYS = """You are a corporate hotel expense AI parser for credit card reporting.
 Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice
 (IHG, Marriott, Hilton, etc.), screenshot, or free text.
@@ -633,7 +600,6 @@ Return ONLY a valid JSON object — no markdown, no explanation.
 
 Keys:
 - supplier   : string  — platform/OTA/hotel brand from document header
-                         e.g. "Expedia TAAP", "Mitra Tours & Travel", "IHG", "Marriott"
 - booking_id : string  — itinerary/booking/confirmation number
 - booked_on  : string  — booking date YYYY-MM-DD
 - issued_on  : string  — issued/receipt date YYYY-MM-DD
@@ -642,31 +608,24 @@ Keys:
 - checkout   : string  — check-out date YYYY-MM-DD
 - qty        : string  — rooms and nights e.g. "2 rooms x 2 nights"
 - room       : integer — TOTAL amount charged to the credit card (IDR/Rp).
-                         Priority order for finding this value:
-                         1. "Subtotal paid to Expedia" line  → use that amount
-                         2. Grand "Total" line (bottom of document)
-                         3. Sum of all "Total Room 1" + "Total Room 2" + ... lines
-                         4. Sum of all "Room 1" + "Room 2" + ... subtotal lines
-                         NEVER use per-night rates, Miscellaneous Tax alone, or
-                         resort fee alone — always use the final billed total.
+                         Priority: 1) "Subtotal paid to Expedia"  2) Grand Total
+                         3) Sum of all room totals  4) Sum of subtotals
 - name       : string  — primary guest name (first traveller listed)
-- card       : string  — e.g. "Visa •••• 0191" or "MasterCard •••• 4467", empty if absent
+- card       : string  — e.g. "Visa •••• 0191", empty if absent
 - notes      : string  — room type(s), number of rooms, tax details, confirmation #
 
 Rules:
 1. Dates: any format → YYYY-MM-DD.
-   "Mon, 11 May 2026" → "2026-05-11"  |  "13 May 2026" → "2026-05-13"
 2. Amounts: strip IDR/Rp/USD/$/commas → plain integer, no decimals.
-   "IDR 24,007,312.00" → 24007312
-3. room = the single final total the credit card was charged.
-   For multi-room hotel invoices: use the grand Total at the bottom.
-   For Expedia TAAP: use "Subtotal paid to Expedia" line.
+3. room = single final total the credit card was charged.
 4. qty: count distinct rooms × nights.
-   "2 rooms x 2 nights" if 2 rooms checked in same dates.
 5. Missing field → "" for strings, 0 for integers."""
 
-def ai_parse(text: str = "", images: list = None) -> tuple:
-    key = oai_key()
+
+# ─── AI Parser — OpenAI ───────────────────────────────────────────────────────
+def _parse_openai(text: str = "", images: list = None) -> tuple:
+    import openai, httpx
+    key = get_openai_key()
     if not key:
         raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
     content = []
@@ -688,6 +647,44 @@ def ai_parse(text: str = "", images: list = None) -> tuple:
     return json.loads(m.group()), raw
 
 
+# ─── AI Parser — Claude ───────────────────────────────────────────────────────
+def _parse_claude(text: str = "", images: list = None) -> tuple:
+    import anthropic
+    key = get_claude_key()
+    if not key:
+        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
+    content = []
+    if images:
+        for b64, mime in images:
+            content.append({
+                "type": "image",
+                "source": {"type": "base64", "media_type": mime, "data": b64}
+            })
+    content.append({
+        "type": "text",
+        "text": text if text else "Extract all structured data from this document."
+    })
+    client = anthropic.Anthropic(api_key=key)
+    resp = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=800,
+        system=_SYS,
+        messages=[{"role": "user", "content": content}],
+    )
+    raw = resp.content[0].text
+    m   = re.search(r"\{[\s\S]*\}", raw)
+    if not m: raise ValueError("Format AI tidak valid — JSON tidak ditemukan.")
+    return json.loads(m.group()), raw
+
+
+# ─── Unified AI parser ────────────────────────────────────────────────────────
+def ai_parse(text: str = "", images: list = None) -> tuple:
+    """Dispatch ke provider yang sedang aktif."""
+    if get_ai_provider() == "claude":
+        return _parse_claude(text, images)
+    return _parse_openai(text, images)
+
+
 # ─── UI utilities ─────────────────────────────────────────────────────────────
 def fmt(v) -> str:
     try:    return "Rp {:,}".format(int(float(v or 0))).replace(",",".")
@@ -697,10 +694,10 @@ def now_ts() -> str:
     return datetime.now().strftime("%d/%m/%Y %H:%M")
 
 def notice(kind: str, msg: str):
-    icons = {"ok":"✓","err":"✕","info":"ℹ","warn":"⚠"}
-    cls   = {"ok":"nok","err":"nerr","info":"ninfo","warn":"nwarn"}
+    icons = {"ok":"✓","err":"✕","info":"ℹ","warn":"⚠","violet":"✦"}
+    cls   = {"ok":"nok","err":"nerr","info":"ninfo","warn":"nwarn","violet":"nviolet"}
     st.markdown(
-        f'<div class="notice {cls[kind]}"><b>{icons[kind]}</b>&ensp;{msg}</div>',
+        f'<div class="notice {cls.get(kind,"ninfo")}"><b>{icons.get(kind,"ℹ")}</b>&ensp;{msg}</div>',
         unsafe_allow_html=True)
 
 
@@ -709,7 +706,9 @@ _DEF = {
     "tab":                "input",
     "bulk_results":       [],
     "bulk_saved_count":   0,
-    "oai_key":            "",
+    "openai_key_manual":  "",
+    "claude_key_manual":  "",
+    "ai_provider":        "openai",   # "openai" | "claude"
     "sheet_id":           "1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g",
     "last_issuer":        "",
     "last_pic":           "",
@@ -720,19 +719,21 @@ for _k, _v in _DEF.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
-def reset_bulk():
-    st.session_state["bulk_results"]     = []
-    st.session_state["bulk_saved_count"] = 0
-
 
 # ─── Header ───────────────────────────────────────────────────────────────────
-st.markdown("""
+_prov      = get_ai_provider()
+_prov_lbl  = "GPT-4o mini" if _prov == "openai" else "Claude Sonnet"
+_prov_cls  = "ah-ai-openai" if _prov == "openai" else "ah-ai-claude"
+_prov_ico  = "🤖" if _prov == "openai" else "🟣"
+
+st.markdown(f"""
 <div class="app-header">
   <div class="ah-icon">💳</div>
   <div>
     <div class="ah-title">CC Reporting</div>
     <div class="ah-sub">AI Expense Manager</div>
   </div>
+  <span class="ah-ai-badge {_prov_cls}">{_prov_ico} {_prov_lbl}</span>
   <div class="ah-live">LIVE</div>
 </div>
 """, unsafe_allow_html=True)
@@ -768,8 +769,10 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ═══════════════════════════════════════════════════════════════════════════════
 if st.session_state["tab"] == "input":
 
-    if not oai_key():
-        notice("err", "OpenAI API key belum diisi — buka tab <b>Pengaturan</b>.")
+    if not active_ai_ready():
+        _pv = get_ai_provider()
+        _nm = "OpenAI" if _pv == "openai" else "Anthropic"
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -804,6 +807,15 @@ if st.session_state["tab"] == "input":
         "Nama Kegiatan", value=st.session_state.get("last_nama_kegiatan",""),
         placeholder="Nama kegiatan (opsional)", key="bulk_nama_kegiatan")
 
+    # ── AI provider info banner ───────────────────────────────────────────────
+    _ap = get_ai_provider()
+    if _ap == "claude":
+        notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
+               "Ganti di tab <b>Pengaturan</b>")
+    else:
+        notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
+               "Ganti di tab <b>Pengaturan</b>")
+
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
 <div class="expedia-banner">
@@ -814,9 +826,6 @@ if st.session_state["tab"] == "input":
 """, unsafe_allow_html=True)
 
     # ── File uploader ─────────────────────────────────────────────────────────
-    # label="" + label_visibility="collapsed" adalah kombinasi paling aman.
-    # Jangan beri teks pada label karena Streamlit bisa render teks itu
-    # sebagai teks di dalam tombol "Browse files" pada versi tertentu.
     _ftypes = ["jpg","jpeg","png","webp"] + (["pdf"] if _PDF_OK else [])
     bulk_files = st.file_uploader(
         label="",
@@ -849,7 +858,9 @@ if st.session_state["tab"] == "input":
     st.markdown('</div>', unsafe_allow_html=True)
 
     if _clear:
-        reset_bulk(); st.rerun()
+        st.session_state["bulk_results"]     = []
+        st.session_state["bulk_saved_count"] = 0
+        st.rerun()
 
     # ── Process ───────────────────────────────────────────────────────────────
     if _run:
@@ -862,7 +873,8 @@ if st.session_state["tab"] == "input":
             st.session_state["last_pic"]           = bulk_pic
             st.session_state["last_no_bc"]         = bulk_no_bc
             st.session_state["last_nama_kegiatan"] = bulk_nama_kegiatan
-            reset_bulk()
+            st.session_state["bulk_results"]       = []
+            st.session_state["bulk_saved_count"]   = 0
 
             try:    _existing = load_rows()
             except: _existing = []
@@ -1092,7 +1104,6 @@ elif st.session_state["tab"] == "dashboard":
                         unsafe_allow_html=True)
 
             st.markdown('<div class="sec-lbl">Data transaksi</div>', unsafe_allow_html=True)
-
             srch = st.text_input("",placeholder="🔍  Cari hotel / tamu / booking ID...",
                                   label_visibility="collapsed", key="srch")
             if srch:
@@ -1152,20 +1163,138 @@ elif st.session_state["tab"] == "log":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
-    oai_ok = False
+    # ── ① AI Provider Selector ────────────────────────────────────────────────
+    st.markdown('<div class="sec-lbl" style="margin-top:6px">Pilih Provider AI</div>',
+                unsafe_allow_html=True)
+
+    _cur_prov = get_ai_provider()
+    _oai_has  = bool(get_openai_key())
+    _cla_has  = bool(get_claude_key())
+
+    # Render 2 card pilihan provider
+    _card_oai_cls = "ai-card ai-card-active-openai" if _cur_prov == "openai" else "ai-card"
+    _card_cla_cls = "ai-card ai-card-active-claude"  if _cur_prov == "claude"  else "ai-card"
+    _oai_chk_cls  = "ai-openai-check" if _cur_prov == "openai" else "ai-inactive-check"
+    _cla_chk_cls  = "ai-claude-check"  if _cur_prov == "claude"  else "ai-inactive-check"
+    _oai_chk_lbl  = "✓ Aktif" if _cur_prov == "openai" else ("Key OK" if _oai_has else "Belum ada key")
+    _cla_chk_lbl  = "✓ Aktif" if _cur_prov == "claude"  else ("Key OK" if _cla_has else "Belum ada key")
+
+    st.markdown(f"""
+<div class="ai-selector">
+  <div class="{_card_oai_cls}">
+    <div class="ai-card-logo">🤖</div>
+    <div class="ai-card-name">OpenAI</div>
+    <div class="ai-card-model">gpt-4o-mini</div>
+    <span class="ai-card-check {_oai_chk_cls}">{_oai_chk_lbl}</span>
+  </div>
+  <div class="{_card_cla_cls}">
+    <div class="ai-card-logo">🟣</div>
+    <div class="ai-card-name">Claude AI</div>
+    <div class="ai-card-model">claude-sonnet-4-5</div>
+    <span class="ai-card-check {_cla_chk_cls}">{_cla_chk_lbl}</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+    # Tombol pilih provider
+    _pa, _pb = st.columns(2)
+    with _pa:
+        _oai_btn_type = "primary" if _cur_prov == "openai" else "secondary"
+        if st.button("Gunakan OpenAI", type=_oai_btn_type,
+                     use_container_width=True, key="sel_openai"):
+            st.session_state["ai_provider"] = "openai"
+            st.rerun()
+    with _pb:
+        _cla_btn_type = "primary" if _cur_prov == "claude" else "secondary"
+        if st.button("Gunakan Claude AI", type=_cla_btn_type,
+                     use_container_width=True, key="sel_claude"):
+            st.session_state["ai_provider"] = "claude"
+            st.rerun()
+
+    # Konfirmasi provider aktif
+    if _cur_prov == "openai":
+        notice("info", "Provider aktif: <b>OpenAI gpt-4o-mini</b>")
+    else:
+        notice("violet", "Provider aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic)")
+
+    # ── ② API Keys ────────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-lbl">API Keys</div>', unsafe_allow_html=True)
+
+    # — OpenAI key —
+    _oai_secrets_ok = False
     try:
         k = st.secrets["openai"]["api_key"]
         if k and len(k) > 20 and "GANTI" not in k and "PASTE" not in k:
-            oai_ok = True
+            _oai_secrets_ok = True
     except: pass
 
-    st.markdown('<div class="sec-lbl" style="margin-top:6px">Cek Koneksi</div>',
-                unsafe_allow_html=True)
+    if _oai_secrets_ok:
+        st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
+<div class="st-body"><div class="st-title">OpenAI — gpt-4o-mini</div>
+<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
+<span class="st-badge bg">✓ Siap</span></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
+<div class="st-body"><div class="st-title">OpenAI — gpt-4o-mini</div>
+<div class="st-sub">Masukkan key manual untuk sesi ini</div></div>
+<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+        _nk_oai = st.text_input(
+            "OpenAI API Key",
+            value=st.session_state.get("openai_key_manual",""),
+            type="password", placeholder="sk-proj-...",
+            label_visibility="collapsed", key="inp_oai_key")
+        if _nk_oai != st.session_state.get("openai_key_manual",""):
+            st.session_state["openai_key_manual"] = _nk_oai; st.rerun()
+        if st.session_state.get("openai_key_manual",""):
+            notice("ok","OpenAI key aktif untuk sesi ini.")
+
+    # — Claude key —
+    _cla_secrets_ok = False
+    try:
+        k = st.secrets["anthropic"]["api_key"]
+        if k and len(k) > 20 and "GANTI" not in k and "PASTE" not in k:
+            _cla_secrets_ok = True
+    except: pass
+
+    if _cla_secrets_ok:
+        st.markdown("""<div class="st-row"><div class="st-icon si-v">🟣</div>
+<div class="st-body"><div class="st-title">Claude AI — claude-sonnet-4-5</div>
+<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
+<span class="st-badge bv">✓ Siap</span></div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""<div class="st-row"><div class="st-icon si-y">🟣</div>
+<div class="st-body"><div class="st-title">Claude AI — claude-sonnet-4-5</div>
+<div class="st-sub">Masukkan key manual untuk sesi ini</div></div>
+<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
+        _nk_cla = st.text_input(
+            "Anthropic API Key",
+            value=st.session_state.get("claude_key_manual",""),
+            type="password", placeholder="sk-ant-api03-...",
+            label_visibility="collapsed", key="inp_cla_key")
+        if _nk_cla != st.session_state.get("claude_key_manual",""):
+            st.session_state["claude_key_manual"] = _nk_cla; st.rerun()
+        if st.session_state.get("claude_key_manual",""):
+            notice("ok","Claude key aktif untuk sesi ini.")
+
+    # ── ③ Cek Koneksi ─────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-lbl">Cek Koneksi</div>', unsafe_allow_html=True)
 
     if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
         _rl = []
-        _ol = bool(oai_key())
-        _rl.append((_ol,"OpenAI gpt-4o-mini","Terhubung" if _ol else "Key tidak ditemukan"))
+
+        # OpenAI check
+        _ol = bool(get_openai_key())
+        _rl.append((_ol, "OpenAI gpt-4o-mini",
+                    ("Terhubung" if _ol else "Key tidak ditemukan")
+                    + (" · Aktif" if _cur_prov == "openai" and _ol else "")))
+
+        # Claude check
+        _cl2 = bool(get_claude_key())
+        _rl.append((_cl2, "Claude claude-sonnet-4-5",
+                    ("Terhubung" if _cl2 else "Key tidak ditemukan")
+                    + (" · Aktif" if _cur_prov == "claude" and _cl2 else "")))
+
+        # Google Sheets check
         _sc = False
         try:
             if st.secrets["google_sheets"]["sheet_id"] and \
@@ -1176,37 +1305,23 @@ elif st.session_state["tab"] == "settings":
             except Exception as e: _rl.append((False,"Google Sheets",str(e)[:55]))
         else:
             _rl.append((False,"Google Sheets","Belum dikonfigurasi"))
-        _rl.append((_PDF_OK,"PDF Upload","pypdfium2 aktif" if _PDF_OK else "pypdfium2 tidak terinstall"))
+
+        _rl.append((_PDF_OK,"PDF Upload",
+                    "pypdfium2 aktif" if _PDF_OK else "pypdfium2 tidak terinstall"))
 
         _it = ""
         for _ok2,_sv,_ms in _rl:
-            _cl = "#1e9e5a" if _ok2 else "#e53935"
+            _cl  = "#1e9e5a" if _ok2 else "#e53935"
             _it += (f'<div class="conn-item">'
                     f'<div class="cdot" style="background:{_cl}"></div>'
                     f'<span style="font-weight:700;color:{_cl}">{"✓" if _ok2 else "✕"} {_sv}</span>'
                     f'&ensp;<span style="color:#9e9e9e">{_ms}</span></div>')
         st.markdown(f'<div class="conn-list">{_it}</div>', unsafe_allow_html=True)
 
+    # ── ④ Status Sistem ───────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Status Sistem</div>', unsafe_allow_html=True)
 
-    if oai_ok:
-        st.markdown("""<div class="st-row"><div class="st-icon si-g">🤖</div>
-<div class="st-body"><div class="st-title">OpenAI gpt-4o-mini</div>
-<div class="st-sub">API key dikonfigurasi via secrets.toml</div></div>
-<span class="st-badge bg">✓ Aktif</span></div>""", unsafe_allow_html=True)
-    else:
-        st.markdown("""<div class="st-row"><div class="st-icon si-y">🤖</div>
-<div class="st-body"><div class="st-title">OpenAI gpt-4o-mini</div>
-<div class="st-sub">API key belum dikonfigurasi</div></div>
-<span class="st-badge by">⚠ Belum</span></div>""", unsafe_allow_html=True)
-        nk = st.text_input("OpenAI API Key",
-            value=st.session_state.get("oai_key",""), type="password",
-            placeholder="sk-proj-...", label_visibility="collapsed")
-        if nk != st.session_state.get("oai_key",""):
-            st.session_state["oai_key"] = nk; st.rerun()
-        if st.session_state.get("oai_key",""):
-            notice("ok","Key aktif untuk sesi ini.")
-
+    # Google Sheets status
     sh_ok = False
     try:
         if st.secrets["google_sheets"]["sheet_id"] and \
@@ -1229,6 +1344,7 @@ elif st.session_state["tab"] == "settings":
         if ns != st.session_state.get("sheet_id",""):
             st.session_state["sheet_id"] = ns
 
+    # PDF status
     if _PDF_OK:
         st.markdown("""<div class="st-row"><div class="st-icon si-b">📄</div>
 <div class="st-body"><div class="st-title">PDF Upload</div>
@@ -1241,10 +1357,13 @@ elif st.session_state["tab"] == "settings":
 <span class="st-badge br">✕ Nonaktif</span></div>""", unsafe_allow_html=True)
         notice("err","Jalankan: <code>pip install pypdfium2==4.30.0</code>")
 
+    # ── ⑤ Tentang ─────────────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Tentang Aplikasi</div>', unsafe_allow_html=True)
-    st.markdown("""
+    _active_model = "gpt-4o-mini (OpenAI)" if get_ai_provider() == "openai" \
+                    else "claude-sonnet-4-5 (Anthropic)"
+    st.markdown(f"""
 <div class="about-box">
-  <div class="about-ttl">AI CC Reporting System v5</div>
+  <div class="about-ttl">AI CC Reporting System v6</div>
   <div class="about-r"><div class="about-k">Input</div>
     <div class="about-v">PDF · JPG · PNG — bulk upload banyak file sekaligus</div></div>
   <div class="about-r"><div class="about-k">Output</div>
@@ -1252,7 +1371,7 @@ elif st.session_state["tab"] == "settings":
   <div class="about-r"><div class="about-k">Dokumen</div>
     <div class="about-v">Expedia TAAP · Mitra Tours · Invoice hotel</div></div>
   <div class="about-r"><div class="about-k">Model AI</div>
-    <div class="about-v">gpt-4o-mini (OpenAI)</div></div>
+    <div class="about-v">{_active_model} <b>(aktif)</b> · bisa diganti di atas</div></div>
 </div>""", unsafe_allow_html=True)
 
 
@@ -1260,7 +1379,7 @@ elif st.session_state["tab"] == "settings":
 st.markdown("""
 <div style="margin-top:40px;padding:18px 0 10px;border-top:2px solid #ddd;
     text-align:center;font-size:12px;color:#9e9e9e;line-height:2.2">
-  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v5<br>
+  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v6<br>
   <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
      style="color:#6398c8;font-weight:700;text-decoration:none;
             display:inline-flex;align-items:center;gap:5px;margin-top:4px">
