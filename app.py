@@ -92,10 +92,27 @@ def _get_cookie_ctrl():
 
 # ── login wall ────────────────────────────────────────────────────────────────
 def require_login():
+    """Tidak digunakan sebagai global wall — hanya Dashboard yang terkunci.
+    Tetap ada untuk backward-compatibility jika dipanggil dari luar."""
+    pass
+
+def _render_logout_button():
+    """Tombol logout kecil — dipakai di dalam dashboard."""
+    if st.button("🔒 Logout Dashboard", type="secondary",
+                 use_container_width=True, key="_auth_logout_btn"):
+        st.session_state["_auth_ok"]         = False
+        st.session_state["_auth_login_time"] = 0
+        ctrl = _get_cookie_ctrl()
+        if ctrl:
+            try: ctrl.remove(_COOKIE_NAME)
+            except: pass
+        st.rerun()
+
+def _dashboard_login_wall() -> bool:
     """
-    1. Cek session state → sudah login & belum expired → lanjut.
-    2. Jika session kosong (setelah refresh), baca cookie → restore login.
-    3. Jika tidak ada / invalid → tampilkan halaman login.
+    Guard khusus untuk tab Dashboard.
+    Return True  → sudah login, lanjut render dashboard.
+    Return False → belum login, tampilkan form login inline lalu return False.
     """
     ctrl = _get_cookie_ctrl()
 
@@ -109,32 +126,58 @@ def require_login():
         except Exception:
             pass
 
-    # Cek apakah sudah login & masih dalam TTL
+    # Cek TTL
     if st.session_state.get("_auth_ok"):
         elapsed = time.time() - st.session_state.get("_auth_login_time", 0)
         if elapsed < _ttl_hours() * 3600:
-            _render_logout_button()
-            return
-        # Sesi expired
+            return True
+        # Expired
         st.session_state["_auth_ok"] = False
         if ctrl:
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
 
-    _render_login_page()
-    st.stop()
+    # ── Tampilkan form login inline di dalam dashboard ────────────────────────
+    st.markdown("""
+<div style="background:#fff;border:1.5px solid #ddd;border-radius:20px;
+    padding:32px 24px;text-align:center;max-width:380px;margin:24px auto">
+  <div style="width:52px;height:52px;border-radius:14px;background:#191d3a;
+      display:flex;align-items:center;justify-content:center;
+      font-size:24px;margin:0 auto 14px">🔒</div>
+  <div style="font-size:17px;font-weight:800;color:#191d3a;margin-bottom:6px">
+    Dashboard Terkunci</div>
+  <div style="font-size:13px;color:#9e9e9e;margin-bottom:20px">
+    Masukkan password untuk melihat data</div>
+</div>
+""", unsafe_allow_html=True)
 
-def _render_logout_button():
-    with st.sidebar:
-        st.markdown("---")
-        if st.button("🔒 Logout", use_container_width=True, key="_auth_logout_btn"):
-            st.session_state["_auth_ok"]         = False
-            st.session_state["_auth_login_time"] = 0
-            ctrl = _get_cookie_ctrl()
-            if ctrl:
-                try: ctrl.remove(_COOKIE_NAME)
-                except: pass
+    pw = st.text_input("Password Dashboard", type="password",
+                       placeholder="••••••••", label_visibility="collapsed",
+                       key="_dash_pw_input")
+    if st.button("🔓 Buka Dashboard", type="primary",
+                 use_container_width=True, key="_dash_login_btn"):
+        if _check_pw(pw):
+            st.session_state["_auth_ok"]         = True
+            st.session_state["_auth_login_time"] = time.time()
+            ctrl2 = _get_cookie_ctrl()
+            if ctrl2:
+                try:
+                    ctrl2.set(_COOKIE_NAME, _make_token(),
+                              max_age=int(_ttl_hours() * 3600))
+                except Exception:
+                    pass
             st.rerun()
+        else:
+            st.markdown('<div style="background:#fff1f2;border:1px solid #fecdd3;' +
+                'color:#9f1239;border-radius:12px;padding:10px 14px;' +
+                'font-size:13px;font-weight:600;text-align:center;margin-top:8px">' +
+                '✕ Password salah. Coba lagi.</div>', unsafe_allow_html=True)
+
+    ttl = _ttl_hours()
+    st.markdown(f'<div style="font-size:11px;color:#bbb;text-align:center;margin-top:12px">' +
+        f'Sesi aktif {int(ttl)} jam · Tab lain (Input, Riwayat, Pengaturan) bebas diakses</div>',
+        unsafe_allow_html=True)
+    return False
 
 def _render_login_page():
     st.markdown("""
@@ -789,9 +832,6 @@ for _k, _v in _DEF.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
-# ─── Login wall — harus dipanggil sebelum render apapun ──────────────────────
-require_login()
-
 # ─── Header ───────────────────────────────────────────────────────────────────
 _prov      = get_ai_provider()
 _prov_lbl  = "GPT-4o mini" if _prov == "openai" else "Claude Sonnet"
@@ -822,7 +862,9 @@ with _na:
                  type="primary" if _cur == "input" else "secondary"):
         st.session_state["tab"] = "input"; st.rerun()
 with _nb:
-    if st.button(f"📊{_NL}Dashboard", key="nb_dash", use_container_width=True,
+    _dash_locked = not st.session_state.get("_auth_ok")
+    _dash_lbl    = f"📊{_NL}Dashboard 🔒" if _dash_locked else f"📊{_NL}Dashboard"
+    if st.button(_dash_lbl, key="nb_dash", use_container_width=True,
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
@@ -1113,11 +1155,17 @@ if st.session_state["tab"] == "input":
 elif st.session_state["tab"] == "dashboard":
     import pandas as pd
 
-    _cr, _cb2 = st.columns([3,1])
+    # ── Auth guard — hanya dashboard yang butuh password ─────────────────────
+    if not _dashboard_login_wall():
+        st.stop()
+
+    _cr, _cb2, _cb3 = st.columns([3, 1, 1])
     _cr.markdown('<div class="sec-lbl" style="margin-top:6px">Ringkasan</div>',
                  unsafe_allow_html=True)
     if _cb2.button("↻ Refresh", type="secondary", use_container_width=True, key="dash_ref"):
         st.cache_resource.clear(); st.rerun()
+    with _cb3:
+        _render_logout_button()
 
     try:
         with st.spinner("Memuat data..."):
