@@ -7,7 +7,7 @@ import streamlit as st
 import hmac, hashlib, time
 import openai, gspread, json, base64, re, io, warnings, httpx
 from google.oauth2.service_account import Credentials
-from login_guard import require_login
+# from login_guard import require_login
 from datetime import datetime
 from PIL import Image
 
