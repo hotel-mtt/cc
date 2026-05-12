@@ -154,7 +154,7 @@ def _dashboard_login_wall() -> bool:
     pw = st.text_input("Password Dashboard", type="password",
                        placeholder="••••••••", label_visibility="collapsed",
                        key="_dash_pw_input")
-    if st.button("🔓 Buka Dashboard", type="primary",
+    if st.button("🔓 Buka ", type="primary",
                  use_container_width=True, key="_dash_login_btn"):
         if _check_pw(pw):
             st.session_state["_auth_ok"]         = True
