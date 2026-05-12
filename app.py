@@ -4,8 +4,10 @@
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 # =============================================================================
 import streamlit as st
+import hmac, hashlib, time
 import openai, gspread, json, base64, re, io, warnings, httpx
 from google.oauth2.service_account import Credentials
+from login_guard import require_login
 from datetime import datetime
 from PIL import Image
 
@@ -22,6 +24,164 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
+ 
+# ── helpers ──────────────────────────────────────────────────────────────────
+ 
+def _get_password() -> str:
+    """Ambil password dari secrets, fallback ke session state (manual input)."""
+    try:
+        p = st.secrets["auth"]["password"]
+        if p and "GANTI" not in p:
+            return p
+    except Exception:
+        pass
+    return st.session_state.get("_auth_pw_override", "")
+ 
+def _ttl_hours() -> float:
+    try:
+        return float(st.secrets["auth"].get("session_ttl_hours", 8))
+    except Exception:
+        return 8.0
+ 
+def _check_pw(candidate: str) -> bool:
+    correct = _get_password()
+    if not correct:
+        return False
+    # Constant-time comparison untuk mencegah timing attack
+    return hmac.compare_digest(
+        hashlib.sha256(candidate.encode()).digest(),
+        hashlib.sha256(correct.encode()).digest(),
+    )
+ 
+def _is_session_valid() -> bool:
+    login_time = st.session_state.get("_auth_login_time", 0)
+    ttl = _ttl_hours() * 3600
+    return (time.time() - login_time) < ttl
+ 
+# ── login wall ────────────────────────────────────────────────────────────────
+ 
+def require_login():
+    """
+    Panggil fungsi ini di paling atas app.py.
+    Jika belum login / sesi kedaluwarsa → tampilkan form login & st.stop().
+    Jika sudah login → lanjut eksekusi app normal.
+    """
+    # Sudah login dan sesi masih valid → langsung lanjut
+    if st.session_state.get("_auth_ok") and _is_session_valid():
+        _render_logout_button()
+        return
+ 
+    # Reset flag jika sesi kedaluwarsa
+    if st.session_state.get("_auth_ok") and not _is_session_valid():
+        st.session_state["_auth_ok"] = False
+        st.session_state["_auth_login_time"] = 0
+ 
+    # Render halaman login
+    _render_login_page()
+    st.stop()
+ 
+ 
+def _render_logout_button():
+    """Tombol logout kecil di sidebar (tidak mengganggu layout utama)."""
+    with st.sidebar:
+        st.markdown("---")
+        if st.button("🔒 Logout", use_container_width=True, key="_auth_logout_btn"):
+            st.session_state["_auth_ok"] = False
+            st.session_state["_auth_login_time"] = 0
+            st.rerun()
+ 
+ 
+def _render_login_page():
+    st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+html,body,[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"],.main{
+    background:#ededed !important;
+    font-family:'Inter',system-ui,sans-serif !important}
+.main .block-container{
+    padding:60px 12px 80px !important;
+    max-width:420px !important;margin:0 auto !important}
+[data-testid="stSidebar"],#MainMenu,footer,header,
+[data-testid="stDecoration"]{display:none !important}
+ 
+.login-card{
+    background:#fff;border:1.5px solid #ddd;border-radius:24px;
+    padding:36px 28px 28px;text-align:center}
+.lc-icon{
+    width:64px;height:64px;border-radius:18px;background:#191d3a;
+    display:flex;align-items:center;justify-content:center;
+    font-size:28px;margin:0 auto 18px}
+.lc-title{font-size:22px;font-weight:800;color:#191d3a;margin-bottom:4px}
+.lc-sub  {font-size:13px;color:#9e9e9e;margin-bottom:24px}
+ 
+.stTextInput input{
+    border-radius:12px !important;border:1.5px solid #ddd !important;
+    background:#f7f7f7 !important;font-size:15px !important;
+    color:#191d3a !important;padding:0 14px !important;
+    height:48px !important;line-height:48px !important;
+    text-align:center !important}
+.stTextInput input:focus{
+    border-color:#6398c8 !important;background:#fff !important;
+    box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}
+label[data-testid="stWidgetLabel"]{display:none !important}
+ 
+.stButton>button{
+    width:100% !important;border-radius:13px !important;
+    height:50px !important;font-size:15px !important;
+    font-weight:700 !important;border:none !important;
+    background:#ffc744 !important;color:#191d3a !important;
+    box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
+.stButton>button:hover{
+    background:#fddb32 !important;
+    box-shadow:0 4px 14px rgba(255,199,68,.4) !important}
+ 
+.err-box{
+    background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;
+    border-radius:12px;padding:11px 14px;font-size:13px;
+    font-weight:600;margin-top:12px}
+.hint{font-size:12px;color:#bbb;margin-top:16px}
+</style>
+""", unsafe_allow_html=True)
+ 
+    st.markdown("""
+<div class="login-card">
+  <div class="lc-icon">💳</div>
+  <div class="lc-title">CC Reporting</div>
+  <div class="lc-sub">Masukkan password untuk melanjutkan</div>
+</div>
+""", unsafe_allow_html=True)
+ 
+    # Spacer agar input muncul di tengah card secara visual
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+ 
+    pw_input = st.text_input(
+        "Password", type="password",
+        placeholder="••••••••",
+        key="_auth_pw_input",
+        label_visibility="collapsed",
+    )
+ 
+    login_btn = st.button("Masuk →", type="primary", use_container_width=True, key="_auth_login_btn")
+ 
+    if login_btn or (pw_input and st.session_state.get("_auth_enter_pressed")):
+        if not _get_password():
+            st.markdown(
+                '<div class="err-box">⚠ Password belum dikonfigurasi di secrets.toml</div>',
+                unsafe_allow_html=True)
+        elif _check_pw(pw_input):
+            st.session_state["_auth_ok"]         = True
+            st.session_state["_auth_login_time"] = time.time()
+            st.rerun()
+        else:
+            st.markdown(
+                '<div class="err-box">✕ Password salah. Coba lagi.</div>',
+                unsafe_allow_html=True)
+ 
+    ttl = _ttl_hours()
+    st.markdown(
+        f'<div class="hint">Sesi aktif selama {int(ttl)} jam setelah login.</div>',
+        unsafe_allow_html=True)
 
 # ─── CSS ─────────────────────────────────────────────────────────────────────
 st.markdown("""
