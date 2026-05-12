@@ -622,7 +622,7 @@ if st.session_state["tab"] == "input":
         "","Ade Puspitasari","Farras Mahmud","Meijika",
         "Muhammad Geraldi Jagaddhita","Nur Anissa Firda Aulia",
         "Riega Wisudhantara","Rifyal Tumber","Selvy Anggraini",
-        "Shaiful Baldy","Veronica Novi Heri",
+        "Shaiful Baldy","Veronica Novi Heri","Rida Manora Nasution",
     ]
     _li = st.session_state.get("last_issuer","")
     _bi = _ISSUERS.index(_li) if _li in _ISSUERS else 0
