@@ -1030,10 +1030,10 @@ if st.session_state["tab"] == "input":
     # ── AI provider info banner ───────────────────────────────────────────────
     _ap = get_ai_provider()
     if _ap == "claude":
-        notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
+        notice("violet", "AI aktif: <b>Claude</b> (Anthropic) &nbsp;·&nbsp; "
                "Ganti di tab <b>Settings</b>")
     else:
-        notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
+        notice("info", "AI aktif: <b>OpenAI</b> &nbsp;·&nbsp; "
                "Ganti di tab <b>Settings</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
