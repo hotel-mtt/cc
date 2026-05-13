@@ -479,6 +479,12 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .ai-card-btn-wrap .stButton>button[kind="primary"]{
     background:#f0fdf4 !important;border:1.5px solid #1D9E75 !important;
     color:#191d3a !important;box-shadow:none !important}
+/* Cek Koneksi button — navy + yellow */
+.cek-koneksi-wrap .stButton>button{
+    background:#191d3a !important;color:#ffffff !important;
+    border:none !important;box-shadow:none !important}
+.cek-koneksi-wrap .stButton>button:hover{
+    background:#2d3250 !important;color:#ffffff !important}
 
 .ai-card-min{
     background:#fff;border:1px solid #e0e0e0;border-radius:14px;
@@ -1419,7 +1425,10 @@ elif st.session_state["tab"] == "settings":
     # ── ③ Cek Koneksi ─────────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Cek Koneksi</div>', unsafe_allow_html=True)
 
-    if st.button("🔍  Cek Koneksi", type="primary", use_container_width=True):
+    st.markdown('<div class="cek-koneksi-wrap">', unsafe_allow_html=True)
+    _cek_btn = st.button("🔍  Cek Koneksi", type="primary", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    if _cek_btn:
         _rl = []
 
         # OpenAI check
