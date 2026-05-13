@@ -3,7 +3,7 @@
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 #  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
-#         Pilih provider di tab Pengaturan (disimpan ke session state)
+#         Pilih provider di tab Settings (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
@@ -98,7 +98,7 @@ def require_login():
 
 def _render_logout_button():
     """Tombol logout kecil — dipakai di dalam dashboard."""
-    if st.button("🔒 Logout Dashboard", type="secondary",
+    if st.button("🔒 Logout ", type="secondary",
                  use_container_width=True, key="_auth_logout_btn"):
         st.session_state["_auth_ok"]         = False
         st.session_state["_auth_login_time"] = 0
@@ -107,36 +107,6 @@ def _render_logout_button():
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
         st.rerun()
-
-
-def _render_footer():
-    st.markdown("""
-<div style="margin-top:40px;padding:16px 0 10px;border-top:0.5px solid #ddd;
-    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-  <div style="display:flex;align-items:center;gap:9px;">
-    <div style="width:26px;height:26px;border-radius:7px;background:#191d3a;
-        display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">&#x1F4B3;</div>
-    <div>
-      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">CC Reporting</div>
-      <div style="font-size:10px;color:#aaa;line-height:1.2;">v6 &middot; Mitra Tours &amp; Travel</div>
-    </div>
-  </div>
-  <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
-     style="display:flex;align-items:center;gap:6px;text-decoration:none;
-            font-size:11px;font-weight:500;color:#616161;
-            border:0.5px solid #e0e0e0;padding:5px 12px;border-radius:20px;
-            background:#fff;">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
-               -1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046
-               c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z
-               M5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1
-               2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/>
-    </svg>
-    Rifyal Tumber
-  </a>
-</div>
-""", unsafe_allow_html=True)
 
 def _dashboard_login_wall() -> bool:
     """
@@ -209,7 +179,7 @@ def _dashboard_login_wall() -> bool:
                            label_visibility="collapsed",
                            key="_dash_pw_input")
 
-        _btn = st.button("Buka Dashboard", type="primary",
+        _btn = st.button("Open", type="primary",
                          use_container_width=True, key="_dash_login_btn")
 
     if _btn:
@@ -808,7 +778,7 @@ def _parse_openai(text: str = "", images: list = None) -> tuple:
     import openai, httpx
     key = get_openai_key()
     if not key:
-        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
+        raise ValueError("OpenAI API key belum diisi — buka tab Settings.")
     content = []
     if images:
         for b64, mime in images:
@@ -833,7 +803,7 @@ def _parse_claude(text: str = "", images: list = None) -> tuple:
     import anthropic
     key = get_claude_key()
     if not key:
-        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
+        raise ValueError("Anthropic API key belum diisi — buka tab Settings.")
     content = []
     if images:
         for b64, mime in images:
@@ -908,12 +878,10 @@ _prov_ico  = "🤖" if _prov == "openai" else "🟣"
 
 st.markdown(f"""
 <div class="app-header">
-  <div class="ah-icon" style="background:#fff;padding:2px;overflow:hidden;">
-    <img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:10px;">
-  </div>
+  <div class="ah-icon">💳</div>
   <div>
     <div class="ah-title">Credit Card Reporting</div>
-    <div class="ah-sub">Mitra Tours &amp; Travel</div>
+    <div class="ah-sub">OCR Automation</div>
   </div>
   <span class="ah-ai-badge {_prov_cls}">{_prov_ico} {_prov_lbl}</span>
   <div class="ah-live">LIVE</div>
@@ -938,11 +906,11 @@ with _nb:
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"🕐{_NL}Riwayat", key="nb_log", use_container_width=True,
+    if st.button(f"🕐{_NL}Activity Log", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"⚙️{_NL}Pengaturan", key="nb_set", use_container_width=True,
+    if st.button(f"⚙️{_NL}Settings", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -956,7 +924,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -995,10 +963,10 @@ if st.session_state["tab"] == "input":
     _ap = get_ai_provider()
     if _ap == "claude":
         notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
-               "Ganti di tab <b>Pengaturan</b>")
+               "Ganti di tab <b>Settings</b>")
     else:
         notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
-               "Ganti di tab <b>Pengaturan</b>")
+               "Ganti di tab <b>Settings</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
@@ -1033,7 +1001,7 @@ if st.session_state["tab"] == "input":
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _ba, _bb = st.columns([4, 1])
     _run   = _ba.button(
-        "⚡  Proses & Simpan Semua", type="primary",
+        "Process", type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
@@ -1218,7 +1186,6 @@ if st.session_state["tab"] == "input":
         if _err:
             notice("warn", f"{_err} file gagal. Periksa kualitas file dan coba lagi.")
 
-    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — DASHBOARD
@@ -1314,12 +1281,11 @@ elif st.session_state["tab"] == "dashboard":
 
     except Exception as e:
         notice("err", str(e))
-        notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
+        notice("info","Konfigurasi Google Sheets di tab Settings.")
 
-    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — RIWAYAT
+#  TAB — Activity Log
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "log":
     try:
@@ -1336,7 +1302,7 @@ elif st.session_state["tab"] == "log":
             df_log["_ts"] = df_log["Timestamp Input"].apply(_pts)
             df_log = df_log.sort_values("_ts", ascending=False).reset_index(drop=True)
             st.markdown(
-                f'<div class="sec-lbl" style="margin-top:6px">Riwayat — {len(df_log)} transaksi</div>',
+                f'<div class="sec-lbl" style="margin-top:6px">Activity Log — {len(df_log)} transaksi</div>',
                 unsafe_allow_html=True)
             _log = df_log[["Timestamp Input","Booking ID","Issuer"]].copy()
             _log["Booking ID"] = _log["Booking ID"].astype(str)
@@ -1349,10 +1315,9 @@ elif st.session_state["tab"] == "log":
     except Exception as e:
         notice("err", str(e))
 
-    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — PENGATURAN
+#  TAB — Settings
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
@@ -1435,13 +1400,13 @@ elif st.session_state["tab"] == "settings":
 
     _pa, _pb = st.columns(2)
     with _pa:
-        if st.button("Gunakan OpenAI",
+        if st.button("OpenAI",
                      type="primary" if _cur_prov == "openai" else "secondary",
                      use_container_width=True, key="sel_openai"):
             st.session_state["ai_provider"] = "openai"
             st.rerun()
     with _pb:
-        if st.button("Gunakan Claude AI",
+        if st.button("Claude AI",
                      type="primary" if _cur_prov == "claude" else "secondary",
                      use_container_width=True, key="sel_claude"):
             st.session_state["ai_provider"] = "claude"
@@ -1562,6 +1527,22 @@ elif st.session_state["tab"] == "settings":
 </div>""", unsafe_allow_html=True)
 
 
-    _render_footer()
-
-# ─── Footer already rendered inside each tab ─────────────────────────────────
+# ─── Footer ───────────────────────────────────────────────────────────────────
+st.markdown("""
+<div style="margin-top:40px;padding:18px 0 10px;border-top:2px solid #ddd;
+    text-align:center;font-size:12px;color:#9e9e9e;line-height:2.2">
+  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v6<br>
+  <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
+     style="color:#6398c8;font-weight:700;text-decoration:none;
+            display:inline-flex;align-items:center;gap:5px;margin-top:4px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="#6398c8">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
+               -1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046
+               c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z
+               M5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1
+               2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/>
+    </svg>
+    Rifyal Tumber
+  </a>
+</div>
+""", unsafe_allow_html=True)
