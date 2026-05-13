@@ -209,7 +209,7 @@ def _dashboard_login_wall() -> bool:
                            label_visibility="collapsed",
                            key="_dash_pw_input")
 
-        _btn = st.button("Buka Dashboard", type="primary",
+        _btn = st.button("Login", type="primary",
                          use_container_width=True, key="_dash_login_btn")
 
     if _btn:
@@ -1080,7 +1080,7 @@ if st.session_state["tab"] == "input":
 
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _run = st.button(
-        "Submita",
+        "Submit",
         type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
