@@ -1461,18 +1461,18 @@ elif st.session_state["tab"] == "settings":
     _cla_active = "active" if _cur_prov == "claude"  else ""
     _oai_dot    = "on"     if _cur_prov == "openai" else ""
     _cla_dot    = "on"     if _cur_prov == "claude"  else ""
-    _active_lbl = "OpenAI gpt-4o-mini" if _cur_prov == "openai" else "Claude claude-sonnet-4-5"
+    _active_lbl = "OpenAI" if _cur_prov == "openai" else "Claude"
 
     # Render 2 kartu vertikal (atas-bawah) dengan tombol di dalam kartu
     # Kartu sebagai tombol — CSS override agar button tampil seperti kartu
     st.markdown('<div class="ai-card-btn-wrap">', unsafe_allow_html=True)
     if st.button(
-        f"{'✦ ' if _cur_prov == 'openai' else ''}OpenAI  ·  gpt-4o-mini",
+        f"{'✦ ' if _cur_prov == 'openai' else ''}OpenAI",
         key="sel_openai", use_container_width=True,
         type="primary" if _cur_prov == "openai" else "secondary"):
         st.session_state["ai_provider"] = "openai"; st.rerun()
     if st.button(
-        f"{'✦ ' if _cur_prov == 'claude' else ''}Claude AI  ·  claude-sonnet-4-5",
+        f"{'✦ ' if _cur_prov == 'claude' else ''}Claude AI",
         key="sel_claude", use_container_width=True,
         type="primary" if _cur_prov == "claude" else "secondary"):
         st.session_state["ai_provider"] = "claude"; st.rerun()
