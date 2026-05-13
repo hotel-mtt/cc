@@ -1080,13 +1080,13 @@ if st.session_state["tab"] == "input":
 
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _run = st.button(
-        "Proses & Simpan Semua",
+        "Submita",
         type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
     _clear = st.button(
-        "Hapus hasil",
+        "Delete",
         type="secondary",
         use_container_width=True,
         key="bulk_clear")
