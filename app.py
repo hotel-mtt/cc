@@ -209,7 +209,7 @@ def _dashboard_login_wall() -> bool:
                            label_visibility="collapsed",
                            key="_dash_pw_input")
 
-        _btn = st.button("Buka Dashboard", type="primary",
+        _btn = st.button("Login", type="primary",
                          use_container_width=True, key="_dash_login_btn")
 
     if _btn:
