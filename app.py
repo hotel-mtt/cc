@@ -1058,7 +1058,7 @@ if st.session_state["tab"] == "input":
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _ba, _bb = st.columns([4, 1])
     _run   = _ba.button(
-        "⚡  Proses & Simpan Semua", type="primary",
+        "⚡  Process", type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
