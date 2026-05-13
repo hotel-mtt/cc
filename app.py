@@ -117,7 +117,7 @@ def _render_footer():
     <div style="width:26px;height:26px;border-radius:7px;background:#191d3a;
         display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">&#x1F4B3;</div>
     <div>
-      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">CC Reporting</div>
+      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">Intelligent Automation Scanner</div>
       <div style="font-size:10px;color:#aaa;line-height:1.2;">v6 &middot; Mitra Tours &amp; Travel</div>
     </div>
   </div>
