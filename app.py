@@ -1,9 +1,9 @@
 # =============================================================================
-#  AI Intelligent Automation Scanner System  v6
+#  AI CC Reporting System  v6
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 #  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
-#         Pilih provider di tab Settings (disimpan ke session state)
+#         Pilih provider di tab Pengaturan (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
@@ -20,7 +20,7 @@ except ImportError:
 
 # ─── Page config ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Intelligent Automation Scanner",
+    page_title="CC Reporting",
     page_icon="💳",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -117,7 +117,7 @@ def _render_footer():
     <div style="width:26px;height:26px;border-radius:7px;background:#191d3a;
         display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">&#x1F4B3;</div>
     <div>
-      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">Intelligent Automation Scanner</div>
+      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">CC Reporting</div>
       <div style="font-size:10px;color:#aaa;line-height:1.2;">v6 &middot; Mitra Tours &amp; Travel</div>
     </div>
   </div>
@@ -287,7 +287,7 @@ label[data-testid="stWidgetLabel"]{display:none !important}
     st.markdown("""
 <div class="login-card">
   <div class="lc-icon">💳</div>
-  <div class="lc-title">Intelligent Automation Scanner</div>
+  <div class="lc-title">CC Reporting</div>
   <div class="lc-sub">Masukkan password untuk melanjutkan</div>
 </div>
 """, unsafe_allow_html=True)
@@ -443,17 +443,28 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .stButton>button[kind="secondary"]:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important;color:#191d3a !important}
 
-.bb-wrap div[data-testid="stHorizontalBlock"] button{
-    height:52px !important;border-radius:13px !important;
-    font-size:14px !important;font-weight:700 !important}
-.bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]{
-    background:#1668e3 !important;color:#ffffff !important;border:none !important;
-    box-shadow:none !important}
-.bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]:hover{
+.bb-wrap .stButton>button{
+    height:48px !important;border-radius:13px !important;
+    font-size:14px !important;font-weight:600 !important;
+    width:100% !important}
+.bb-wrap .stButton>button[kind="primary"]{
+    background:#1668e3 !important;color:#ffffff !important;
+    border:none !important;box-shadow:none !important}
+.bb-wrap .stButton>button[kind="primary"]:hover{
     background:#1255c0 !important}
-.bb-wrap div[data-testid="stHorizontalBlock"] button[kind="secondary"]{
-    background:#fff !important;border:1.5px solid #ddd !important;
-    color:#616161 !important;font-size:20px !important;font-weight:400 !important}
+.bb-wrap .stButton>button[kind="primary"]::before{
+    content:"";display:inline-block;width:15px;height:15px;
+    margin-right:8px;vertical-align:middle;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='16 16 12 12 8 16'/%3E%3Cline x1='12' y1='12' x2='12' y2='21'/%3E%3Cpath d='M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-size:contain}
+.bb-wrap .stButton>button[kind="secondary"]{
+    background:transparent !important;border:none !important;
+    color:#9e9e9e !important;font-size:12px !important;
+    font-weight:400 !important;height:32px !important;
+    text-decoration:underline !important;text-underline-offset:3px !important}
+.bb-wrap .stButton>button[kind="secondary"]:hover{
+    color:#e53935 !important;background:transparent !important;
+    border:none !important}
 
 [data-testid="stLinkButton"] a{
     background:#6398c8 !important;color:#fff !important;
@@ -833,7 +844,7 @@ def _parse_openai(text: str = "", images: list = None) -> tuple:
     import openai, httpx
     key = get_openai_key()
     if not key:
-        raise ValueError("OpenAI API key belum diisi — buka tab Settings.")
+        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
     content = []
     if images:
         for b64, mime in images:
@@ -858,7 +869,7 @@ def _parse_claude(text: str = "", images: list = None) -> tuple:
     import anthropic
     key = get_claude_key()
     if not key:
-        raise ValueError("Anthropic API key belum diisi — buka tab Settings.")
+        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
     content = []
     if images:
         for b64, mime in images:
@@ -953,21 +964,21 @@ _NL  = "\n"
 st.markdown('<div class="nb-wrap">', unsafe_allow_html=True)
 _na, _nb, _nc, _nd = st.columns(4)
 with _na:
-    if st.button(f"Input", key="nb_input", use_container_width=True,
+    if st.button(f"⬆️{_NL}Input", key="nb_input", use_container_width=True,
                  type="primary" if _cur == "input" else "secondary"):
         st.session_state["tab"] = "input"; st.rerun()
 with _nb:
     _dash_locked = not st.session_state.get("_auth_ok")
-    _dash_lbl    = f"Dashboard 🔒" if _dash_locked else f"📊{_NL}Dashboard"
+    _dash_lbl    = f"📊{_NL}Dashboard 🔒" if _dash_locked else f"📊{_NL}Dashboard"
     if st.button(_dash_lbl, key="nb_dash", use_container_width=True,
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"Recent Activity", key="nb_log", use_container_width=True,
+    if st.button(f"🕐{_NL}Riwayat", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"Settings", key="nb_set", use_container_width=True,
+    if st.button(f"⚙️{_NL}Pengaturan", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -981,7 +992,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings</b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -1020,10 +1031,10 @@ if st.session_state["tab"] == "input":
     _ap = get_ai_provider()
     if _ap == "claude":
         notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
-               "Ganti di tab <b>Settings</b>")
+               "Ganti di tab <b>Pengaturan</b>")
     else:
         notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
-               "Ganti di tab <b>Settings</b>")
+               "Ganti di tab <b>Pengaturan</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
@@ -1055,15 +1066,30 @@ if st.session_state["tab"] == "input":
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
     # ── Action buttons ────────────────────────────────────────────────────────
+    # Icon upload SVG di-embed dalam label button
+    _upload_icon = (
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" '
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+        'stroke-linejoin="round" style="display:inline;vertical-align:middle;'
+        'margin-right:6px;margin-bottom:2px;">'
+        '<polyline points="16 16 12 12 8 16"/>'
+        '<line x1="12" y1="12" x2="12" y2="21"/>'
+        '<path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>'
+        '</svg>'
+    )
+
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
-    _ba, _bb = st.columns([4, 1])
-    _run   = _ba.button(
-        "Submit", type="primary",
+    _run = st.button(
+        "Proses & Simpan Semua",
+        type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
-    _clear = _bb.button("🗑", type="secondary",
-        use_container_width=True, key="bulk_clear")
+    _clear = st.button(
+        "Hapus hasil",
+        type="secondary",
+        use_container_width=True,
+        key="bulk_clear")
     st.markdown('</div>', unsafe_allow_html=True)
 
     if _clear:
@@ -1340,12 +1366,12 @@ elif st.session_state["tab"] == "dashboard":
 
     except Exception as e:
         notice("err", str(e))
-        notice("info","Konfigurasi Google Sheets di tab Settings.")
+        notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
 
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — Recent Activity
+#  TAB — RIWAYAT
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "log":
     try:
@@ -1419,7 +1445,7 @@ elif st.session_state["tab"] == "log":
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — Settings
+#  TAB — PENGATURAN
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
@@ -1562,7 +1588,7 @@ elif st.session_state["tab"] == "settings":
                     else "claude-sonnet-4-5 (Anthropic)"
     st.markdown(f"""
 <div class="about-box">
-  <div class="about-ttl">Intelligent Automation Scanner/div>
+  <div class="about-ttl">AI CC Reporting System v6</div>
   <div class="about-r"><div class="about-k">Input</div>
     <div class="about-v">PDF · JPG · PNG — bulk upload banyak file sekaligus</div></div>
   <div class="about-r"><div class="about-k">Output</div>
