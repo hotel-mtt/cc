@@ -108,6 +108,36 @@ def _render_logout_button():
             except: pass
         st.rerun()
 
+
+def _render_footer():
+    st.markdown("""
+<div style="margin-top:40px;padding:16px 0 10px;border-top:0.5px solid #ddd;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:9px;">
+    <div style="width:26px;height:26px;border-radius:7px;background:#191d3a;
+        display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">&#x1F4B3;</div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">CC Reporting</div>
+      <div style="font-size:10px;color:#aaa;line-height:1.2;">v6 &middot; Mitra Tours &amp; Travel</div>
+    </div>
+  </div>
+  <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
+     style="display:flex;align-items:center;gap:6px;text-decoration:none;
+            font-size:11px;font-weight:500;color:#616161;
+            border:0.5px solid #e0e0e0;padding:5px 12px;border-radius:20px;
+            background:#fff;">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
+               -1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046
+               c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z
+               M5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1
+               2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/>
+    </svg>
+    Rifyal Tumber
+  </a>
+</div>
+""", unsafe_allow_html=True)
+
 def _dashboard_login_wall() -> bool:
     """
     Guard khusus untuk tab Dashboard.
@@ -1188,6 +1218,7 @@ if st.session_state["tab"] == "input":
         if _err:
             notice("warn", f"{_err} file gagal. Periksa kualitas file dan coba lagi.")
 
+    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — DASHBOARD
@@ -1285,6 +1316,7 @@ elif st.session_state["tab"] == "dashboard":
         notice("err", str(e))
         notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
 
+    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — RIWAYAT
@@ -1317,6 +1349,7 @@ elif st.session_state["tab"] == "log":
     except Exception as e:
         notice("err", str(e))
 
+    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — PENGATURAN
@@ -1529,22 +1562,6 @@ elif st.session_state["tab"] == "settings":
 </div>""", unsafe_allow_html=True)
 
 
-# ─── Footer ───────────────────────────────────────────────────────────────────
-st.markdown("""
-<div style="margin-top:40px;padding:18px 0 10px;border-top:2px solid #ddd;
-    text-align:center;font-size:12px;color:#9e9e9e;line-height:2.2">
-  Built with ❤️ &nbsp;·&nbsp; AI CC Reporting System v6<br>
-  <a href="https://www.linkedin.com/in/rifyalt" target="_blank"
-     style="color:#6398c8;font-weight:700;text-decoration:none;
-            display:inline-flex;align-items:center;gap:5px;margin-top:4px">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="#6398c8">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037
-               -1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046
-               c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286z
-               M5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1
-               2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/>
-    </svg>
-    Rifyal Tumber
-  </a>
-</div>
-""", unsafe_allow_html=True)
+    _render_footer()
+
+# ─── Footer already rendered inside each tab ─────────────────────────────────
