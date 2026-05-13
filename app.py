@@ -1,9 +1,9 @@
 # =============================================================================
-#  AI Intelligent Automation Scanner System  v6
+#  AI CC Reporting System  v6
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 #  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
-#         Pilih provider di tab Settings (disimpan ke session state)
+#         Pilih provider di tab Pengaturan (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
@@ -209,7 +209,7 @@ def _dashboard_login_wall() -> bool:
                            label_visibility="collapsed",
                            key="_dash_pw_input")
 
-        _btn = st.button("Login", type="primary",
+        _btn = st.button("Buka Dashboard", type="primary",
                          use_container_width=True, key="_dash_login_btn")
 
     if _btn:
@@ -287,7 +287,7 @@ label[data-testid="stWidgetLabel"]{display:none !important}
     st.markdown("""
 <div class="login-card">
   <div class="lc-icon">💳</div>
-  <div class="lc-title">Intelligent Automation Scanner</div>
+  <div class="lc-title">CC Reporting</div>
   <div class="lc-sub">Masukkan password untuk melanjutkan</div>
 </div>
 """, unsafe_allow_html=True)
@@ -367,10 +367,10 @@ html,body,[data-testid="stAppViewContainer"],
 
 .nb-wrap div[data-testid="stHorizontalBlock"]{gap:8px !important}
 .nb-wrap button{
-    height:76px !important;border-radius:16px !important;
+    height:52px !important;border-radius:16px !important;
     border:1.5px solid #d8d8d8 !important;background:#fff !important;
     color:#616161 !important;font-size:11px !important;font-weight:600 !important;
-    padding:0 4px !important;white-space:pre-line !important;
+    padding:0 4px !important;
     line-height:1.7 !important;box-shadow:none !important;width:100% !important}
 .nb-wrap button:hover{
     border-color:#6398c8 !important;background:#e8f0fe !important;color:#191d3a !important}
@@ -674,7 +674,7 @@ details>summary{font-size:13px !important;color:#616161 !important}
     .app-header{border-radius:16px;padding:12px 14px}
     .ah-icon{width:40px;height:40px;font-size:20px}
     .ah-title{font-size:16px}
-    .nb-wrap button{height:68px !important;font-size:10px !important}
+    .nb-wrap button{height:52px !important;font-size:11px !important}
     .bs-val{font-size:20px}.stat-val{font-size:18px}
     .ai-selector{grid-template-columns:1fr 1fr}}
 </style>
@@ -844,7 +844,7 @@ def _parse_openai(text: str = "", images: list = None) -> tuple:
     import openai, httpx
     key = get_openai_key()
     if not key:
-        raise ValueError("OpenAI API key belum diisi — buka tab Settings.")
+        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
     content = []
     if images:
         for b64, mime in images:
@@ -869,7 +869,7 @@ def _parse_claude(text: str = "", images: list = None) -> tuple:
     import anthropic
     key = get_claude_key()
     if not key:
-        raise ValueError("Anthropic API key belum diisi — buka tab Settings.")
+        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
     content = []
     if images:
         for b64, mime in images:
@@ -964,21 +964,19 @@ _NL  = "\n"
 st.markdown('<div class="nb-wrap">', unsafe_allow_html=True)
 _na, _nb, _nc, _nd = st.columns(4)
 with _na:
-    if st.button(f"Input", key="nb_input", use_container_width=True,
+    if st.button("Input", key="nb_input", use_container_width=True,
                  type="primary" if _cur == "input" else "secondary"):
         st.session_state["tab"] = "input"; st.rerun()
 with _nb:
-    _dash_locked = not st.session_state.get("_auth_ok")
-    _dash_lbl    = f"Dashboard" if _dash_locked else f"Dashboard"
-    if st.button(_dash_lbl, key="nb_dash", use_container_width=True,
+    if st.button("Dashboard", key="nb_dash", use_container_width=True,
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"Recent Activity", key="nb_log", use_container_width=True,
+    if st.button("Recent Activity", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"Settings", key="nb_set", use_container_width=True,
+    if st.button("Settings", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -992,7 +990,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings</b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -1031,10 +1029,10 @@ if st.session_state["tab"] == "input":
     _ap = get_ai_provider()
     if _ap == "claude":
         notice("violet", "AI aktif: <b>Claude</b> (Anthropic) &nbsp;·&nbsp; "
-               "Ganti di tab <b>Settings</b>")
+               "Ganti di tab <b>Pengaturan</b>")
     else:
         notice("info", "AI aktif: <b>OpenAI</b> &nbsp;·&nbsp; "
-               "Ganti di tab <b>Settings</b>")
+               "Ganti di tab <b>Pengaturan</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
@@ -1317,6 +1315,86 @@ elif st.session_state["tab"] == "dashboard":
                 '</div>',
                 unsafe_allow_html=True)
 
+            # ── Filter Tanggal Global ──────────────────────────────────────
+            st.markdown('<div class="sec-lbl">Filter</div>', unsafe_allow_html=True)
+
+            # Parse kolom tanggal
+            _date_col = None
+            _date_opts = []
+            if "Check-in" in df.columns:
+                _date_opts.append("Check-in")
+            if "Booking Date" in df.columns:
+                _date_opts.append("Booking Date")
+            if "Issued Date" in df.columns:
+                _date_opts.append("Issued Date")
+            if "Timestamp Input" in df.columns:
+                _date_opts.append("Timestamp Input")
+
+            _fa, _fb, _fc = st.columns([2, 1, 1])
+            with _fa:
+                _filter_col = st.selectbox(
+                    "Kolom tanggal",
+                    options=_date_opts,
+                    index=0,
+                    label_visibility="collapsed",
+                    key="dash_filter_col")
+
+            # Parse tanggal dari kolom terpilih
+            def _parse_date_col(series):
+                parsed = pd.to_datetime(series, dayfirst=True, errors="coerce")
+                if parsed.isna().all():
+                    # coba format YYYY-MM-DD
+                    parsed = pd.to_datetime(series, errors="coerce")
+                return parsed
+
+            _df_dated = df.copy()
+            _df_dated["_parsed_date"] = _parse_date_col(_df_dated[_filter_col].astype(str))
+            _valid = _df_dated["_parsed_date"].dropna()
+
+            if not _valid.empty:
+                _min_date = _valid.min().date()
+                _max_date = _valid.max().date()
+                with _fb:
+                    _date_from = st.date_input(
+                        "Dari", value=_min_date, min_value=_min_date, max_value=_max_date,
+                        label_visibility="collapsed", key="dash_date_from")
+                with _fc:
+                    _date_to = st.date_input(
+                        "Sampai", value=_max_date, min_value=_min_date, max_value=_max_date,
+                        label_visibility="collapsed", key="dash_date_to")
+
+                # Terapkan filter
+                _mask = (
+                    (_df_dated["_parsed_date"].dt.date >= _date_from) &
+                    (_df_dated["_parsed_date"].dt.date <= _date_to)
+                )
+                df = _df_dated[_mask].drop(columns=["_parsed_date"]).reset_index(drop=True)
+
+                # Update stat cards setelah filter
+                _fn2 = len(df)
+                _tr2 = df["Total (Rp)"].sum() if "Total (Rp)" in df.columns else 0
+                _avg2 = _tr2 / _fn2 if _fn2 else 0
+
+                if _fn2 != tn:
+                    st.markdown(
+                        f'<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+                        f'<div style="flex:1;background:#e8f0fe;border-radius:12px;padding:10px 14px;">' +
+                        f'<div style="font-size:11px;color:#1e3a6e;">Transaksi terfilter</div>' +
+                        f'<div style="font-size:18px;font-weight:700;color:#191d3a;">{_fn2}</div></div>' +
+                        f'<div style="flex:1;background:#e8f0fe;border-radius:12px;padding:10px 14px;">' +
+                        f'<div style="font-size:11px;color:#1e3a6e;">Total terfilter</div>' +
+                        f'<div style="font-size:16px;font-weight:700;color:#191d3a;">{fmt(_tr2)}</div></div>' +
+                        f'<div style="flex:1;background:#e8f0fe;border-radius:12px;padding:10px 14px;">' +
+                        f'<div style="font-size:11px;color:#1e3a6e;">Rata-rata</div>' +
+                        f'<div style="font-size:16px;font-weight:700;color:#191d3a;">{fmt(_avg2)}</div></div>' +
+                        '</div>',
+                        unsafe_allow_html=True)
+            else:
+                st.markdown(
+                    '<div style="font-size:12px;color:#9e9e9e;margin-bottom:8px;">' +
+                    'Kolom tanggal tidak dapat diparse.</div>',
+                    unsafe_allow_html=True)
+
             if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
                 _cc = df[df["Kartu Kredit"].astype(str).str.strip().ne("")]
                 if not _cc.empty:
@@ -1366,12 +1444,12 @@ elif st.session_state["tab"] == "dashboard":
 
     except Exception as e:
         notice("err", str(e))
-        notice("info","Konfigurasi Google Sheets di tab Settings.")
+        notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
 
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — Recent Activity
+#  TAB — RIWAYAT
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "log":
     try:
@@ -1445,7 +1523,7 @@ elif st.session_state["tab"] == "log":
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — Settings
+#  TAB — PENGATURAN
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
@@ -1467,12 +1545,12 @@ elif st.session_state["tab"] == "settings":
     # Kartu sebagai tombol — CSS override agar button tampil seperti kartu
     st.markdown('<div class="ai-card-btn-wrap">', unsafe_allow_html=True)
     if st.button(
-        f"{'✦ ' if _cur_prov == 'openai' else ''}OpenAI",
+        f"{'✦ ' if _cur_prov == 'openai' else ''}OpenAI  ·  gpt-4o-mini",
         key="sel_openai", use_container_width=True,
         type="primary" if _cur_prov == "openai" else "secondary"):
         st.session_state["ai_provider"] = "openai"; st.rerun()
     if st.button(
-        f"{'✦ ' if _cur_prov == 'claude' else ''}Claude AI",
+        f"{'✦ ' if _cur_prov == 'claude' else ''}Claude AI  ·  claude-sonnet-4-5",
         key="sel_claude", use_container_width=True,
         type="primary" if _cur_prov == "claude" else "secondary"):
         st.session_state["ai_provider"] = "claude"; st.rerun()
