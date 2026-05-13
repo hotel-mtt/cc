@@ -1285,7 +1285,7 @@ elif st.session_state["tab"] == "dashboard":
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — Activity Log
+#  TAB — RIWAYAT
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "log":
     try:
@@ -1301,20 +1301,62 @@ elif st.session_state["tab"] == "log":
                 except: return pd.NaT
             df_log["_ts"] = df_log["Timestamp Input"].apply(_pts)
             df_log = df_log.sort_values("_ts", ascending=False).reset_index(drop=True)
+ 
+            _total = len(df_log)
+            _recent = df_log.head(10)
+ 
+            # Header row
             st.markdown(
-                f'<div class="sec-lbl" style="margin-top:6px">Activity Log — {len(df_log)} transaksi</div>',
+                f'''<div style="display:flex;align-items:center;justify-content:space-between;
+                    margin-top:6px;margin-bottom:12px;">
+                  <div class="sec-lbl" style="margin:0;border:none;padding:0;">
+                    Activity Log</div>
+                  <span style="font-size:11px;color:#9e9e9e;font-weight:500;">
+                    10 dari {_total} transaksi</span>
+                </div>''',
                 unsafe_allow_html=True)
-            _log = df_log[["Timestamp Input","Booking ID","Issuer"]].copy()
-            _log["Booking ID"] = _log["Booking ID"].astype(str)
-            st.dataframe(_log, use_container_width=True, hide_index=True,
-                column_config={
-                    "Timestamp Input": st.column_config.TextColumn("Timestamp", width="medium"),
-                    "Booking ID":      st.column_config.TextColumn("Booking ID", width="medium"),
-                    "Issuer":          st.column_config.TextColumn("Issuer", width="medium"),
-                })
+ 
+            # Render tiap baris sebagai card minimalis
+            _items_html = ""
+            for _, _row in _recent.iterrows():
+                _ts      = str(_row.get("Timestamp Input","—"))
+                _bid     = str(_row.get("Booking ID","—"))
+                _hotel   = str(_row.get("Hotel","")) or "—"
+                _issuer  = str(_row.get("Issuer","")) or "—"
+                _total_r = _row.get("Total (Rp)", 0)
+                try:    _amt = "Rp {:,}".format(int(float(_total_r))).replace(",",".")
+                except: _amt = "—"
+ 
+                _items_html += f'''
+<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;
+    background:#fff;border-radius:12px;border:0.5px solid #e8e8e8;margin-bottom:6px;">
+  <div style="width:36px;height:36px;border-radius:10px;background:#f5f5f5;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+        stroke="#9e9e9e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+    </svg>
+  </div>
+  <div style="flex:1;min-width:0;">
+    <div style="font-size:13px;font-weight:600;color:#191d3a;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{_hotel}</div>
+    <div style="font-size:11px;color:#9e9e9e;margin-top:1px;
+        overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+      {_bid} &nbsp;·&nbsp; {_issuer}</div>
+  </div>
+  <div style="text-align:right;flex-shrink:0;">
+    <div style="font-size:12px;font-weight:600;color:#191d3a;">{_amt}</div>
+    <div style="font-size:10px;color:#bbb;margin-top:1px;">{_ts}</div>
+  </div>
+</div>'''
+ 
+            st.markdown(_items_html, unsafe_allow_html=True)
+ 
     except Exception as e:
         notice("err", str(e))
-
+ 
+    _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — Settings
