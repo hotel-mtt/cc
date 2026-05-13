@@ -3,7 +3,7 @@
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 #  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
-#         Pilih provider di tab Settings (disimpan ke session state)
+#         Pilih provider di tab Pengaturan (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
@@ -209,7 +209,7 @@ def _dashboard_login_wall() -> bool:
                            label_visibility="collapsed",
                            key="_dash_pw_input")
 
-        _btn = st.button("Login", type="primary",
+        _btn = st.button("Buka Dashboard", type="primary",
                          use_container_width=True, key="_dash_login_btn")
 
     if _btn:
@@ -426,10 +426,10 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     height:50px !important;font-size:14px !important;
     font-weight:700 !important;border:none !important}
 .stButton>button[kind="primary"]{
-    background:#191d3a !important;color:#ffffff !important;
+    background:#1668e3 !important;color:#ffffff !important;
     box-shadow:none !important}
 .stButton>button[kind="primary"]:hover{
-    background:#2d3250 !important;color:#ffffff !important;box-shadow:none !important}
+    background:#1255c0 !important;color:#ffffff !important;box-shadow:none !important}
 
 
 .stButton>button[kind="secondary"]{
@@ -441,10 +441,10 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     height:52px !important;border-radius:13px !important;
     font-size:14px !important;font-weight:700 !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]{
-    background:#191d3a !important;color:#ffffff !important;border:none !important;
+    background:#1668e3 !important;color:#ffffff !important;border:none !important;
     box-shadow:none !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]:hover{
-    background:#2d3250 !important}
+    background:#1255c0 !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="secondary"]{
     background:#fff !important;border:1.5px solid #ddd !important;
     color:#616161 !important;font-size:20px !important;font-weight:400 !important}
@@ -478,10 +478,10 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     color:#191d3a !important;box-shadow:none !important}
 /* Cek Koneksi button — navy + yellow */
 .cek-koneksi-wrap .stButton>button{
-    background:#191d3a !important;color:#ffffff !important;
+    background:#1668e3 !important;color:#ffffff !important;
     border:none !important;box-shadow:none !important}
 .cek-koneksi-wrap .stButton>button:hover{
-    background:#2d3250 !important;color:#ffffff !important}
+    background:#1255c0 !important;color:#ffffff !important}
 
 .ai-card-min{
     background:#fff;border:1px solid #e0e0e0;border-radius:14px;
@@ -827,7 +827,7 @@ def _parse_openai(text: str = "", images: list = None) -> tuple:
     import openai, httpx
     key = get_openai_key()
     if not key:
-        raise ValueError("OpenAI API key belum diisi — buka tab Settings.")
+        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
     content = []
     if images:
         for b64, mime in images:
@@ -852,7 +852,7 @@ def _parse_claude(text: str = "", images: list = None) -> tuple:
     import anthropic
     key = get_claude_key()
     if not key:
-        raise ValueError("Anthropic API key belum diisi — buka tab Settings.")
+        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
     content = []
     if images:
         for b64, mime in images:
@@ -957,11 +957,11 @@ with _nb:
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"🕐{_NL}Activity Log", key="nb_log", use_container_width=True,
+    if st.button(f"🕐{_NL}Riwayat", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"⚙️{_NL}Settings", key="nb_set", use_container_width=True,
+    if st.button(f"⚙️{_NL}Pengaturan", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -975,7 +975,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings/b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -1014,10 +1014,10 @@ if st.session_state["tab"] == "input":
     _ap = get_ai_provider()
     if _ap == "claude":
         notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
-               "Ganti di tab <b>Settings</b>")
+               "Ganti di tab <b>Pengaturan</b>")
     else:
         notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
-               "Ganti di tab <b>Settings</b>")
+               "Ganti di tab <b>Pengaturan</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
@@ -1052,7 +1052,7 @@ if st.session_state["tab"] == "input":
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _ba, _bb = st.columns([4, 1])
     _run   = _ba.button(
-        " Submit ", type="primary",
+        "⚡  Proses & Simpan Semua", type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
@@ -1334,7 +1334,7 @@ elif st.session_state["tab"] == "dashboard":
 
     except Exception as e:
         notice("err", str(e))
-        notice("info","Konfigurasi Google Sheets di tab Settings.")
+        notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
 
     _render_footer()
 
@@ -1413,7 +1413,7 @@ elif st.session_state["tab"] == "log":
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — Settings
+#  TAB — PENGATURAN
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
