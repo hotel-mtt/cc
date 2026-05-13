@@ -957,7 +957,7 @@ with _nb:
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"🕐{_NL}Riwayat", key="nb_log", use_container_width=True,
+    if st.button(f"🕐{_NL}Activity Log", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
@@ -975,7 +975,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings/b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -1052,7 +1052,7 @@ if st.session_state["tab"] == "input":
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _ba, _bb = st.columns([4, 1])
     _run   = _ba.button(
-        "⚡  Submit", type="primary",
+        " Submit ", type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
