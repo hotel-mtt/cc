@@ -378,6 +378,12 @@ html,body,[data-testid="stAppViewContainer"],
     background:#191d3a !important;border-color:#191d3a !important;
     color:#fddb32 !important;box-shadow:0 3px 10px rgba(0,0,0,.22) !important}
 .nb-wrap button[kind="primary"]:hover{background:#333 !important;border-color:#333 !important}
+/* Force nav tab override — must come AFTER global primary rule */
+.nb-wrap .stButton>button[kind="primary"]{
+    background:#191d3a !important;color:#fddb32 !important;
+    border-color:#191d3a !important;box-shadow:0 3px 10px rgba(0,0,0,.22) !important}
+.nb-wrap .stButton>button[kind="primary"]:hover{
+    background:#333 !important;border-color:#333 !important;color:#fddb32 !important}
 
 .sec-lbl{
     font-size:11px;font-weight:700;text-transform:uppercase;
