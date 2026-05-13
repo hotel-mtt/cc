@@ -953,21 +953,21 @@ _NL  = "\n"
 st.markdown('<div class="nb-wrap">', unsafe_allow_html=True)
 _na, _nb, _nc, _nd = st.columns(4)
 with _na:
-    if st.button(f"⬆️{_NL}Input", key="nb_input", use_container_width=True,
+    if st.button(f"Input", key="nb_input", use_container_width=True,
                  type="primary" if _cur == "input" else "secondary"):
         st.session_state["tab"] = "input"; st.rerun()
 with _nb:
     _dash_locked = not st.session_state.get("_auth_ok")
-    _dash_lbl    = f"📊{_NL}Dashboard 🔒" if _dash_locked else f"📊{_NL}Dashboard"
+    _dash_lbl    = f"Dashboard 🔒" if _dash_locked else f"📊{_NL}Dashboard"
     if st.button(_dash_lbl, key="nb_dash", use_container_width=True,
                  type="primary" if _cur == "dashboard" else "secondary"):
         st.session_state["tab"] = "dashboard"; st.rerun()
 with _nc:
-    if st.button(f"🕐{_NL}Riwayat", key="nb_log", use_container_width=True,
+    if st.button(f"Recent Activity", key="nb_log", use_container_width=True,
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"⚙️{_NL}Settings", key="nb_set", use_container_width=True,
+    if st.button(f"Settings", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -1345,7 +1345,7 @@ elif st.session_state["tab"] == "dashboard":
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — RIWAYAT
+#  TAB — Recent Activity
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "log":
     try:
