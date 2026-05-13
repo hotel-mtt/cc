@@ -714,8 +714,8 @@ def active_ai_ready() -> bool:
 
 def active_ai_label() -> str:
     if get_ai_provider() == "openai":
-        return "OpenAI gpt-4o-mini"
-    return "Claude claude-sonnet-4-5"
+        return "OpenAI"
+    return "Claude"
 
 
 # ─── Google Sheets ────────────────────────────────────────────────────────────
