@@ -1,9 +1,9 @@
 # =============================================================================
-#  AI CC Reporting System  v6
+#  AI Intelligent Automation Scanner System  v6
 #  Run  : streamlit run app.py
 #  Setup: pip install -r requirements.txt  |  .streamlit/secrets.toml
 #  New  : Dual AI provider — OpenAI gpt-4o-mini  OR  Anthropic Claude
-#         Pilih provider di tab Pengaturan (disimpan ke session state)
+#         Pilih provider di tab Settings (disimpan ke session state)
 # =============================================================================
 import streamlit as st
 import hmac, hashlib, time
@@ -20,7 +20,7 @@ except ImportError:
 
 # ─── Page config ─────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="CC Reporting",
+    page_title="Intelligent Automation Scanner",
     page_icon="💳",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -117,7 +117,7 @@ def _render_footer():
     <div style="width:26px;height:26px;border-radius:7px;background:#191d3a;
         display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">&#x1F4B3;</div>
     <div>
-      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">CC Reporting</div>
+      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">Intelligent Automation Scanner</div>
       <div style="font-size:10px;color:#aaa;line-height:1.2;">v6 &middot; Mitra Tours &amp; Travel</div>
     </div>
   </div>
@@ -287,7 +287,7 @@ label[data-testid="stWidgetLabel"]{display:none !important}
     st.markdown("""
 <div class="login-card">
   <div class="lc-icon">💳</div>
-  <div class="lc-title">CC Reporting</div>
+  <div class="lc-title">Intelligent Automation Scanner</div>
   <div class="lc-sub">Masukkan password untuk melanjutkan</div>
 </div>
 """, unsafe_allow_html=True)
@@ -833,7 +833,7 @@ def _parse_openai(text: str = "", images: list = None) -> tuple:
     import openai, httpx
     key = get_openai_key()
     if not key:
-        raise ValueError("OpenAI API key belum diisi — buka tab Pengaturan.")
+        raise ValueError("OpenAI API key belum diisi — buka tab Settings.")
     content = []
     if images:
         for b64, mime in images:
@@ -858,7 +858,7 @@ def _parse_claude(text: str = "", images: list = None) -> tuple:
     import anthropic
     key = get_claude_key()
     if not key:
-        raise ValueError("Anthropic API key belum diisi — buka tab Pengaturan.")
+        raise ValueError("Anthropic API key belum diisi — buka tab Settings.")
     content = []
     if images:
         for b64, mime in images:
@@ -967,7 +967,7 @@ with _nc:
                  type="primary" if _cur == "log" else "secondary"):
         st.session_state["tab"] = "log"; st.rerun()
 with _nd:
-    if st.button(f"⚙️{_NL}Pengaturan", key="nb_set", use_container_width=True,
+    if st.button(f"⚙️{_NL}Settings", key="nb_set", use_container_width=True,
                  type="primary" if _cur == "settings" else "secondary"):
         st.session_state["tab"] = "settings"; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
@@ -981,7 +981,7 @@ if st.session_state["tab"] == "input":
     if not active_ai_ready():
         _pv = get_ai_provider()
         _nm = "OpenAI" if _pv == "openai" else "Anthropic"
-        notice("err", f"{_nm} API key belum diisi — buka tab <b>Pengaturan</b>.")
+        notice("err", f"{_nm} API key belum diisi — buka tab <b>Settings</b>.")
         st.stop()
     if not _PDF_OK:
         notice("warn", "pypdfium2 belum terinstall — PDF nonaktif. "
@@ -1020,10 +1020,10 @@ if st.session_state["tab"] == "input":
     _ap = get_ai_provider()
     if _ap == "claude":
         notice("violet", "AI aktif: <b>Claude claude-sonnet-4-5</b> (Anthropic) &nbsp;·&nbsp; "
-               "Ganti di tab <b>Pengaturan</b>")
+               "Ganti di tab <b>Settings</b>")
     else:
         notice("info", "AI aktif: <b>OpenAI gpt-4o-mini</b> &nbsp;·&nbsp; "
-               "Ganti di tab <b>Pengaturan</b>")
+               "Ganti di tab <b>Settings</b>")
 
     # ── Expedia banner ────────────────────────────────────────────────────────
     st.markdown("""
@@ -1058,7 +1058,7 @@ if st.session_state["tab"] == "input":
     st.markdown('<div class="bb-wrap">', unsafe_allow_html=True)
     _ba, _bb = st.columns([4, 1])
     _run   = _ba.button(
-        "⚡  Process", type="primary",
+        "Submit", type="primary",
         use_container_width=True,
         disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),
         key="bulk_run")
@@ -1340,7 +1340,7 @@ elif st.session_state["tab"] == "dashboard":
 
     except Exception as e:
         notice("err", str(e))
-        notice("info","Konfigurasi Google Sheets di tab Pengaturan.")
+        notice("info","Konfigurasi Google Sheets di tab Settings.")
 
     _render_footer()
 
@@ -1419,7 +1419,7 @@ elif st.session_state["tab"] == "log":
     _render_footer()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-#  TAB — PENGATURAN
+#  TAB — Settings
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "settings":
 
@@ -1562,7 +1562,7 @@ elif st.session_state["tab"] == "settings":
                     else "claude-sonnet-4-5 (Anthropic)"
     st.markdown(f"""
 <div class="about-box">
-  <div class="about-ttl">AI CC Reporting System v6</div>
+  <div class="about-ttl">Intelligent Automation Scanner/div>
   <div class="about-r"><div class="about-k">Input</div>
     <div class="about-v">PDF · JPG · PNG — bulk upload banyak file sekaligus</div></div>
   <div class="about-r"><div class="about-k">Output</div>
