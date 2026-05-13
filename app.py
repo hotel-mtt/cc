@@ -426,15 +426,12 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     height:50px !important;font-size:14px !important;
     font-weight:700 !important;border:none !important}
 .stButton>button[kind="primary"]{
-    background:#ffc744 !important;color:#191d3a !important;
-    box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
-.stButton>button[kind="primary"]:hover{
-    background:#fddb32 !important;box-shadow:0 4px 14px rgba(255,199,68,.4) !important}
-
-/* ── Dashboard login button — dark navy style ── */
-[data-testid="stButton"] button[data-testid="baseButton-primary"][kind="primary"]#_dash_login_btn{
-    background:#191d3a !important;color:#fddb32 !important;
+    background:#191d3a !important;color:#ffffff !important;
     box-shadow:none !important}
+.stButton>button[kind="primary"]:hover{
+    background:#2d3250 !important;color:#ffffff !important;box-shadow:none !important}
+
+
 .stButton>button[kind="secondary"]{
     background:#fff !important;border:1.5px solid #ddd !important;color:#616161 !important}
 .stButton>button[kind="secondary"]:hover{
@@ -444,10 +441,10 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     height:52px !important;border-radius:13px !important;
     font-size:14px !important;font-weight:700 !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]{
-    background:#ffc744 !important;color:#191d3a !important;border:none !important;
-    box-shadow:0 3px 10px rgba(255,199,68,.3) !important}
+    background:#191d3a !important;color:#ffffff !important;border:none !important;
+    box-shadow:none !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="primary"]:hover{
-    background:#fddb32 !important}
+    background:#2d3250 !important}
 .bb-wrap div[data-testid="stHorizontalBlock"] button[kind="secondary"]{
     background:#fff !important;border:1.5px solid #ddd !important;
     color:#616161 !important;font-size:20px !important;font-weight:400 !important}
