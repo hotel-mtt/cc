@@ -117,7 +117,7 @@ def _render_footer():
     <div style="width:26px;height:26px;border-radius:7px;background:#191d3a;
         display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">&#x1F4B3;</div>
     <div>
-      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">Intelligent Automation Scanner</div>
+      <div style="font-size:12px;font-weight:600;color:#191d3a;line-height:1.2;">CC Reporting</div>
       <div style="font-size:10px;color:#aaa;line-height:1.2;">v6 &middot; Mitra Tours &amp; Travel</div>
     </div>
   </div>
@@ -464,6 +464,8 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 
 /* ── AI provider selector cards — minimalist ── */
 .ai-sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.ai-sel-v{display:flex;flex-direction:column;margin-bottom:0px}
+
 .ai-card-min{
     background:#fff;border:1px solid #e0e0e0;border-radius:14px;
     padding:12px 14px;cursor:pointer;transition:border-color .12s,background .12s;
@@ -1456,38 +1458,53 @@ elif st.session_state["tab"] == "settings":
     _cla_dot    = "on"     if _cur_prov == "claude"  else ""
     _active_lbl = "OpenAI gpt-4o-mini" if _cur_prov == "openai" else "Claude claude-sonnet-4-5"
 
+    # Render 2 kartu vertikal (atas-bawah) dengan tombol di dalam kartu
+    # Status bar aktif
     st.markdown(
-        f'''<div class="ai-sel">
-  <div class="ai-card-min {_oai_active}">
+        f'<div class="ai-status-bar" style="margin-top:4px;">' +
+        f'<div class="ai-status-dot"></div>' +
+        f'<span class="ai-status-txt">Active: {_active_lbl}</span></div>',
+        unsafe_allow_html=True)
+
+    # Radio tersembunyi sebagai trigger klik kartu
+    st.markdown('<div style="display:none">', unsafe_allow_html=True)
+    _sel = st.radio("p", ["openai","claude"],
+                    index=0 if _cur_prov == "openai" else 1,
+                    key="ai_radio_sel", label_visibility="collapsed")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Kartu HTML dengan onclick yang submit form radio tersembunyi
+    st.markdown(f"""
+<style>
+.ai-card-clickable{{cursor:pointer;user-select:none;}}
+.ai-card-clickable:hover{{opacity:0.85;}}
+</style>
+<div class="ai-card-clickable" onclick="
+  var radios=window.parent.document.querySelectorAll('input[type=radio][data-testid]');
+  for(var r of radios){{if(r.value==='openai'){{r.click();break;}}}}
+">
+  <div class="ai-card-min {_oai_active}" style="margin-bottom:8px;pointer-events:none;">
     <div class="ai-card-icon">🤖</div>
     <div class="ai-card-info"><b>OpenAI</b><span>gpt-4o-mini</span></div>
     <div class="ai-dot {_oai_dot}"></div>
   </div>
-  <div class="ai-card-min {_cla_active}">
+</div>
+<div class="ai-card-clickable" onclick="
+  var radios=window.parent.document.querySelectorAll('input[type=radio][data-testid]');
+  for(var r of radios){{if(r.value==='claude'){{r.click();break;}}}}
+">
+  <div class="ai-card-min {_cla_active}" style="pointer-events:none;">
     <div class="ai-card-icon">🟣</div>
     <div class="ai-card-info"><b>Claude AI</b><span>claude-sonnet-4-5</span></div>
     <div class="ai-dot {_cla_dot}"></div>
   </div>
 </div>
-<div class="ai-status-bar">
-  <div class="ai-status-dot"></div>
-  <span class="ai-status-txt">Active: {_active_lbl}</span>
-</div>''',
-        unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-    _pa, _pb = st.columns(2)
-    with _pa:
-        if st.button("Gunakan OpenAI",
-                     type="primary" if _cur_prov == "openai" else "secondary",
-                     use_container_width=True, key="sel_openai"):
-            st.session_state["ai_provider"] = "openai"
-            st.rerun()
-    with _pb:
-        if st.button("Gunakan Claude AI",
-                     type="primary" if _cur_prov == "claude" else "secondary",
-                     use_container_width=True, key="sel_claude"):
-            st.session_state["ai_provider"] = "claude"
-            st.rerun()
+    if _sel == "openai" and _cur_prov != "openai":
+        st.session_state["ai_provider"] = "openai"; st.rerun()
+    if _sel == "claude" and _cur_prov != "claude":
+        st.session_state["ai_provider"] = "claude"; st.rerun()
 
     # ── ② API Keys — hanya tampilkan status, tanpa nilai key ─────────────────
     st.markdown('<div class="sec-lbl" style="margin-top:18px">API Keys</div>',
