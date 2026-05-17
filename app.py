@@ -897,7 +897,7 @@ if st.session_state["tab"] == "input":
         st.markdown('<div class="bb-wrap">',unsafe_allow_html=True)
         _run = st.button("Submit",type="primary",use_container_width=True,
             disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),key="bulk_run")
-        _clear = st.button("Hapus Hasil",type="secondary",use_container_width=True,key="bulk_clear")
+        _clear = st.button("Delete",type="secondary",use_container_width=True,key="bulk_clear")
         st.markdown('</div>',unsafe_allow_html=True)
 
         if _clear:
@@ -1060,7 +1060,7 @@ if st.session_state["tab"] == "input":
         st.markdown('<div class="bb-wrap">',unsafe_allow_html=True)
         _ne_run   = st.button("Submit",type="primary",use_container_width=True,
             disabled=not _ne_ready,key="ne_run")
-        _ne_clear = st.button("Hapus Hasil",type="secondary",use_container_width=True,key="ne_clear")
+        _ne_clear = st.button("Delete",type="secondary",use_container_width=True,key="ne_clear")
         st.markdown('</div>',unsafe_allow_html=True)
 
         if not _ne_ready:
