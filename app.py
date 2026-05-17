@@ -793,7 +793,7 @@ st.markdown(f"""
 # ─── Bottom Navigation Bar ────────────────────────────────────────────────────
 _cur = st.session_state["tab"]
 
-_tab_icons = {"input":"📤","dashboard":"📊","log":"🕐","settings":"⚙️"}
+_tab_icons = {"input":"","dashboard":"","log":"","settings":""}
 _tab_labels = {"input":"Input","dashboard":"Dashboard","log":"Activity","settings":"Settings"}
 _tab_keys   = ["input","dashboard","log","settings"]
 
@@ -1348,9 +1348,9 @@ elif st.session_state["tab"] == "settings":
         if st.secrets["google_sheets"]["sheet_id"] and st.secrets["gcp_service_account"]["client_email"]: sh_ok=True
     except: pass
     if sh_ok:
-        st.markdown('<div class="st-row"><div class="st-icon si-g">📊</div><div class="st-body"><div class="st-title">Google Sheets</div><div class="st-sub">Terhubung</div></div><span class="st-badge bg">✓ Aktif</span></div>',unsafe_allow_html=True)
+        st.markdown('<div class="st-row"><div class="st-icon si-g"></div><div class="st-body"><div class="st-title">Google Sheets</div><div class="st-sub">Terhubung</div></div><span class="st-badge bg">✓ Aktif</span></div>',unsafe_allow_html=True)
     else:
-        st.markdown('<div class="st-row"><div class="st-icon si-y">📊</div><div class="st-body"><div class="st-title">Google Sheets</div><div class="st-sub">Belum dikonfigurasi</div></div><span class="st-badge by">⚠ Belum</span></div>',unsafe_allow_html=True)
+        st.markdown('<div class="st-row"><div class="st-icon si-y"></div><div class="st-body"><div class="st-title">Google Sheets</div><div class="st-sub">Belum dikonfigurasi</div></div><span class="st-badge by">⚠ Belum</span></div>',unsafe_allow_html=True)
         notice("warn","Isi <code>.streamlit/secrets.toml</code>")
         ns=st.text_input("Sheet ID",value=st.session_state.get("sheet_id",""),
             label_visibility="collapsed",placeholder="1nvgMCmo...")
