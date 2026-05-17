@@ -794,7 +794,7 @@ st.markdown(f"""
 # ─── Bottom Navigation Bar ────────────────────────────────────────────────────
 _cur = st.session_state["tab"]
 
-_tab_icons = {"input":"📤","dashboard":"📊","log":"🕐","settings":"⚙️"}
+#_tab_icons = {"input":"📤","dashboard":"📊","log":"🕐","settings":"⚙️"}
 _tab_labels = {"input":"Input","dashboard":"Dashboard","log":"Activity","settings":"Settings"}
 _tab_keys   = ["input","dashboard","log","settings"]
 
