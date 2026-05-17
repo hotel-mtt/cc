@@ -783,7 +783,7 @@ st.markdown(f"""
 <div class="app-header">
   <div class="ah-icon">💳</div>
   <div>
-    <div class="ah-title">CC Reporting</div>
+    <div class="ah-title">Credit Card Reporting</div>
     <div class="ah-sub">Mitra Tours &amp; Travel</div>
   </div>
   <span class="ah-ai-badge {_prov_cls}">{_prov_ico} {_prov_lbl}</span>
