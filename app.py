@@ -444,6 +444,116 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     font-size:15px !important;height:52px !important;
     border-radius:12px !important;border:1.5px solid #ddd !important;
     padding:0 14px !important;-webkit-appearance:none;appearance:none}
+
+/* ═══════════════════════════════════════════════
+   PORTRAIT MODE  (lebar ≤ 430px, orientasi tegak)
+   Semua kolom 2 stack jadi 1 kolom penuh
+   ═══════════════════════════════════════════════ */
+@media screen and (max-width:430px) and (orientation:portrait){
+
+  /* Container lebih sempit & padding rapi */
+  .main .block-container{
+    padding:6px 10px max(90px,calc(72px + env(safe-area-inset-bottom))) !important;
+    max-width:100vw !important}
+
+  /* App header kompak */
+  .app-header{padding:10px 12px;border-radius:14px;gap:8px}
+  .ah-icon{width:36px;height:36px;font-size:18px}
+  .ah-title{font-size:14px}
+  .ah-sub{font-size:10px}
+  .ah-ai-badge{font-size:8px;padding:2px 7px}
+  .ah-live{font-size:8px;padding:3px 8px}
+
+  /* Stack SEMUA kolom 2 → 1 kolom penuh di portrait */
+  [data-testid="stHorizontalBlock"]{
+    flex-wrap:wrap !important;
+    gap:6px !important}
+  [data-testid="stHorizontalBlock"]>[data-testid="column"]{
+    flex:1 1 100% !important;
+    min-width:100% !important;
+    max-width:100% !important}
+
+  /* Nav bar button: lebih kecil */
+  .nb-wrap .stButton>button{
+    height:52px !important;
+    font-size:8px !important;
+    padding:3px 1px !important}
+
+  /* Mode toggle tetap 2 kolom tapi lebih kecil */
+  .mode-toggle{margin-bottom:10px}
+  .mode-toggle .stButton>button{
+    height:40px !important;font-size:12px !important}
+
+  /* Input & selectbox — full width auto dari column stacking */
+  .stTextInput input,.stNumberInput input{
+    height:50px !important;font-size:16px !important}
+  [data-testid="stSelectbox"]>div>div{
+    height:50px !important;min-height:50px !important;font-size:15px !important}
+  [data-testid="stDateInput"] input{
+    height:50px !important;font-size:15px !important}
+
+  /* Buttons */
+  .stButton>button{height:50px !important;font-size:15px !important;border-radius:13px !important}
+  .bb-wrap .stButton>button{height:50px !important}
+
+  /* Section label */
+  .sec-lbl{font-size:10px;margin:12px 0 7px}
+
+  /* Notices */
+  .notice{font-size:12px;padding:9px 11px}
+
+  /* Stats grid 2×2 tetap tapi lebih kecil */
+  .stat-val{font-size:18px}
+  .stat-card{padding:12px 11px;border-radius:14px}
+
+  /* Bulk stats */
+  .bs-val{font-size:20px}
+
+  /* File item */
+  .fi-name{font-size:11px}
+  .fi-k{font-size:9px;min-width:44px}
+  .fi-v{font-size:11px}
+
+  /* Expedia banner */
+  .expedia-banner{padding:9px 12px}
+  .expedia-banner img{height:20px}
+  .taap-pill{font-size:9px;padding:2px 8px}
+
+  /* Non-Expedia header */
+  .mode-toggle + div [style*="border-radius:16px 16px 0 0"]{
+    padding:9px 12px !important}
+
+  /* Mapping info box */
+  [style*="background:#f0fdf4"][style*="line-height:1.8"]{
+    font-size:10px !important;padding:8px 11px !important}
+
+  /* Dashboard filter cards */
+  [style*="background:#e8f0fe"][style*="border-radius:12px"]{
+    padding:8px 10px !important}
+  [style*="background:#e8f0fe"] > div:first-child{font-size:9px !important}
+  [style*="background:#e8f0fe"] > div:last-child{font-size:13px !important}
+
+  /* About box */
+  .about-r{gap:6px}
+  .about-k{width:54px;font-size:10px}
+  .about-v{font-size:10px}
+}
+
+/* Portrait khusus sangat sempit (iPhone SE, 375px) */
+@media screen and (max-width:375px) and (orientation:portrait){
+  .main .block-container{padding-left:8px !important;padding-right:8px !important}
+  .ah-title{font-size:13px}
+  .stat-val{font-size:16px}
+  .stat-lbl{font-size:9px}
+  .bulk-stats .bs-val{font-size:18px}
+}
+
+/* Landscape tetap 2 kolom seperti semula */
+@media screen and (orientation:landscape){
+  [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important}
+  [data-testid="stHorizontalBlock"]>[data-testid="column"]{flex:1 1 0% !important;min-width:0 !important}
+  .main .block-container{max-width:600px !important}
+}
 </style>
 """, unsafe_allow_html=True)
 
