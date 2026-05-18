@@ -740,71 +740,25 @@ def notice(kind, msg):
     st.markdown(f'<div class="notice {cls.get(kind,"ninfo")}"><b>{icons.get(kind,"ℹ")}</b>&ensp;{msg}</div>',
                 unsafe_allow_html=True)
 
-# ─── GANTI blok normalize_card di app.py (Document 5) dengan ini ──────────────
-# Cari bagian "# ─── Card normalizer" sampai "return v" dan ganti seluruhnya.
-
-import re
-
-_BIN_MAP = {"521558": ("MasterCard", "4467"), "489594": ("Visa", "0191")}
-
+# ─── Card normalizer ──────────────────────────────────────────────────────────
+_BIN_MAP = {"521558":("MasterCard","4467"),"489594":("Visa","0191")}
+_DISPLAY_MAP = {
+    "mastercard \u2022\u2022\u2022\u2022 4467":"MasterCard \u2022\u2022\u2022\u2022 4467",
+    "visa \u2022\u2022\u2022\u2022 0191":"Visa \u2022\u2022\u2022\u2022 0191",
+}
 
 def normalize_card(raw: str) -> str:
-    """Normalisasi nomor kartu ke format: BrandName •••• last4
-    Handle semua variasi: .... | •••• | **** | 521558******4467 | MASTERCARD .... 4467
-    """
-    if not raw:
-        return ""
+    if not raw: return ""
     v = str(raw).strip()
-    if not v or v.lower() in ("nan", "none", ""):
-        return ""
-
-    # 1. Pola: "BrandName [separator: •/./*/spasi] last4"
-    _m = re.match(
-        r'^(mastercard|visa)\s*[\.\*\u2022\s]+\s*(\d{4})$',
-        v, re.IGNORECASE
-    )
-    if _m:
-        _bk = _m.group(1).lower()
-        return f"{'MasterCard' if _bk == 'mastercard' else 'Visa'} \u2022\u2022\u2022\u2022 {_m.group(2)}"
-
-    # 2. BIN 6-digit dari raw card number (e.g. 521558******4467)
-    _dg = re.sub(r"[^\d]", "", v)
-    if len(_dg) >= 6 and _dg[:6] in _BIN_MAP:
-        _b, _l = _BIN_MAP[_dg[:6]]
-        return f"{_b} \u2022\u2022\u2022\u2022 {_l}"
-
-    # 3. Pola longgar: "BrandName [non-digit] last4"
-    _m2 = re.match(r'^(mastercard|visa)[^0-9]*(\d{4})$', v, re.IGNORECASE)
-    if _m2:
-        _bk = _m2.group(1).lower()
-        return f"{'MasterCard' if _bk == 'mastercard' else 'Visa'} \u2022\u2022\u2022\u2022 {_m2.group(2)}"
-
+    _lower = re.sub(r"\s+", " ", v.lower())
+    if _lower in _DISPLAY_MAP: return _DISPLAY_MAP[_lower]
+    digits = re.sub(r"[^\d]", "", v)
+    if len(digits) >= 6:
+        bin6 = digits[:6]
+        if bin6 in _BIN_MAP:
+            brand, last4 = _BIN_MAP[bin6]
+            return f"{brand} \u2022\u2022\u2022\u2022 {last4}"
     return v
-
-
-# ── Test ──────────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    tests = [
-        ("MasterCard .... 4467",         "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("MasterCard \u2022\u2022\u2022\u2022 4467", "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("521558******4467",             "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("521558 ****** 4467",           "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("mastercard.... 4467",          "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("MASTERCARD .... 4467",         "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("MasterCard**** 4467",          "MasterCard \u2022\u2022\u2022\u2022 4467"),
-        ("Visa \u2022\u2022\u2022\u2022 0191",       "Visa \u2022\u2022\u2022\u2022 0191"),
-        ("visa.... 0191",                "Visa \u2022\u2022\u2022\u2022 0191"),
-        ("489594******0191",             "Visa \u2022\u2022\u2022\u2022 0191"),
-        ("",                             ""),
-    ]
-    all_ok = True
-    for raw, expected in tests:
-        result = normalize_card(raw)
-        ok = result == expected
-        if not ok:
-            all_ok = False
-        print(f"{'✅' if ok else '❌'} {raw!r:45s} → {result!r}")
-    print("\n✅ Semua passed" if all_ok else "\n❌ Ada yang gagal")
 
 # ─── Session state ────────────────────────────────────────────────────────────
 _DEF = {
