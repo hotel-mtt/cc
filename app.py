@@ -1258,6 +1258,27 @@ elif st.session_state["tab"] == "dashboard":
                     "total_pengeluaran_rp": int(df_ctx["Total (Rp)"].sum()) if "Total (Rp)" in df_ctx.columns else 0,
                     "rata_rata_rp": int(df_ctx["Total (Rp)"].mean()) if "Total (Rp)" in df_ctx.columns and len(df_ctx) > 0 else 0,
                 }
+                # Room x Night — parse & totalkan
+                if "Room x Night" in df_ctx.columns:
+                    _total_rooms = 0; _total_nights = 0; _total_room_nights = 0
+                    _rn_detail = []
+                    for _val in df_ctx["Room x Night"].dropna().astype(str):
+                        _val_c = _val.strip().lower()
+                        if not _val_c or _val_c in ("", "nan"): continue
+                        _m = re.search(r"(\d+)\s*(?:room[s]?)?\s*[x×]\s*(\d+)\s*(?:night[s]?)?", _val_c)
+                        if _m:
+                            _r, _n = int(_m.group(1)), int(_m.group(2))
+                            _total_rooms += _r; _total_nights += _n; _total_room_nights += _r * _n
+                            _rn_detail.append(f"{_r} room x {_n} night")
+                        else:
+                            _rn_detail.append(_val.strip())
+                    _summary["room_x_night"] = {
+                        "total_kamar": _total_rooms,
+                        "total_malam": _total_nights,
+                        "total_room_nights": _total_room_nights,
+                        "detail_per_transaksi": _rn_detail,
+                        "catatan": f"Total {_total_rooms} kamar, {_total_nights} malam, {_total_room_nights} room-nights"
+                    }
                 # Top hotel
                 if "Hotel" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _top_hotel = df_ctx.groupby("Hotel")["Total (Rp)"].sum().sort_values(ascending=False).head(5)
@@ -1274,9 +1295,10 @@ elif st.session_state["tab"] == "dashboard":
                 if "Supplier" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
-                # Transaksi terbesar
+                # Transaksi terbesar — sertakan Room x Night
                 if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
-                    _top5 = df_ctx.nlargest(5, "Total (Rp)")[["Hotel","Guest Name","Total (Rp)","Check-in","Issuer"]].fillna("").astype(str)
+                    _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room x Night","Issuer"] if c in df_ctx.columns]
+                    _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
                 return json.dumps(_summary, ensure_ascii=False, indent=2)
 
