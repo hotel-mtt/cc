@@ -7,8 +7,6 @@ import hmac, hashlib, time
 import gspread, json, base64, re, io, warnings
 from google.oauth2.service_account import Credentials
 from datetime import datetime
-from zoneinfo import ZoneInfo
-_WIB = ZoneInfo("Asia/Jakarta")
 from PIL import Image
 
 try:
@@ -112,28 +110,28 @@ def _dashboard_login_wall():
         if ctrl:
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
-    _err = st.session_state.get("_dash_err","")
+    ttl = int(_ttl_hours()); _err = st.session_state.get("_dash_err","")
     st.markdown(f"""
 <style>
-.dl-wrap{{padding:40px 0 12px;max-width:280px;margin:0 auto;text-align:center}}
-.dl-logo{{width:44px;height:44px;border-radius:11px;background:#191d3a;
-    display:flex;align-items:center;justify-content:center;margin:0 auto 20px;overflow:hidden;padding:3px}}
-.dl-logo img{{width:100%;height:100%;object-fit:contain;border-radius:8px}}
-.dl-title{{font-size:16px;font-weight:700;color:#191d3a;margin-bottom:4px}}
-.dl-sub{{font-size:12px;color:#9e9e9e;margin-bottom:24px;line-height:1.5}}
-.dl-err{{font-size:11px;color:#e53935;margin-bottom:6px;min-height:14px}}
+.dash-lock-wrap{{display:flex;flex-direction:column;align-items:center;padding:48px 16px 8px;text-align:center}}
+.dash-lock-icon{{width:52px;height:52px;border-radius:16px;background:#fff;border:1px solid #e4e4e4;
+    display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px}}
+.dash-lock-title{{font-size:18px;font-weight:700;color:#191d3a;margin-bottom:4px}}
+.dash-lock-sub{{font-size:13px;color:#aaa;margin-bottom:28px}}
+.dash-lock-err{{font-size:12px;color:#e53935;margin-bottom:8px;min-height:16px;text-align:center}}
+.dash-lock-foot{{font-size:11px;color:#ccc;margin-top:12px;margin-bottom:4px;text-align:center}}
 </style>
-<div class="dl-wrap">
-  <div class="dl-logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAPo==" alt="M"></div>
-  <div class="dl-title">Dashboard</div>
-  <div class="dl-sub">Masukkan password untuk mengakses laporan</div>
-  <div class="dl-err">{_err}</div>
-</div>""", unsafe_allow_html=True)
-    _col_l, _col_c, _col_r = st.columns([1,3,1])
+<div class="dash-lock-wrap">
+  <div class="dash-lock-icon">🔒</div>
+  <div class="dash-lock-title">Welcome</div>
+  <div class="dash-lock-sub">Masukkan password untuk melanjutkan</div>
+</div>
+<div class="dash-lock-err">{_err}</div>""", unsafe_allow_html=True)
+    _col_l, _col_c, _col_r = st.columns([1,2,1])
     with _col_c:
-        pw = st.text_input("Password", type="password", placeholder="••••••••",
+        pw = st.text_input("Password", type="password", placeholder="Password",
                            label_visibility="collapsed", key="_dash_pw_input")
-        _btn = st.button("Masuk", type="primary", use_container_width=True, key="_dash_login_btn")
+        _btn = st.button("Login", type="primary", use_container_width=True, key="_dash_login_btn")
     if _btn:
         if _check_pw(pw):
             st.session_state["_auth_ok"] = True
@@ -145,8 +143,10 @@ def _dashboard_login_wall():
                 except: pass
             st.rerun()
         else:
-            st.session_state["_dash_err"] = "Password salah."
+            st.session_state["_dash_err"] = "Password salah. Coba lagi."
             st.rerun()
+    st.markdown(f'<div class="dash-lock-foot">Sesi aktif {ttl} jam · Tab lain bebas diakses</div>',
+                unsafe_allow_html=True)
     return False
 
 
@@ -358,14 +358,9 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .stat-lbl{font-size:10px;color:#9e9e9e;margin-top:4px;font-weight:500}
 
 /* ── Progress bar ── */
-.bulk-prog-wrap{background:#fff;border:1px solid #e8e8e8;border-radius:12px;
-    padding:14px 16px;margin-bottom:10px}
-.bulk-prog-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.bulk-prog-label{font-size:12px;font-weight:600;color:#191d3a}
-.bulk-prog-step{font-size:11px;color:#9e9e9e;font-weight:500}
-.bulk-prog-track{background:#f0f0f0;border-radius:3px;height:3px;overflow:hidden;margin-bottom:8px}
-.bulk-prog-fill{height:100%;border-radius:3px;background:#191d3a;transition:width .35s ease}
-.bulk-prog-file{font-size:11px;color:#9e9e9e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk-prog{background:#ddd;border-radius:99px;height:5px;overflow:hidden;margin-bottom:6px}
+.bulk-prog-f{height:100%;background:#6398c8;border-radius:99px;transition:width .3s}
+.bulk-prog-lbl{font-size:12px;color:#9e9e9e;text-align:center;margin-bottom:12px;font-weight:500}
 
 /* ── Bulk summary ── */
 .bulk-sum{background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:16px 14px;margin-bottom:14px}
@@ -655,26 +650,11 @@ def to_b64(img):
 _SYS = """You are a corporate hotel expense AI parser for credit card reporting.
 Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice.
 Return ONLY a valid JSON object — no markdown, no explanation.
-
-Keys and their source in Expedia TAAP documents:
-- supplier   : platform name from header (e.g. "Expedia TAAP")
-- booking_id : TAAP itinerary number / booking / confirmation number
-- booked_on  : date from label "Booked on:" -> YYYY-MM-DD  (WAJIB diisi jika ada)
-- issued_on  : date from label "Issued on:" -> YYYY-MM-DD  (WAJIB diisi jika ada)
-- hotel      : full hotel name as written
-- checkin    : check-in date -> YYYY-MM-DD
-- checkout   : check-out date -> YYYY-MM-DD
-- qty        : rooms and nights e.g. "2 rooms x 2 nights"
-- room       : integer TOTAL amount charged. Priority: 1)Grand Total 2)sum of room totals. Strip IDR/Rp/commas -> plain integer
-- name       : first traveller name listed
-- card       : card used e.g. "MasterCard .... 4467"
-- notes      : room type(s), tax details, number of rooms
-
-Rules:
-1. Dates ANY format -> YYYY-MM-DD. Example: "11 May 2026" -> "2026-05-11".
-2. Amounts: strip IDR/Rp/USD/$/,/. -> plain integer no decimals.
-3. booked_on and issued_on MUST be extracted if labels "Booked on:" or "Issued on:" appear in document.
-4. Missing field -> "" for strings, 0 for integers."""
+Keys: supplier, booking_id, booked_on (YYYY-MM-DD), issued_on (YYYY-MM-DD),
+hotel, checkin (YYYY-MM-DD), checkout (YYYY-MM-DD), qty (e.g. "1 room x 2 nights"),
+room (integer total IDR, strip Rp/commas), name (primary guest),
+card (e.g. "Visa •••• 0191"), notes (room type, tax, etc.)
+Rules: 1.Dates->YYYY-MM-DD. 2.Amounts->plain integer. 3.Missing->"" or 0."""
 
 _SYS_NONEXP = """You are a payment receipt parser. Extract ONLY these 4 fields.
 Return ONLY a valid JSON object — no markdown, no explanation.
@@ -752,7 +732,7 @@ def fmt(v):
     try: return "Rp {:,}".format(int(float(v or 0))).replace(",",".")
     except: return str(v) if v else "—"
 
-def now_ts(): return datetime.now(_WIB).strftime("%d/%m/%Y %H:%M")
+def now_ts(): return datetime.now().strftime("%d/%m/%Y %H:%M")
 
 def notice(kind, msg):
     icons = {"ok":"✓","err":"✕","info":"ℹ","warn":"⚠","violet":"✦"}
@@ -760,25 +740,71 @@ def notice(kind, msg):
     st.markdown(f'<div class="notice {cls.get(kind,"ninfo")}"><b>{icons.get(kind,"ℹ")}</b>&ensp;{msg}</div>',
                 unsafe_allow_html=True)
 
-# ─── Card normalizer ──────────────────────────────────────────────────────────
-_BIN_MAP = {"521558":("MasterCard","4467"),"489594":("Visa","0191")}
-_DISPLAY_MAP = {
-    "mastercard \u2022\u2022\u2022\u2022 4467":"MasterCard \u2022\u2022\u2022\u2022 4467",
-    "visa \u2022\u2022\u2022\u2022 0191":"Visa \u2022\u2022\u2022\u2022 0191",
-}
+# ─── GANTI blok normalize_card di app.py (Document 5) dengan ini ──────────────
+# Cari bagian "# ─── Card normalizer" sampai "return v" dan ganti seluruhnya.
+
+import re
+
+_BIN_MAP = {"521558": ("MasterCard", "4467"), "489594": ("Visa", "0191")}
+
 
 def normalize_card(raw: str) -> str:
-    if not raw: return ""
+    """Normalisasi nomor kartu ke format: BrandName •••• last4
+    Handle semua variasi: .... | •••• | **** | 521558******4467 | MASTERCARD .... 4467
+    """
+    if not raw:
+        return ""
     v = str(raw).strip()
-    _lower = re.sub(r"\s+", " ", v.lower())
-    if _lower in _DISPLAY_MAP: return _DISPLAY_MAP[_lower]
-    digits = re.sub(r"[^\d]", "", v)
-    if len(digits) >= 6:
-        bin6 = digits[:6]
-        if bin6 in _BIN_MAP:
-            brand, last4 = _BIN_MAP[bin6]
-            return f"{brand} \u2022\u2022\u2022\u2022 {last4}"
+    if not v or v.lower() in ("nan", "none", ""):
+        return ""
+
+    # 1. Pola: "BrandName [separator: •/./*/spasi] last4"
+    _m = re.match(
+        r'^(mastercard|visa)\s*[\.\*\u2022\s]+\s*(\d{4})$',
+        v, re.IGNORECASE
+    )
+    if _m:
+        _bk = _m.group(1).lower()
+        return f"{'MasterCard' if _bk == 'mastercard' else 'Visa'} \u2022\u2022\u2022\u2022 {_m.group(2)}"
+
+    # 2. BIN 6-digit dari raw card number (e.g. 521558******4467)
+    _dg = re.sub(r"[^\d]", "", v)
+    if len(_dg) >= 6 and _dg[:6] in _BIN_MAP:
+        _b, _l = _BIN_MAP[_dg[:6]]
+        return f"{_b} \u2022\u2022\u2022\u2022 {_l}"
+
+    # 3. Pola longgar: "BrandName [non-digit] last4"
+    _m2 = re.match(r'^(mastercard|visa)[^0-9]*(\d{4})$', v, re.IGNORECASE)
+    if _m2:
+        _bk = _m2.group(1).lower()
+        return f"{'MasterCard' if _bk == 'mastercard' else 'Visa'} \u2022\u2022\u2022\u2022 {_m2.group(2)}"
+
     return v
+
+
+# ── Test ──────────────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    tests = [
+        ("MasterCard .... 4467",         "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("MasterCard \u2022\u2022\u2022\u2022 4467", "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("521558******4467",             "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("521558 ****** 4467",           "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("mastercard.... 4467",          "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("MASTERCARD .... 4467",         "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("MasterCard**** 4467",          "MasterCard \u2022\u2022\u2022\u2022 4467"),
+        ("Visa \u2022\u2022\u2022\u2022 0191",       "Visa \u2022\u2022\u2022\u2022 0191"),
+        ("visa.... 0191",                "Visa \u2022\u2022\u2022\u2022 0191"),
+        ("489594******0191",             "Visa \u2022\u2022\u2022\u2022 0191"),
+        ("",                             ""),
+    ]
+    all_ok = True
+    for raw, expected in tests:
+        result = normalize_card(raw)
+        ok = result == expected
+        if not ok:
+            all_ok = False
+        print(f"{'✅' if ok else '❌'} {raw!r:45s} → {result!r}")
+    print("\n✅ Semua passed" if all_ok else "\n❌ Ada yang gagal")
 
 # ─── Session state ────────────────────────────────────────────────────────────
 _DEF = {
@@ -791,113 +817,6 @@ _DEF = {
 }
 for _k,_v in _DEF.items():
     if _k not in st.session_state: st.session_state[_k] = _v
-
-# ─── Global Login Wall ────────────────────────────────────────────────────────
-def _global_login_wall():
-    """Tampilkan halaman login. Return True jika sudah login."""
-    ctrl = _get_cookie_ctrl()
-    # Restore dari cookie
-    if not st.session_state.get("_auth_ok") and ctrl:
-        try:
-            token = ctrl.get(_COOKIE_NAME)
-            if token and _verify_token(token):
-                st.session_state["_auth_ok"] = True
-                st.session_state["_auth_login_time"] = time.time()
-        except: pass
-    # Cek TTL
-    if st.session_state.get("_auth_ok"):
-        elapsed = time.time() - st.session_state.get("_auth_login_time", 0)
-        if elapsed < _ttl_hours() * 3600:
-            return True
-        st.session_state["_auth_ok"] = False
-        if ctrl:
-            try: ctrl.remove(_COOKIE_NAME)
-            except: pass
-    # ── Render halaman login ──
-    _err = st.session_state.get("_login_err", "")
-    st.markdown(f"""
-<style>
-html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],.main{
-    background:#f5f5f5 !important}
-.main .block-container{
-    padding:0 !important;max-width:100vw !important;margin:0 !important}
-[data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{display:none !important}
-.login-page{
-    min-height:100vh;display:flex;align-items:center;justify-content:center;
-    padding:24px 16px}
-.login-card{
-    background:#fff;border:1px solid #e8e8e8;border-radius:16px;
-    padding:36px 28px 28px;width:100%;max-width:320px;text-align:center}
-.lc-logo{width:52px;height:52px;border-radius:13px;background:#191d3a;
-    display:flex;align-items:center;justify-content:center;
-    margin:0 auto 20px;overflow:hidden;padding:4px}
-.lc-logo img{width:100%;height:100%;object-fit:contain;border-radius:9px}
-.lc-brand{font-size:11px;font-weight:600;color:#9e9e9e;letter-spacing:.6px;
-    text-transform:uppercase;margin-bottom:6px}
-.lc-title{font-size:20px;font-weight:800;color:#191d3a;margin-bottom:4px}
-.lc-sub{font-size:12px;color:#9e9e9e;margin-bottom:28px;line-height:1.5}
-.lc-err{font-size:11px;color:#e53935;margin-bottom:10px;min-height:14px;font-weight:500}
-.lc-input input{
-    border-radius:11px !important;border:1.5px solid #e0e0e0 !important;
-    background:#fafafa !important;font-size:16px !important;color:#191d3a !important;
-    padding:0 14px !important;height:50px !important;
-    text-align:center !important;letter-spacing:4px !important;
-    box-sizing:border-box !important;width:100% !important;
-    -webkit-appearance:none;appearance:none}
-.lc-input input:focus{
-    border-color:#191d3a !important;background:#fff !important;
-    box-shadow:none !important;outline:none !important}
-.lc-btn .stButton>button{
-    width:100% !important;height:50px !important;border-radius:12px !important;
-    background:#191d3a !important;color:#fff !important;
-    font-size:14px !important;font-weight:700 !important;
-    border:none !important;box-shadow:none !important;margin-top:10px !important}
-.lc-btn .stButton>button:hover{background:#2d3354 !important}
-.lc-footer{font-size:10px;color:#bbb;margin-top:20px;line-height:1.6}
-</style>
-<div class="login-page">
-  <div class="login-card">
-    <div class="lc-logo">
-      <img src="data:image/png;base64,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" alt="Mitra">
-    </div>
-    <div class="lc-brand">Mitra Tours &amp; Travel</div>
-    <div class="lc-title">CC Reporting</div>
-    <div class="lc-sub">Intelligent Automation Scanner</div>
-    <div class="lc-err">{_err}</div>
-  </div>
-</div>""".format(_err=_err), unsafe_allow_html=True)
-
-    # Input & button — rendered OUTSIDE the HTML card agar Streamlit bisa handle
-    # Kita inject ke dalam card via CSS positioning trick
-    st.markdown('<div style="max-width:320px;margin:-180px auto 0;padding:0 28px 28px;">', unsafe_allow_html=True)
-    st.markdown('<div class="lc-input">', unsafe_allow_html=True)
-    _pw = st.text_input("", type="password", placeholder="Password",
-                        label_visibility="collapsed", key="_login_pw")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="lc-btn">', unsafe_allow_html=True)
-    _login_btn = st.button("Masuk", type="primary", use_container_width=True, key="_login_btn")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('<div class="lc-footer">Sistem internal · Hanya untuk pengguna terotorisasi</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    if _login_btn:
-        if _check_pw(_pw):
-            st.session_state["_auth_ok"] = True
-            st.session_state["_auth_login_time"] = time.time()
-            st.session_state["_login_err"] = ""
-            ctrl2 = _get_cookie_ctrl()
-            if ctrl2:
-                try: ctrl2.set(_COOKIE_NAME, _make_token(), max_age=int(_ttl_hours() * 3600))
-                except: pass
-            st.rerun()
-        else:
-            st.session_state["_login_err"] = "Password salah. Coba lagi."
-            st.rerun()
-    return False
-
-# Cek login sebelum render apapun
-if not _global_login_wall():
-    st.stop()
 
 # ─── Header ───────────────────────────────────────────────────────────────────
 _prov = get_ai_provider()
@@ -920,7 +839,7 @@ st.markdown(f"""
 # ─── Bottom Navigation Bar ────────────────────────────────────────────────────
 _cur = st.session_state["tab"]
 
-_tab_icons = {"input":"📤","dashboard":"📊","log":"🕐","settings":"⚙️"}
+_tab_icons = {"input":"","dashboard":"","log":"","settings":""}
 _tab_labels = {"input":"Input","dashboard":"Dashboard","log":"Activity","settings":"Settings"}
 _tab_keys   = ["input","dashboard","log","settings"]
 
@@ -1024,7 +943,7 @@ if st.session_state["tab"] == "input":
         st.markdown('<div class="bb-wrap">',unsafe_allow_html=True)
         _run = st.button("Submit",type="primary",use_container_width=True,
             disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),key="bulk_run")
-        _clear = st.button("Hapus Hasil",type="secondary",use_container_width=True,key="bulk_clear")
+        _clear = st.button("Delete",type="secondary",use_container_width=True,key="bulk_clear")
         st.markdown('</div>',unsafe_allow_html=True)
 
         if _clear:
@@ -1040,18 +959,9 @@ if st.session_state["tab"] == "input":
             _slot = st.empty()
             for _idx,_uf in enumerate(bulk_files):
                 _pct = int(_idx/_n*100)
-                _fn_short = _uf.name if len(_uf.name)<=36 else _uf.name[:34]+"…"
                 _slot.markdown(
-                    f'''<div class="bulk-prog-wrap">
-  <div class="bulk-prog-header">
-    <span class="bulk-prog-label">Memproses dokumen</span>
-    <span class="bulk-prog-step">{_idx+1} / {_n}</span>
-  </div>
-  <div class="bulk-prog-track">
-    <div class="bulk-prog-fill" style="width:{_pct}%"></div>
-  </div>
-  <div class="bulk-prog-file">{_fn_short}</div>
-</div>''',
+                    '<div class="bulk-prog"><div class="bulk-prog-f" style="width:'+str(_pct)+'%"></div></div>'
+                    '<div class="bulk-prog-lbl">'+str(_idx+1)+'/'+str(_n)+' · '+_uf.name+'</div>',
                     unsafe_allow_html=True)
                 _res = {"file":_uf.name,"status":"error","parsed":{},"err":"","mode":"expedia"}
                 try:
@@ -1326,7 +1236,7 @@ elif st.session_state["tab"] == "dashboard":
                 df["Total (Rp)"] = pd.to_numeric(df["Total (Rp)"],errors="coerce").fillna(0)
             tn=len(df); tr=df["Total (Rp)"].sum() if "Total (Rp)" in df.columns else 0
             avg=tr/tn if tn else 0
-            tds=datetime.now(_WIB).strftime("%d/%m/%Y")
+            tds=datetime.now().strftime("%d/%m/%Y")
             tdc=int(df["Timestamp Input"].astype(str).str.startswith(tds).sum()) if "Timestamp Input" in df.columns else 0
             st.markdown('<div class="stat-grid">'
                 +f'<div class="stat-card"><div class="stat-val">{tn}</div><div class="stat-lbl">Total transaksi</div></div>'
@@ -1372,111 +1282,31 @@ elif st.session_state["tab"] == "dashboard":
 
             # Siapkan konteks data untuk Claude (ringkas agar tidak terlalu besar)
             def _build_data_context(df_ctx):
-                import pandas as _pd2
-
                 _summary = {
                     "total_transaksi": len(df_ctx),
                     "total_pengeluaran_rp": int(df_ctx["Total (Rp)"].sum()) if "Total (Rp)" in df_ctx.columns else 0,
                     "rata_rata_rp": int(df_ctx["Total (Rp)"].mean()) if "Total (Rp)" in df_ctx.columns and len(df_ctx) > 0 else 0,
                 }
-
-                def _parse_rn(val):
-                    v = str(val).strip().lower()
-                    if not v or v == "nan": return 0, 0
-                    import re as _re2
-                    m = _re2.search(r"(\d+)\s*(?:rooms?)?\s*[x\xd7]\s*(\d+)\s*(?:nights?)?", v)
-                    if m: return int(m.group(1)), int(m.group(2))
-                    return 0, 0
-
-                def _parse_dt(s):
-                    try: return _pd2.to_datetime(str(s), dayfirst=True, errors="coerce")
-                    except: return _pd2.NaT
-
-                # Semua kolom tanggal — sertakan sample
-                _DATE_COLS = ["Issued Date","Booking Date","Check-in","Check-out","Timestamp Input"]
-                for _dc in _DATE_COLS:
-                    if _dc in df_ctx.columns:
-                        _vals = df_ctx[_dc].dropna().astype(str)
-                        _vals = _vals[_vals.str.strip().ne("") & _vals.str.lower().ne("nan")]
-                        if not _vals.empty:
-                            _summary[f"sample_{_dc.lower().replace(' ','_').replace('-','_')}"] = _vals.head(5).tolist()
-
-                # Room x Night — total
-                if "Room x Night" in df_ctx.columns:
-                    _total_rooms = 0; _total_nights = 0; _total_rn = 0
-                    for _val in df_ctx["Room x Night"].dropna().astype(str):
-                        _r, _n = _parse_rn(_val)
-                        _total_rooms += _r; _total_nights += _n; _total_rn += _r * _n
-                    _summary["room_x_night_total"] = {
-                        "total_kamar": _total_rooms,
-                        "total_malam": _total_nights,
-                        "total_room_nights": _total_rn,
-                        "catatan": f"Total {_total_rooms} kamar, {_total_nights} malam, {_total_rn} room-nights"
-                    }
-
-                # Data per transaksi lengkap — semua kolom kunci per baris
-                _all_cols = [c for c in [
-                    "Timestamp Input","Issued Date","Booking Date",
-                    "Hotel","Check-in","Check-out","Room x Night",
-                    "Total (Rp)","Guest Name","Issuer","Supplier",
-                    "Kartu Kredit","No. BC","Nama Kegiatan"
-                ] if c in df_ctx.columns]
-
-                _rows_data = []
-                for _, _row in df_ctx[_all_cols].iterrows():
-                    _entry = {}
-                    for _c in _all_cols:
-                        _v = str(_row[_c]).strip()
-                        if _v and _v.lower() != "nan":
-                            _entry[_c] = _v
-                    if "Room x Night" in _entry:
-                        _r2, _n2 = _parse_rn(_entry["Room x Night"])
-                        if _r2 or _n2:
-                            _entry["_room_nights"] = _r2 * _n2
-                    _rows_data.append(_entry)
-
-                if len(_rows_data) <= 300:
-                    _summary["transaksi_detail"] = _rows_data
-                else:
-                    # Dataset besar — kirim ringkasan bulanan per kolom tanggal
-                    _summary["catatan_data"] = f"Dataset besar ({len(_rows_data)} baris), dikirim ringkasan bulanan"
-                    for _date_col in ["Issued Date","Check-in","Booking Date"]:
-                        if _date_col not in df_ctx.columns: continue
-                        _df_d = df_ctx.copy()
-                        _df_d["_dt"] = _df_d[_date_col].apply(_parse_dt)
-                        _df_d = _df_d.dropna(subset=["_dt"])
-                        if _df_d.empty: continue
-                        _df_d["_ym"] = _df_d["_dt"].dt.to_period("M").astype(str)
-                        _monthly = {}
-                        for _ym, _grp in _df_d.groupby("_ym"):
-                            _rn_tot = 0
-                            if "Room x Night" in _grp.columns:
-                                for _v2 in _grp["Room x Night"].dropna().astype(str):
-                                    _r3, _n3 = _parse_rn(_v2)
-                                    _rn_tot += _r3 * _n3
-                            _monthly[str(_ym)] = {
-                                "transaksi": len(_grp),
-                                "total_rp": int(_grp["Total (Rp)"].sum()) if "Total (Rp)" in _grp.columns else 0,
-                                "room_nights": _rn_tot
-                            }
-                        _key = f"ringkasan_bulanan_{_date_col.lower().replace(' ','_')}"
-                        _summary[_key] = _monthly
-                        break
-
-                # Top hotel, issuer, kartu, supplier
+                # Top hotel
                 if "Hotel" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _top_hotel = df_ctx.groupby("Hotel")["Total (Rp)"].sum().sort_values(ascending=False).head(5)
                     _summary["top_hotel"] = {k: int(v) for k, v in _top_hotel.items()}
+                # Per issuer
                 if "Issuer" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_issuer = df_ctx.groupby("Issuer")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_issuer"] = {k: int(v) for k, v in _per_issuer.items()}
+                # Per kartu
                 if "Kartu Kredit" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_kartu = df_ctx[df_ctx["Kartu Kredit"].astype(str).str.strip().ne("")].groupby("Kartu Kredit")["Total (Rp)"].sum()
                     _summary["per_kartu_kredit"] = {k: int(v) for k, v in _per_kartu.items()}
+                # Per supplier
                 if "Supplier" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
-
+                # Transaksi terbesar
+                if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
+                    _top5 = df_ctx.nlargest(5, "Total (Rp)")[["Hotel","Guest Name","Total (Rp)","Check-in","Issuer"]].fillna("").astype(str)
+                    _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
                 return json.dumps(_summary, ensure_ascii=False, indent=2)
 
             _ctx_json = _build_data_context(df)
