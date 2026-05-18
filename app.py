@@ -64,8 +64,6 @@ def _get_cookie_ctrl():
         st.session_state["_cookie_ctrl"] = CookieController()
     return st.session_state["_cookie_ctrl"]
 
-def require_login(): pass
-
 def _render_logout_button():
     if st.button("Logout", type="secondary", use_container_width=True, key="_auth_logout_btn"):
         st.session_state["_auth_ok"] = False; st.session_state["_auth_login_time"] = 0
@@ -94,8 +92,18 @@ def _render_footer():
   </a>
 </div>""", unsafe_allow_html=True)
 
-def _dashboard_login_wall():
+# ─── APP-LEVEL LOGIN WALL ─────────────────────────────────────────────────────
+# This runs before ANYTHING else is rendered. If not authenticated, show only
+# the login screen and call st.stop().
+
+def _app_login_wall():
+    """
+    Returns True if user is authenticated. Otherwise renders login screen
+    and calls st.stop() — blocking the rest of the app from rendering.
+    """
     ctrl = _get_cookie_ctrl()
+
+    # 1. Try restoring session from cookie
     if not st.session_state.get("_auth_ok") and ctrl:
         try:
             token = ctrl.get(_COOKIE_NAME)
@@ -103,51 +111,129 @@ def _dashboard_login_wall():
                 st.session_state["_auth_ok"] = True
                 st.session_state["_auth_login_time"] = time.time()
         except: pass
+
+    # 2. Check if already authenticated and not expired
     if st.session_state.get("_auth_ok"):
         elapsed = time.time() - st.session_state.get("_auth_login_time", 0)
-        if elapsed < _ttl_hours()*3600: return True
+        if elapsed < _ttl_hours() * 3600:
+            return True
+        # Expired — clear session
         st.session_state["_auth_ok"] = False
         if ctrl:
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
-    ttl = int(_ttl_hours()); _err = st.session_state.get("_dash_err","")
+
+    # 3. Not authenticated — render login screen and stop
+    ttl = int(_ttl_hours())
+    _err = st.session_state.get("_app_login_err", "")
+
     st.markdown(f"""
 <style>
-.dash-lock-wrap{{display:flex;flex-direction:column;align-items:center;padding:48px 16px 8px;text-align:center}}
-.dash-lock-icon{{width:52px;height:52px;border-radius:16px;background:#fff;border:1px solid #e4e4e4;
-    display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px}}
-.dash-lock-title{{font-size:18px;font-weight:700;color:#191d3a;margin-bottom:4px}}
-.dash-lock-sub{{font-size:13px;color:#aaa;margin-bottom:28px}}
-.dash-lock-err{{font-size:12px;color:#e53935;margin-bottom:8px;min-height:16px;text-align:center}}
-.dash-lock-foot{{font-size:11px;color:#ccc;margin-top:12px;margin-bottom:4px;text-align:center}}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
+html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],.main{{
+    background:#ededed !important;font-family:'Inter',system-ui,sans-serif !important}}
+.main .block-container{{
+    padding:8px 8px 100px !important;
+    max-width:480px !important;margin:0 auto !important}}
+[data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{{display:none !important}}
+*{{font-family:'Inter',system-ui,sans-serif !important}}
+
+.login-outer{{
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;min-height:80vh;padding:24px 16px}}
+.login-card{{
+    background:#fff;border:1.5px solid #e4e4e4;border-radius:24px;
+    padding:36px 28px 28px;width:100%;max-width:380px;
+    box-shadow:0 8px 40px rgba(0,0,0,.08)}}
+.login-logo-wrap{{
+    display:flex;justify-content:center;margin-bottom:20px}}
+.login-logo{{
+    width:60px;height:60px;border-radius:18px;overflow:hidden;
+    border:1.5px solid #e8e8e8;background:#fff;padding:4px}}
+.login-title{{
+    font-size:20px;font-weight:800;color:#191d3a;
+    text-align:center;margin-bottom:4px}}
+.login-sub{{
+    font-size:13px;color:#9e9e9e;text-align:center;margin-bottom:28px}}
+.login-err{{
+    font-size:12px;color:#e53935;text-align:center;
+    margin-bottom:12px;min-height:18px;font-weight:500}}
+.login-foot{{
+    font-size:11px;color:#bbb;text-align:center;
+    margin-top:14px}}
+
+/* Override Streamlit input inside login card */
+.login-inputs .stTextInput input{{
+    border-radius:12px !important;border:1.5px solid #ddd !important;
+    background:#fff !important;font-size:16px !important;color:#191d3a !important;
+    padding:0 14px !important;height:52px !important;line-height:52px !important;
+    box-sizing:border-box !important;width:100% !important;
+    -webkit-appearance:none;appearance:none}}
+.login-inputs .stTextInput input:focus{{
+    border-color:#6398c8 !important;
+    box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}}
+.login-inputs .stButton>button{{
+    width:100% !important;border-radius:14px !important;
+    height:52px !important;font-size:15px !important;
+    font-weight:700 !important;border:none !important;
+    background:#1668e3 !important;color:#fff !important;
+    box-shadow:none !important;margin-top:4px !important}}
+.login-inputs .stButton>button:active{{background:#1255c0 !important}}
+label[data-testid="stWidgetLabel"] p{{
+    font-size:12px !important;font-weight:600 !important;color:#191d3a !important}}
 </style>
-<div class="dash-lock-wrap">
-  <div class="dash-lock-icon">🔒</div>
-  <div class="dash-lock-title">Welcome</div>
-  <div class="dash-lock-sub">Masukkan password untuk melanjutkan</div>
+
+<div class="login-outer">
+  <div class="login-card">
+    <div class="login-logo-wrap">
+      <div class="login-logo">
+        <img src="data:image/png;base64,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"
+          style="width:100%;height:100%;object-fit:contain;border-radius:9px;" alt="Mitra">
+      </div>
+    </div>
+    <div class="login-title">CC Reporting</div>
+    <div class="login-sub">Mitra Tours &amp; Travel · Masukkan password</div>
+    <div class="login-err">{_err}</div>
+  </div>
 </div>
-<div class="dash-lock-err">{_err}</div>""", unsafe_allow_html=True)
-    _col_l, _col_c, _col_r = st.columns([1,2,1])
+""", unsafe_allow_html=True)
+
+    # Render input di dalam card area (Streamlit widgets tidak bisa didalam HTML div)
+    _col_l, _col_c, _col_r = st.columns([1, 10, 1])
     with _col_c:
-        pw = st.text_input("Password", type="password", placeholder="Password",
-                           label_visibility="collapsed", key="_dash_pw_input")
-        _btn = st.button("Login", type="primary", use_container_width=True, key="_dash_login_btn")
+        st.markdown('<div class="login-inputs">', unsafe_allow_html=True)
+        pw = st.text_input("Password", type="password",
+                           placeholder="Masukkan password",
+                           label_visibility="collapsed",
+                           key="_app_pw_input")
+        _btn = st.button("Masuk", type="primary", use_container_width=True,
+                         key="_app_login_btn")
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:11px;color:#bbb;text-align:center;margin-top:10px">Sesi aktif {ttl} jam</div>',
+                    unsafe_allow_html=True)
+
     if _btn:
         if _check_pw(pw):
             st.session_state["_auth_ok"] = True
             st.session_state["_auth_login_time"] = time.time()
-            st.session_state["_dash_err"] = ""
+            st.session_state["_app_login_err"] = ""
             ctrl2 = _get_cookie_ctrl()
             if ctrl2:
-                try: ctrl2.set(_COOKIE_NAME, _make_token(), max_age=int(_ttl_hours()*3600))
+                try: ctrl2.set(_COOKIE_NAME, _make_token(), max_age=int(_ttl_hours() * 3600))
                 except: pass
             st.rerun()
         else:
-            st.session_state["_dash_err"] = "Password salah. Coba lagi."
+            st.session_state["_app_login_err"] = "Password salah. Coba lagi."
             st.rerun()
-    st.markdown(f'<div class="dash-lock-foot">Sesi aktif {ttl} jam · Tab lain bebas diakses</div>',
-                unsafe_allow_html=True)
-    return False
+
+    st.stop()
+    return False  # never reached
+
+
+# ─── RUN APP-LEVEL LOGIN WALL ─────────────────────────────────────────────────
+# Every page render checks auth first. st.stop() is called if not authenticated.
+_app_login_wall()
 
 
 # ─── CSS Mobile-First ─────────────────────────────────────────────────────────
@@ -446,99 +532,48 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 
 /* ═══════════════════════════════════════════════
    PORTRAIT MODE  (lebar ≤ 430px, orientasi tegak)
-   Semua kolom 2 stack jadi 1 kolom penuh
    ═══════════════════════════════════════════════ */
 @media screen and (max-width:430px) and (orientation:portrait){
-
-  /* Container lebih sempit & padding rapi */
   .main .block-container{
     padding:6px 10px max(90px,calc(72px + env(safe-area-inset-bottom))) !important;
     max-width:100vw !important}
-
-  /* App header kompak */
   .app-header{padding:10px 12px;border-radius:14px;gap:8px}
   .ah-icon{width:36px;height:36px;font-size:18px}
   .ah-title{font-size:14px}
   .ah-sub{font-size:10px}
   .ah-ai-badge{font-size:8px;padding:2px 7px}
   .ah-live{font-size:8px;padding:3px 8px}
-
-  /* Stack SEMUA kolom 2 → 1 kolom penuh di portrait */
-  [data-testid="stHorizontalBlock"]{
-    flex-wrap:wrap !important;
-    gap:6px !important}
+  [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;gap:6px !important}
   [data-testid="stHorizontalBlock"]>[data-testid="column"]{
-    flex:1 1 100% !important;
-    min-width:100% !important;
-    max-width:100% !important}
-
-  /* Nav bar button: lebih kecil */
-  .nb-wrap .stButton>button{
-    height:52px !important;
-    font-size:8px !important;
-    padding:3px 1px !important}
-
-  /* Mode toggle tetap 2 kolom tapi lebih kecil */
+    flex:1 1 100% !important;min-width:100% !important;max-width:100% !important}
+  .nb-wrap .stButton>button{height:52px !important;font-size:8px !important;padding:3px 1px !important}
   .mode-toggle{margin-bottom:10px}
-  .mode-toggle .stButton>button{
-    height:40px !important;font-size:12px !important}
-
-  /* Input & selectbox — full width auto dari column stacking */
-  .stTextInput input,.stNumberInput input{
-    height:50px !important;font-size:16px !important}
-  [data-testid="stSelectbox"]>div>div{
-    height:50px !important;min-height:50px !important;font-size:15px !important}
-  [data-testid="stDateInput"] input{
-    height:50px !important;font-size:15px !important}
-
-  /* Buttons */
+  .mode-toggle .stButton>button{height:40px !important;font-size:12px !important}
+  .stTextInput input,.stNumberInput input{height:50px !important;font-size:16px !important}
+  [data-testid="stSelectbox"]>div>div{height:50px !important;min-height:50px !important;font-size:15px !important}
+  [data-testid="stDateInput"] input{height:50px !important;font-size:15px !important}
   .stButton>button{height:50px !important;font-size:15px !important;border-radius:13px !important}
   .bb-wrap .stButton>button{height:50px !important}
-
-  /* Section label */
   .sec-lbl{font-size:10px;margin:12px 0 7px}
-
-  /* Notices */
   .notice{font-size:12px;padding:9px 11px}
-
-  /* Stats grid 2×2 tetap tapi lebih kecil */
   .stat-val{font-size:18px}
   .stat-card{padding:12px 11px;border-radius:14px}
-
-  /* Bulk stats */
   .bs-val{font-size:20px}
-
-  /* File item */
   .fi-name{font-size:11px}
   .fi-k{font-size:9px;min-width:44px}
   .fi-v{font-size:11px}
-
-  /* Expedia banner */
   .expedia-banner{padding:9px 12px}
   .expedia-banner img{height:20px}
   .taap-pill{font-size:9px;padding:2px 8px}
-
-  /* Non-Expedia header */
-  .mode-toggle + div [style*="border-radius:16px 16px 0 0"]{
-    padding:9px 12px !important}
-
-  /* Mapping info box */
-  [style*="background:#f0fdf4"][style*="line-height:1.8"]{
-    font-size:10px !important;padding:8px 11px !important}
-
-  /* Dashboard filter cards */
-  [style*="background:#e8f0fe"][style*="border-radius:12px"]{
-    padding:8px 10px !important}
+  [style*="background:#f0fdf4"][style*="line-height:1.8"]{font-size:10px !important;padding:8px 11px !important}
+  [style*="background:#e8f0fe"][style*="border-radius:12px"]{padding:8px 10px !important}
   [style*="background:#e8f0fe"] > div:first-child{font-size:9px !important}
   [style*="background:#e8f0fe"] > div:last-child{font-size:13px !important}
-
-  /* About box */
   .about-r{gap:6px}
   .about-k{width:54px;font-size:10px}
   .about-v{font-size:10px}
 }
 
-/* Portrait khusus sangat sempit (iPhone SE, 375px) */
 @media screen and (max-width:375px) and (orientation:portrait){
   .main .block-container{padding-left:8px !important;padding-right:8px !important}
   .ah-title{font-size:13px}
@@ -547,7 +582,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
   .bulk-stats .bs-val{font-size:18px}
 }
 
-/* Landscape tetap 2 kolom seperti semula */
 @media screen and (orientation:landscape){
   [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important}
   [data-testid="stHorizontalBlock"]>[data-testid="column"]{flex:1 1 0% !important;min-width:0 !important}
@@ -740,24 +774,66 @@ def notice(kind, msg):
     st.markdown(f'<div class="notice {cls.get(kind,"ninfo")}"><b>{icons.get(kind,"ℹ")}</b>&ensp;{msg}</div>',
                 unsafe_allow_html=True)
 
-# ─── Card normalizer ──────────────────────────────────────────────────────────
-_BIN_MAP = {"521558":("MasterCard","4467"),"489594":("Visa","0191")}
+# ─── Card normalizer (UPDATED) ────────────────────────────────────────────────
+# Maps known BIN6 to (Brand, last4)
+_BIN_MAP = {"521558": ("MasterCard", "4467"), "489594": ("Visa", "0191")}
+
+# Canonical display strings (lowercase key → display value)
 _DISPLAY_MAP = {
-    "mastercard \u2022\u2022\u2022\u2022 4467":"MasterCard \u2022\u2022\u2022\u2022 4467",
-    "visa \u2022\u2022\u2022\u2022 0191":"Visa \u2022\u2022\u2022\u2022 0191",
+    "mastercard \u2022\u2022\u2022\u2022 4467": "MasterCard \u2022\u2022\u2022\u2022 4467",
+    "visa \u2022\u2022\u2022\u2022 0191":        "Visa \u2022\u2022\u2022\u2022 0191",
+}
+
+# Brand name aliases for pattern matching
+_BRAND_ALIAS = {
+    "mastercard":  "MasterCard",
+    "master card": "MasterCard",
+    "visa":        "Visa",
 }
 
 def normalize_card(raw: str) -> str:
+    """
+    Normalizes any card string to canonical form: "Brand •••• last4"
+    Handles inputs like:
+      - "521558******4467"        (BIN-based)
+      - "MasterCard .... 4467"    (dots)
+      - "MasterCard **** 4467"    (asterisks)
+      - "MasterCard •••• 4467"    (already correct)
+      - "mastercard •••• 4467"    (lowercase)
+    """
     if not raw: return ""
     v = str(raw).strip()
     _lower = re.sub(r"\s+", " ", v.lower())
-    if _lower in _DISPLAY_MAP: return _DISPLAY_MAP[_lower]
+
+    # 1. Direct display map lookup (exact match after normalization)
+    if _lower in _DISPLAY_MAP:
+        return _DISPLAY_MAP[_lower]
+
+    # 2. Pattern: "BrandName [mask] last4"
+    #    Mask = any combo of . * • - x (with optional spaces)
+    _m = re.match(
+        r'^(mastercard|master\s+card|visa)\s*[\.\*\u2022\-x]+\s*(\d{4})$',
+        _lower, re.IGNORECASE
+    )
+    if _m:
+        brand_key = re.sub(r'\s+', ' ', _m.group(1).strip().lower())
+        last4 = _m.group(2)
+        brand = _BRAND_ALIAS.get(brand_key, brand_key.title())
+        # Verify against known BIN map for canonical casing
+        for _bin6, (b, l4) in _BIN_MAP.items():
+            if b.lower() == brand.lower() and l4 == last4:
+                return f"{b} \u2022\u2022\u2022\u2022 {l4}"
+        return f"{brand} \u2022\u2022\u2022\u2022 {last4}"
+
+    # 3. BIN-based lookup (digits only input like "521558******4467")
     digits = re.sub(r"[^\d]", "", v)
     if len(digits) >= 6:
         bin6 = digits[:6]
         if bin6 in _BIN_MAP:
             brand, last4 = _BIN_MAP[bin6]
             return f"{brand} \u2022\u2022\u2022\u2022 {last4}"
+
+    # 4. Fallback: return as-is
     return v
 
 # ─── Session state ────────────────────────────────────────────────────────────
@@ -768,6 +844,7 @@ _DEF = {
     "last_issuer":"","last_pic":"","last_no_bc":"","last_nama_kegiatan":"",
     "_ne_last_file_key":"","_ne_prefill_ts":"","_ne_prefill_bid":"",
     "_ne_prefill_room":"","_ne_prefill_card":"","_ne_parse_ok":False,"_ne_parse_err":"",
+    "_app_login_err":"",
 }
 for _k,_v in _DEF.items():
     if _k not in st.session_state: st.session_state[_k] = _v
@@ -808,9 +885,6 @@ for i, _tk in enumerate(_tab_keys):
             st.session_state["tab"] = _tk; st.rerun()
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Sticky bottom nav spacer note: Streamlit nav is rendered inline above content.
-# The bottom fixed bar is CSS-simulated via the nb-wrap buttons being styled
-# as a bottom bar. We inject a viewport-fixed overlay via JS:
 st.markdown("""
 <script>
 (function(){
@@ -1173,8 +1247,8 @@ if st.session_state["tab"] == "input":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "dashboard":
     import pandas as pd
-    if not _dashboard_login_wall():
-        _render_footer(); st.stop()
+    # Dashboard no longer needs its own login wall — app-level auth covers it.
+    # We still keep the refresh + logout button row for UX.
     _cr,_cb2,_cb3 = st.columns([3,1,1])
     _cr.markdown('<div class="sec-lbl" style="margin-top:4px">Ringkasan</div>',unsafe_allow_html=True)
     if _cb2.button("↻",type="secondary",use_container_width=True,key="dash_ref"):
@@ -1198,7 +1272,6 @@ elif st.session_state["tab"] == "dashboard":
                 +f'<div class="stat-card"><div class="stat-val" style="font-size:16px">{fmt(avg)}</div><div class="stat-lbl">Rata-rata</div></div>'
                 +f'<div class="stat-card"><div class="stat-val">{tdc}</div><div class="stat-lbl">Hari ini</div></div>'
                 +'</div>',unsafe_allow_html=True)
-            # ── Kartu Kredit summary (tetap ada di bawah stat cards) ────────
             if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
                 df["Kartu Kredit"] = df["Kartu Kredit"].astype(str).apply(normalize_card)
                 _card_str=df["Kartu Kredit"].astype(str).str.strip().str.lower()
@@ -1218,7 +1291,6 @@ elif st.session_state["tab"] == "dashboard":
                             +f'<span style="font-size:11px;color:#9e9e9e;white-space:nowrap">{_p:.1f}% · {_c} trx</span></div></div>')
                     st.markdown(f'<div style="background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:4px 14px">{_h}</div>',unsafe_allow_html=True)
 
-            # ── Data transaksi (tabel ringkas) ───────────────────────────────
             st.markdown('<div class="sec-lbl">Data transaksi</div>',unsafe_allow_html=True)
             _disp=df.iloc[::-1].reset_index(drop=True).copy()
             if "Booking ID" in _disp.columns: _disp["Booking ID"]=_disp["Booking ID"].astype(str)
@@ -1229,35 +1301,26 @@ elif st.session_state["tab"] == "dashboard":
             if "Timestamp Input" in _disp.columns: _cfg["Timestamp Input"]=st.column_config.TextColumn("Timestamp")
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
-            # ══════════════════════════════════════════════════════════════════
-            #  CHAT CLAUDE — Analisa Data
-            # ══════════════════════════════════════════════════════════════════
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
 
-            # Siapkan konteks data untuk Claude (ringkas agar tidak terlalu besar)
             def _build_data_context(df_ctx):
                 _summary = {
                     "total_transaksi": len(df_ctx),
                     "total_pengeluaran_rp": int(df_ctx["Total (Rp)"].sum()) if "Total (Rp)" in df_ctx.columns else 0,
                     "rata_rata_rp": int(df_ctx["Total (Rp)"].mean()) if "Total (Rp)" in df_ctx.columns and len(df_ctx) > 0 else 0,
                 }
-                # Top hotel
                 if "Hotel" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _top_hotel = df_ctx.groupby("Hotel")["Total (Rp)"].sum().sort_values(ascending=False).head(5)
                     _summary["top_hotel"] = {k: int(v) for k, v in _top_hotel.items()}
-                # Per issuer
                 if "Issuer" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_issuer = df_ctx.groupby("Issuer")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_issuer"] = {k: int(v) for k, v in _per_issuer.items()}
-                # Per kartu
                 if "Kartu Kredit" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_kartu = df_ctx[df_ctx["Kartu Kredit"].astype(str).str.strip().ne("")].groupby("Kartu Kredit")["Total (Rp)"].sum()
                     _summary["per_kartu_kredit"] = {k: int(v) for k, v in _per_kartu.items()}
-                # Per supplier
                 if "Supplier" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
-                # Transaksi terbesar
                 if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
                     _top5 = df_ctx.nlargest(5, "Total (Rp)")[["Hotel","Guest Name","Total (Rp)","Check-in","Issuer"]].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
@@ -1265,14 +1328,11 @@ elif st.session_state["tab"] == "dashboard":
 
             _ctx_json = _build_data_context(df)
 
-            # Inisialisasi chat history
             if "dash_chat_history" not in st.session_state:
                 st.session_state["dash_chat_history"] = []
 
-            # Tampilkan chat history
             _chat_hist = st.session_state["dash_chat_history"]
 
-            # Styling chat bubble
             st.markdown("""
 <style>
 .chat-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;max-height:340px;overflow-y:auto;padding:2px 0}
@@ -1290,14 +1350,9 @@ elif st.session_state["tab"] == "dashboard":
 .chat-empty{background:#f5f5f5;border-radius:12px;padding:14px 16px;
     font-size:12px;color:#9e9e9e;text-align:center;margin-bottom:10px}
 .quick-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.qbtn{font-size:11px;padding:6px 12px;border-radius:20px;border:1.5px solid #ddd;
-    background:#fff;color:#616161;cursor:pointer;transition:all .15s;text-align:left;
-    white-space:nowrap;line-height:1.3}
-.qbtn:hover{border-color:#6b21a8;background:#faf5ff;color:#6b21a8}
 </style>
 """, unsafe_allow_html=True)
 
-            # Render chat bubbles
             if not _chat_hist:
                 st.markdown("""
 <div class="chat-empty">
@@ -1315,7 +1370,6 @@ elif st.session_state["tab"] == "dashboard":
                 _bubbles_html += '</div>'
                 st.markdown(_bubbles_html, unsafe_allow_html=True)
 
-            # Quick question buttons
             _quick_qs = [
                 "Ringkasan pengeluaran keseluruhan",
                 "Hotel dengan biaya terbesar?",
@@ -1333,7 +1387,6 @@ elif st.session_state["tab"] == "dashboard":
                         st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-            # Chat input
             _chat_input_col, _send_col = st.columns([5, 1])
             with _chat_input_col:
                 _user_q = st.text_input("",
@@ -1344,35 +1397,21 @@ elif st.session_state["tab"] == "dashboard":
                 _send_btn = st.button("➤", type="primary", use_container_width=True,
                     key="dash_send_btn")
 
-            # Tombol clear history
             if _chat_hist:
                 if st.button("Hapus riwayat chat", type="secondary",
                              use_container_width=True, key="dash_clear_chat"):
                     st.session_state["dash_chat_history"] = []
                     st.rerun()
 
-            # Proses pertanyaan — dari input field atau quick button
             _pending = st.session_state.pop("_dash_pending_q", None)
             _final_q = _pending or (_user_q.strip() if _send_btn and _user_q.strip() else None)
 
             if _final_q:
-                # Tambah pesan user ke history
                 st.session_state["dash_chat_history"].append({"role":"user","content":_final_q})
-
-                _sys_analyst = f"""Kamu adalah analis keuangan perjalanan bisnis (travel expense analyst) untuk Mitra Tours & Travel.
+                _sys_analyst = f"""Kamu adalah analis keuangan perjalanan bisnis untuk Mitra Tours & Travel.
 Kamu diberikan data ringkasan transaksi kartu kredit hotel berikut dalam format JSON:
 
 {_ctx_json}
-
-Penjelasan field:
-- total_transaksi: jumlah baris data
-- total_pengeluaran_rp: total semua pengeluaran dalam Rupiah
-- rata_rata_rp: rata-rata per transaksi
-- top_hotel: hotel dengan pengeluaran terbesar (nama: total Rp)
-- per_issuer: pengeluaran per nama issuer (pemegang kartu)
-- per_kartu_kredit: pengeluaran per kartu kredit
-- per_supplier: pengeluaran per supplier/platform booking
-- transaksi_terbesar: 5 transaksi dengan nilai terbesar
 
 Jawab pertanyaan user dalam Bahasa Indonesia dengan singkat, padat, dan mudah dipahami.
 Gunakan format yang rapi — boleh pakai poin atau angka jika perlu.
@@ -1386,7 +1425,6 @@ Jika data tidak cukup untuk menjawab, katakan dengan jelas."""
                             raise ValueError("Claude API key belum dikonfigurasi di Settings.")
                         import anthropic as _anth
                         _anth_client = _anth.Anthropic(api_key=_claude_key)
-                        # Bangun messages dari history (max 10 terakhir)
                         _hist_msgs = [
                             {"role": m["role"], "content": m["content"]}
                             for m in st.session_state["dash_chat_history"][-10:]
@@ -1486,6 +1524,8 @@ elif st.session_state["tab"] == "settings":
             _nk=st.text_input(_pname+" Key",value=st.session_state.get(_sskey,""),
                 type="password",placeholder=_placeholder,label_visibility="collapsed",key=_skey)
             if _nk!=st.session_state.get(_sskey,""): st.session_state[_sskey]=_nk; st.rerun()
+    st.markdown('<div class="sec-lbl">Session</div>',unsafe_allow_html=True)
+    _render_logout_button()
     st.markdown('<div class="sec-lbl">Status Sistem</div>',unsafe_allow_html=True)
     sh_ok=False
     try:
@@ -1515,5 +1555,7 @@ elif st.session_state["tab"] == "settings":
     <div class="about-v">Google Sheets — 17 kolom</div></div>
   <div class="about-r"><div class="about-k">Model AI</div>
     <div class="about-v">{_active_model} <b>(aktif)</b></div></div>
+  <div class="about-r"><div class="about-k">Auth</div>
+    <div class="about-v">App-level login · sesi {int(_ttl_hours())} jam · cookie persisten</div></div>
 </div>""",unsafe_allow_html=True)
     _render_footer()
