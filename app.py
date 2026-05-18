@@ -7,6 +7,8 @@ import hmac, hashlib, time
 import gspread, json, base64, re, io, warnings
 from google.oauth2.service_account import Credentials
 from datetime import datetime
+from zoneinfo import ZoneInfo
+_WIB = ZoneInfo("Asia/Jakarta")
 from PIL import Image
 
 try:
@@ -650,11 +652,26 @@ def to_b64(img):
 _SYS = """You are a corporate hotel expense AI parser for credit card reporting.
 Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice.
 Return ONLY a valid JSON object — no markdown, no explanation.
-Keys: supplier, booking_id, booked_on (YYYY-MM-DD), issued_on (YYYY-MM-DD),
-hotel, checkin (YYYY-MM-DD), checkout (YYYY-MM-DD), qty (e.g. "1 room x 2 nights"),
-room (integer total IDR, strip Rp/commas), name (primary guest),
-card (e.g. "Visa •••• 0191"), notes (room type, tax, etc.)
-Rules: 1.Dates->YYYY-MM-DD. 2.Amounts->plain integer. 3.Missing->"" or 0."""
+
+Keys and their source in Expedia TAAP documents:
+- supplier   : platform name from header (e.g. "Expedia TAAP")
+- booking_id : TAAP itinerary number / booking / confirmation number
+- booked_on  : date from label "Booked on:" -> YYYY-MM-DD  (WAJIB diisi jika ada)
+- issued_on  : date from label "Issued on:" -> YYYY-MM-DD  (WAJIB diisi jika ada)
+- hotel      : full hotel name as written
+- checkin    : check-in date -> YYYY-MM-DD
+- checkout   : check-out date -> YYYY-MM-DD
+- qty        : rooms and nights e.g. "2 rooms x 2 nights"
+- room       : integer TOTAL amount charged. Priority: 1)Grand Total 2)sum of room totals. Strip IDR/Rp/commas -> plain integer
+- name       : first traveller name listed
+- card       : card used e.g. "MasterCard .... 4467"
+- notes      : room type(s), tax details, number of rooms
+
+Rules:
+1. Dates ANY format -> YYYY-MM-DD. Example: "11 May 2026" -> "2026-05-11".
+2. Amounts: strip IDR/Rp/USD/$/,/. -> plain integer no decimals.
+3. booked_on and issued_on MUST be extracted if labels "Booked on:" or "Issued on:" appear in document.
+4. Missing field -> "" for strings, 0 for integers."""
 
 _SYS_NONEXP = """You are a payment receipt parser. Extract ONLY these 4 fields.
 Return ONLY a valid JSON object — no markdown, no explanation.
@@ -732,7 +749,7 @@ def fmt(v):
     try: return "Rp {:,}".format(int(float(v or 0))).replace(",",".")
     except: return str(v) if v else "—"
 
-def now_ts(): return datetime.now().strftime("%d/%m/%Y %H:%M")
+def now_ts(): return datetime.now(_WIB).strftime("%d/%m/%Y %H:%M")
 
 def notice(kind, msg):
     icons = {"ok":"✓","err":"✕","info":"ℹ","warn":"⚠","violet":"✦"}
@@ -897,7 +914,7 @@ if st.session_state["tab"] == "input":
         st.markdown('<div class="bb-wrap">',unsafe_allow_html=True)
         _run = st.button("Submit",type="primary",use_container_width=True,
             disabled=(not _n or not bulk_issuer or not bulk_pic.strip()),key="bulk_run")
-        _clear = st.button("Delete",type="secondary",use_container_width=True,key="bulk_clear")
+        _clear = st.button("Hapus Hasil",type="secondary",use_container_width=True,key="bulk_clear")
         st.markdown('</div>',unsafe_allow_html=True)
 
         if _clear:
@@ -1190,7 +1207,7 @@ elif st.session_state["tab"] == "dashboard":
                 df["Total (Rp)"] = pd.to_numeric(df["Total (Rp)"],errors="coerce").fillna(0)
             tn=len(df); tr=df["Total (Rp)"].sum() if "Total (Rp)" in df.columns else 0
             avg=tr/tn if tn else 0
-            tds=datetime.now().strftime("%d/%m/%Y")
+            tds=datetime.now(_WIB).strftime("%d/%m/%Y")
             tdc=int(df["Timestamp Input"].astype(str).str.startswith(tds).sum()) if "Timestamp Input" in df.columns else 0
             st.markdown('<div class="stat-grid">'
                 +f'<div class="stat-card"><div class="stat-val">{tn}</div><div class="stat-lbl">Total transaksi</div></div>'
