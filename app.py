@@ -209,14 +209,17 @@ def _app_login_wall():
             except: pass
 
     # 3. Not authenticated — render login screen and stop
+    # Strategy: pure Streamlit widgets, CSS-only card styling.
+    # No JS injection — reliable across all browsers.
     ttl = int(_ttl_hours())
     _err = st.session_state.get("_app_login_err", "")
-    _err_html = f'<div class="lc-err">{_err}</div>' if _err else ''
-
-    # ── Strategy: entire card is ONE HTML block. Streamlit input is hidden
-    # with CSS and synced via JS. A hidden Streamlit submit button is triggered
-    # by the HTML button click. This eliminates ALL gap issues completely.
     _LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAPqElEQVR42uWce3BdxXnAv293zzn3rWs9rQeWbOMHrmIwfhDz9sSkvGIgbkILHWgBkyEzJk7STmlxMoTUMMOkTTNtSkJITUpDw8NN68KkBRssxyaZUMVg60oELFl+COutK+le6d5zdvfrH+dKvpIl3XPtK1zUM2dGo6OjPfvb77G737e7CGMXY0xrDQDV1dV33333LbfcsmLFimg0yhhDRPgkXESktY7H483Nza+++uoLL7zQ0dGRjQbZtABgGMb27du7urpoTlydnZ2PPvqoYRjjgBNoKysrDxw44L4qpVRKaa0/iZxaa6WUlNL99cCBA5WVlWeYXY0tKytrbm4mItu2P6GcU5Lbtk1EsVistLQUERljwDlHxD179ri0NOcuF+qNN95ARM45AMCWLVvmKm028wMPPAAAGAwGm5qaamtriWiCZc+hS2uNiMePH6+vr2e33XZbXV3dHKZ1/RQR1dXVbdq0SWzevNmVe+5eDkATAQBmPcmUODs9NQEQ6azvZDEgy6qIpy6aiDZv3ozt7e2uPs9cZ03EZnyBCAoLrYg4wgxUBBqBeQdGxPb2dkylUpZl5bABAobQn7L3neprGxwZdqSjCQF8nBVZxrJ5weuqS3yC52yUPAQLxADTBG2Dzf3J/xm2+x2dAgDBTMGs8sDiFSXXG8yXFzMApFIpdA06p2wPftT/17/5sHvURgAc+wcCIgICuDgaePLKSxYVBRQRPz9mGpPpi119b3c8Fxl9RVMKYPyLmbfmB5dsXvJ4VWg5AaFn3SaiHMAubdvgyJ++8a4kCAh2trEjwpAtKwLWP26orwn5z4dZAzCAtJZfamlr6n75DmsX8ggAn2TGCDgqh0Jm6YMrdxZZFe4Tj8AsZ3sDwMsffpRwVFBwqUnR5FtqipiiZ8Te1hDrGklzRO3BBU5JiwC2Vne+d+TnHx25LdDAeUgRaJKaVPatSPqNosH06X0nn0VAyudzOYA5IgG09CcsziTp6V6TmoIGP5VIbWuI9Y7aLH9mGlOo+5ve3d0b/3TghA8GbeIIU5ejtLR46Gj8VymZYMgIqADAbhm20kmpcnojRRQ2RNvQyMMNTfkyk2tdAFtih3d1dZaZPh/1Yw4GYshTMpFw+iZ2kecnYVfIBvOkNpIoYorWwZFtDbH+lFdmGvMUW1uaXjj9UblpOlojUJ7KAQUDJknpIQeZpzq49vxBPLmtITaQdnIyu7Qc8S8+aHn21Mly05SZsQ15Y83bWzAvnu2j1mHvJUpNRZZ4fyC5raEpnovZdemPt37wvePt47T5hjkKDMwM1tsx0nsqaVh8erc1BXNLf3JbQ2wGZkkkEP+mvfXJttayibQ4K+rsWcKA0PZO38iQww302KAuc3N/YltDbHAqZpf26ZPHv3H0g1LTPKtFvDs8youceSmScXRGZFNDp5NWnOfPvH8ys0v7k45Tf/67lmLD1HROHXc2KBZQwkBKE5gsMWA3NXQppVmezLG+xLb9sUE7w+zSvtx5euv7TUVC0LnTnotuM09OgQA0GBYb7E7FftkNRIxBXsxNfYmvNsSGbAcRBeJrPd0PNh8OcoHnYobnNzfO2WzkMiOQBsPH+ztGmg92ozsD9swctcSRvsRX9sccR+8f6Lv3yLsWYxxRw8d9CW9uIUNGmgwf6zmefF/0XHJluZJeKyw1RSzxfk/y3gPvNpqDACCQzdhF4wUDpomCJA2GxU63DnOBS68oU472amIKRBD36F7moI/znAOSC6HS03yfCEyLdfxuqLWxT5gspzETACdMCXUsPGoIJuAcp1MfEzCBO8mfKGcCw2InYvG2Q/2GNROzS5sW+kRRSjFCggvG6r0fns57GxZrPzzQfnhgBmZG4HB9IjLqMM0uNG2+Kk1TMrcd6j8Ri0/JjACawYlIyuaaE3qnxQsLTDP20sJkRxv7TrUMGhY7u6Id4dSoUN5p0Y17EOGFlHBOX2+wD97p7To6LMeCS67pxi05ZEqRj2wJQAHV+XxydpgLA8wZakdd7BhfWFrZl3IEQ7fqQ5bMaywlELvt9DcWXXxPVXXccfgshPcLmV7hgm2tr7u5tqw/5RgMJSOba/QsJ4HYbdsPL6j7eu38hFL5JTPwQgDbUhPA41cuu666eCDlcAbacz0MxG7bvq+65jvL692O8P+0DWc3NEd84srl6yqi8bQ0vEnJpf3D+ZXfX1GvSCPgBfbS6O0lrQkAtAaf4E9dc8makqJESnKGOWl7bHtTecWP6i8FyHdggtN2JESg9blKGD2Bux9lCJooZIi/vXbFumh00HHE9AIzEHsdZ2NJ6U8+dalAJABWkD5Ya0CEqSaxhVTp8Zk8Q1REIVM8u2pljeVLKjUls4Gsz3HWR6M/XbnKx3juPIjHSylgjKRUJ0+dbRysgA5QZ7UmR1RElZbvpytXBTgfktLAzIIv184NxG4nfWk4/OKll4eFKEzmkQikAs6dxkPxDTcNrLlq+GuPkONk6zbzwIvuaCLf6rjMl0eKdq9ac3Eg0GWnE1KmtU5rPSidbtu+obj03y5bU2KY50GbqRsgZKgET734yuDn/kDFmpHx9L/8TPf0AmPjzAIK5rXOsiIizrkiWhUp2rd2/c6Ok6/39XakUwJxkT9wR8X8O+dXgYdU+7T+FrnUtiYFACAVCIO0Tn7z26m/+z6GQlAUocEhsXY1qygHIhhb0CFgli73A0Rca81YSIittQu31i5MacUAzbHPE0D+tOhmz0aceMgsNZkftEZhyGPtiYf/TO7dh6UloDVognTa9+B9yDkoBe6CpUJ2S1ktT1IOf/2R9N63ABE4Z4gkpdSagHyMm4xpIjVxuYgXy2LIGXICNSIHbTVSX7Lx/kuenuevBsZG//WlwRtulfsPYFlpxmnF4+IzG3x3bAKtx2lnRcIIoD5sTf1oZ3rn86mNG3xb7rM2bkAhBABoTaTBXRGXoxDm4rkRCE1KaluSDUQhs2R59Jo15bcvLF4HAPJo68jjT9o/343BIBYVgZSACFJiMBh6ake29XoFPhfzUhKDQTQN57/3OK+/Obp6lfnFz1u33sSrq3DcnSoN6DqdKUZWUqeTThwANCmOwsfDJf7qCv/FiyKrF5esj1gVACA7O1PP/FP6x/9M/QM4bx5oDUoBAHBOff3BH3xPLF+arcyeJZwnMWnNly3ly5aqw0ewuBiklIfelb/+zehT3zWuXm/e9FnjqvX8ohoQfJKHyywEIg0I832LP12+udhXEzHLiv0XlQTror7q8YrYhw+nX9plv/IfdLIDIxGcF82gAoBhUGeX9dAW/71/DFJN+IpLM8MaD7cCKUet+Oprx7oTPmPaUCNnOJq0b1xb84u/2qClYoLbb+0fuv2LGAiAYWScpG1TMgmasKyU168w1q0Ra1eL5ctYdSUaRm6v39fvNDfbB38lGw6oQ4dhOIHhEFgWKHVmOGUY1N1j3Hpj5IXnEBmwybpDRGJW/LPW5oZrQ889k/jyNkgkMRIGxwHOMRoFAEil5C/flm/uAyEwGmVVlaz2Il67gNVUs/IyLCpCn0VS6mRCDwzozi59/KQ+dly3n6DuHkinwTQxEIDSYlAapMwauBnU3SM2bgjvfAZdNZ5KkKKAXhqzmZXy3bGJ1y4Yfugr+kgMS4oBcdzGMBzKDHQdR394VDW3OFIBETAExjN/0jqj6oyBIdC0MBiEcDjzXKoJTYyoO7vMOzZFfvw0BvygNUzjF0WBHfQZLeeglHH5ZdE9rya/9UR65/OgFEYimbHu+FSGMfD7MRDIjOVc5STK/Dr+0L1d1MnTUQGjozSa8n9ta3DHY4g4A22BJw+TfQHnoDULh8PfeTKy+2VxzVUUH6ShIUAEITL65mIoBVKBlKAUKAVag5r40BX1pDGlEKCJenqxrCz0/LOhJ76FboEz9nlslgR8RtmIQCnzqvXR/3wl/LPnxPXXUjpNvX2QTgNjIARw7mnC7/ZhnIMQGRfY2wuc+7Y+FN33X77bPwdKZQb+MweSZj3y7dZSa0C0br7RuvlGp/FQete/23ve0q1tkEqBEGhZZ8jPrrGrz0qB45Btg3TAMNmiWvOWG617/shcsjRjJpx7ipydZ1w6v6G1UsCYsXqVsXoVffMvnUPvOQfelu/8Vh1tpe4eSiRBOqD1hO8hADIwDAwFcX4FX7yQX/YpY/0684p1LBgCAFAaGHqk9S7hAmVI3GppDUTo85nrrzDXXwEANDKqTp/Wp7t0Tw/19NLwsE6lCDSaFoZDWFLM5lfwqipRVYV+/3hhvYljh3peu3z+phL/Au9LTMXHBnv2RAo0AWlgDAN+sXgRLF6U81+T6f7eZNvJRFPbUOPJRFPSiV9acfNYLQsETLOUrUUEjhmvOd7xABBpBOxMftg10iqYaavRETk47PQO2T1xu3PQ7ko6/Y5OcxQG9weNojO1xEKq9Ow7NsSs8Sxvir/5i2PfDZrFWks3jsmQMRQcDYP5TB4gd98dqbyzQl5Cc2507uPMdHJmBYxoQBRlI9HYinTKnzNPCdMsWfMMrXxmdXSuqhVw6SECABiCmYID5V51XsD28I6B+cZjZuYlAoOzkrAJWs9QMgKgpvKIBQAFWYnkxjq8jWYxr0l7jqGl0gQAl9XNA6lnypkgEMHVy8sLJWiBpvdAV+FUemxGec91C0FMv4oD0bZ1WXnw9rU1bjDg/IGLfTWYQ/tQk/KLopBZkpdi59rzwFBpWr+07E8+s3h0YNQ0JgdVGSJnKBPpb9+5siRsKU3nmT9AZACwKLo26psvdZohm6ZiIiWHlxVfbfGgJg2FAnaRNNE/3Ld24xUXJXpHlCbB0b05Q1uqZP/Iw1+o/9INS5Sm8xcvAhJpv4h8tnZrSiWllgyFG8HMukXCHigLLLy+5n4Cyit1nnuj1nhwy5b6sZfe++HrR/sHRsczhReVBx/ZXP/l31+qibBwOxCJNCL7bdfu14///bDdN3nfErIF4ZWfX/JYqb82741aXrbiQdbWwtMDow2xrqNdw4KxFTWR636voihgFmoT3sSeSSOwYbv3aPzXw3aP1DaRZigM7isPLFoy70oEzIsW3K14Hjdbut5XT6W0BdHkGeQ8Q1+dn2wR29vbWWNjo7td3kvIgTMkIqlJKpKKlCYimCVaV3XdtMNZt4Y8ZesebNDY2Mh27dqFmIf1IaJgZ5zWbJ/wMZ5SmnizfPMDLuOuXbswGAzGYrEFCxb8f9kSn0wmd+zYgYhKKZijl1IKEXfs2JFMJjPHWuzdu3duH2uxZ8+ezLEW4weXtLS0zNWDS5qbm8vKynA8Tev+qKqqOnjw4Nw/mmYsrjY3Dx/avn37pMOHshNgmTOYampq7rrrrrl6vNT/AgHg96zADI9eAAAAAElFTkSuQmCC"
+
+    # ── Render CSS + card header HTML ──────────────────────────────────────────
+    _err_banner = ""
+    if _err:
+        _err_banner = f'''<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;
+            padding:7px 12px;margin-top:10px;font-size:12px;color:#9f1239;font-weight:500;">{_err}</div>'''
 
     st.markdown(f"""
 <style>
@@ -226,177 +229,70 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
     background:#ededed !important;font-family:'Inter',system-ui,sans-serif !important}}
 [data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{{display:none !important}}
 *{{font-family:'Inter',system-ui,sans-serif !important}}
-
-/* ── Page container: compact, centered ── */
 .main .block-container{{
-    padding:0 !important;
-    max-width:480px !important;
-    margin:0 auto !important;
-    padding-top:max(24px,6vh) !important;
-    padding-bottom:24px !important;
-    padding-left:max(12px,3vw) !important;
-    padding-right:max(12px,3vw) !important;
-}}
-
-/* ── Unified card ── */
-.lc-card{{
-    background:#fff;
-    border:1.5px solid #e4e4e4;
-    border-radius:18px;
-    box-shadow:0 6px 28px rgba(0,0,0,.07);
-    /* Desktop: limit to ~1/3 of wide screens via inline max-width on wrapper */
-    width:100%;
-    max-width:300px;
-    margin:0 auto;
-    overflow:hidden;
-}}
-.lc-head{{
-    padding:28px 24px 20px;
-    text-align:center;
-    border-bottom:1px solid #f0f0f0;
-}}
-.lc-logo-wrap{{display:flex;justify-content:center;margin-bottom:13px}}
-.lc-logo-inner{{
-    width:54px;height:54px;border-radius:14px;overflow:hidden;
+    padding:0 !important;max-width:360px !important;margin:0 auto !important;
+    padding-top:max(24px,6vh) !important;padding-bottom:24px !important;
+    padding-left:16px !important;padding-right:16px !important;}}
+/* Card head (HTML) */
+.lc-head{{background:#fff;border:1.5px solid #e4e4e4;border-radius:16px 16px 0 0;
+    border-bottom:none;padding:26px 22px 18px;text-align:center;}}
+.lc-logo-wrap{{display:flex;justify-content:center;margin-bottom:12px}}
+.lc-logo-inner{{width:52px;height:52px;border-radius:14px;overflow:hidden;
     border:1.5px solid #e8e8e8;background:#fff;padding:3px}}
 .lc-title{{font-size:17px;font-weight:800;color:#191d3a;margin:0 0 2px}}
 .lc-sub{{font-size:11px;color:#9e9e9e;margin:0}}
-.lc-err-wrap{{
-    background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;
-    padding:7px 12px;margin-top:10px;
-    font-size:12px;color:#9f1239;font-weight:500;
-    display:{{'block' if _err else 'none'}};
-}}
-.lc-body{{padding:16px 20px 18px}}
-
-/* Native HTML password input — no Streamlit gap possible */
-.lc-pw-wrap{{position:relative;margin-bottom:10px}}
-.lc-pw{{
-    width:100%;height:46px;border-radius:10px;
-    border:1.5px solid #ddd;background:#fafafa;
-    font-size:15px;color:#191d3a;padding:0 42px 0 12px;
-    outline:none;font-family:'Inter',system-ui,sans-serif;
-    transition:border-color .15s,box-shadow .15s;
-    -webkit-appearance:none;appearance:none;
-}}
-.lc-pw:focus{{
-    border-color:#6398c8;background:#fff;
-    box-shadow:0 0 0 3px rgba(99,152,200,.15);
-}}
-.lc-pw::placeholder{{color:#bbb;font-size:14px}}
-.lc-eye{{
-    position:absolute;right:12px;top:50%;transform:translateY(-50%);
-    cursor:pointer;font-size:16px;color:#bbb;user-select:none;
-    background:none;border:none;padding:0;line-height:1;
-}}
-.lc-eye:hover{{color:#616161}}
-.lc-submit{{
-    width:100%;height:46px;border-radius:10px;border:none;
-    background:#1668e3;color:#fff;font-size:15px;font-weight:700;
-    cursor:pointer;font-family:'Inter',system-ui,sans-serif;
-    transition:background .15s,transform .1s;display:block;
-}}
-.lc-submit:hover{{background:#1255c0}}
-.lc-submit:active{{transform:scale(0.98)}}
-.lc-foot{{font-size:11px;color:#bbb;text-align:center;margin-top:12px}}
-
-/* Hide Streamlit widgets — they still process, just invisible */
-[data-testid="stTextInput"],
-[data-testid="stTextInput"] *,
-[data-testid="stButton"],
-[data-testid="stButton"] *,
-.element-container:has([data-testid="stTextInput"]),
-.element-container:has([data-testid="stButton"]){{
-    position:absolute !important;
-    opacity:0 !important;
-    pointer-events:none !important;
-    width:1px !important;height:1px !important;
-    overflow:hidden !important;
-    clip:rect(0,0,0,0) !important;
-}}
-
-/* Desktop: card at natural width, centered */
-@media(min-width:600px){{
-    .lc-card{{max-width:300px}}
-}}
-/* Mobile: fill nicely with horizontal padding from container */
-@media(max-width:440px){{
-    .main .block-container{{
-        padding-top:max(16px,4vh) !important;
-        padding-left:16px !important;
-        padding-right:16px !important;
-    }}
-    .lc-card{{max-width:100%;border-radius:16px}}
-    .lc-head{{padding:22px 18px 16px}}
-    .lc-body{{padding:14px 16px 16px}}
-    .lc-logo-inner{{width:48px;height:48px;border-radius:12px}}
-    .lc-title{{font-size:16px}}
+/* Card body (wraps Streamlit widgets) */
+.lc-body{{background:#fff;border:1.5px solid #e4e4e4;border-radius:0 0 16px 16px;
+    border-top:1px solid #f0f0f0;padding:14px 20px 18px;
+    box-shadow:0 6px 24px rgba(0,0,0,.07);}}
+.lc-foot{{font-size:11px;color:#bbb;text-align:center;margin-top:10px}}
+/* Streamlit widget overrides inside .lc-body */
+.lc-body label[data-testid="stWidgetLabel"]{{display:none !important}}
+.lc-body .stTextInput input{{
+    border-radius:10px !important;border:1.5px solid #ddd !important;
+    background:#fafafa !important;font-size:15px !important;color:#191d3a !important;
+    padding:0 12px !important;height:46px !important;line-height:46px !important;
+    box-sizing:border-box !important;width:100% !important;-webkit-appearance:none}}
+.lc-body .stTextInput input:focus{{
+    border-color:#6398c8 !important;background:#fff !important;
+    box-shadow:0 0 0 3px rgba(99,152,200,.15) !important;outline:none !important}}
+.lc-body .stTextInput input::placeholder{{color:#bbb !important;font-size:14px !important}}
+.lc-body [data-testid="stVerticalBlock"]>div{{gap:0 !important}}
+.lc-body .element-container{{margin:0 !important;padding:0 !important}}
+.lc-body .stTextInput,.lc-body .stTextInput>div{{margin:0 !important}}
+.lc-body .stButton>button{{
+    width:100% !important;border-radius:10px !important;height:46px !important;
+    font-size:15px !important;font-weight:700 !important;border:none !important;
+    background:#1668e3 !important;color:#fff !important;
+    box-shadow:none !important;margin-top:10px !important}}
+.lc-body .stButton>button:hover{{background:#1255c0 !important}}
+@media(max-width:400px){{
+    .main .block-container{{padding-left:12px !important;padding-right:12px !important}}
+    .lc-head{{padding:20px 16px 16px;border-radius:14px 14px 0 0}}
+    .lc-body{{padding:12px 16px 16px;border-radius:0 0 14px 14px}}
 }}
 </style>
-
-<div class="lc-card">
-  <div class="lc-head">
-    <div class="lc-logo-wrap">
-      <div class="lc-logo-inner">
-        <img src="data:image/png;base64,{_LOGO_B64}"
-          style="width:100%;height:100%;object-fit:contain;border-radius:9px;" alt="Mitra">
-      </div>
+<div class="lc-head">
+  <div class="lc-logo-wrap">
+    <div class="lc-logo-inner">
+      <img src="data:image/png;base64,{_LOGO_B64}"
+        style="width:100%;height:100%;object-fit:contain;border-radius:9px;" alt="Mitra">
     </div>
-    <div class="lc-title">CC Reporting</div>
-    <div class="lc-sub">Mitra Tours &amp; Travel</div>
-    {_err_html.replace('class="lc-err"','class="lc-err-wrap"')}
   </div>
-  <div class="lc-body">
-    <div class="lc-pw-wrap">
-      <input class="lc-pw" id="lc_pw_html" type="password"
-        placeholder="Masukkan password" autocomplete="current-password">
-      <button class="lc-eye" id="lc_eye" type="button" aria-label="Tampilkan password">👁</button>
-    </div>
-    <button class="lc-submit" id="lc_submit_html">Masuk</button>
-    <div class="lc-foot">Sesi aktif {ttl} jam</div>
-  </div>
+  <div class="lc-title">CC Reporting</div>
+  <div class="lc-sub">Mitra Tours &amp; Travel</div>
+  {_err_banner}
 </div>
-
-<script>
-(function(){{
-  var eye = document.getElementById('lc_eye');
-  var pwHtml = document.getElementById('lc_pw_html');
-  var submitHtml = document.getElementById('lc_submit_html');
-
-  /* Toggle show/hide password */
-  eye.addEventListener('click', function(){{
-    if(pwHtml.type==='password'){{ pwHtml.type='text'; eye.textContent='🙈'; }}
-    else{{ pwHtml.type='password'; eye.textContent='👁'; }}
-    pwHtml.focus();
-  }});
-
-  /* When user submits: push value into hidden Streamlit input, then click hidden button */
-  function doSubmit(){{
-    var val = pwHtml.value;
-    /* Find the actual Streamlit input (hidden via CSS) and set its value */
-    var stInput = document.querySelector('[data-testid="stTextInput"] input');
-    if(stInput){{
-      var nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
-      nativeSet.call(stInput, val);
-      stInput.dispatchEvent(new Event('input', {{bubbles:true}}));
-    }}
-    /* Tiny delay so React picks up the value, then click Streamlit button */
-    setTimeout(function(){{
-      var stBtn = document.querySelector('[data-testid="stButton"] button');
-      if(stBtn) stBtn.click();
-    }}, 80);
-  }}
-
-  submitHtml.addEventListener('click', doSubmit);
-  pwHtml.addEventListener('keydown', function(e){{ if(e.key==='Enter') doSubmit(); }});
-}})();
-</script>
 """, unsafe_allow_html=True)
 
-    # Hidden Streamlit widgets — invisible but functional
+    # Card body — pure Streamlit widgets, no JS needed
+    st.markdown('<div class="lc-body">', unsafe_allow_html=True)
     pw = st.text_input("pw", type="password", label_visibility="collapsed",
-                       key="_app_pw_input")
-    _btn = st.button("login", key="_app_login_btn")
+                       key="_app_pw_input", placeholder="Masukkan password")
+    _btn = st.button("Masuk", type="primary", use_container_width=True,
+                     key="_app_login_btn")
+    st.markdown(f'<div class="lc-foot">Sesi aktif {ttl} jam</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     if _btn:
         if _check_pw(pw):
