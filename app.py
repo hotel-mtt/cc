@@ -100,52 +100,73 @@ def _dashboard_login_wall():
         return True
 
     _err = st.session_state.get("_dash_login_err", "")
-    _err_html = f'<div style="font-size:12px;color:#e53935;font-weight:500;margin-top:8px;'
-    _err_html += f'background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:6px 12px;">{_err}</div>' if _err else ""
+    _err_banner = f'''<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;
+        padding:6px 12px;margin-top:8px;font-size:12px;color:#9f1239;font-weight:500;">{_err}</div>''' if _err else ""
 
     st.markdown(f"""
 <style>
-.dl-box{{
-    background:#fff;border:1.5px solid #e4e4e4;border-radius:16px;
-    padding:20px 20px 18px;max-width:320px;margin:8px auto 0;
-    box-shadow:0 4px 20px rgba(0,0,0,.06);
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* ── Dashboard login — compact centered card ── */
+.dash-login-head{{
+    background:#fff;border:1.5px solid #e4e4e4;
+    border-radius:16px 16px 0 0;border-bottom:none;
+    padding:22px 20px 16px;text-align:center;
+    max-width:280px;margin:0 auto;
 }}
-.dl-icon{{font-size:22px;margin-bottom:8px;text-align:center}}
-.dl-title{{font-size:15px;font-weight:700;color:#191d3a;text-align:center;margin-bottom:2px}}
-.dl-sub{{font-size:11px;color:#9e9e9e;text-align:center;margin-bottom:12px}}
-.dl-box .stTextInput input{{
+.dash-login-icon{{font-size:26px;margin-bottom:8px}}
+.dash-login-title{{font-size:16px;font-weight:800;color:#191d3a;margin:0 0 2px}}
+.dash-login-sub{{font-size:11px;color:#9e9e9e;margin:0}}
+
+/* Card body — target stVerticalBlock dalam konteks dashboard login */
+.dash-login-wrap [data-testid="stVerticalBlock"]{{
+    background:#fff !important;
+    border:1.5px solid #e4e4e4 !important;
+    border-radius:0 0 16px 16px !important;
+    border-top:1px solid #f0f0f0 !important;
+    padding:12px 20px 16px !important;
+    box-shadow:0 6px 20px rgba(0,0,0,.07) !important;
+    max-width:280px !important;
+    margin:0 auto !important;
+    gap:0 !important;
+}}
+.dash-login-wrap [data-testid="stVerticalBlock"] > div,
+.dash-login-wrap .element-container{{margin:0 !important;padding:0 !important}}
+.dash-login-wrap label[data-testid="stWidgetLabel"]{{display:none !important}}
+.dash-login-wrap .stTextInput input{{
     border-radius:10px !important;border:1.5px solid #ddd !important;
     background:#fafafa !important;font-size:15px !important;color:#191d3a !important;
     padding:0 12px !important;height:44px !important;
     box-sizing:border-box !important;width:100% !important;
-    -webkit-appearance:none;appearance:none}}
-.dl-box .stTextInput input:focus{{
+    -webkit-appearance:none !important;appearance:none !important;}}
+.dash-login-wrap .stTextInput input:focus{{
     border-color:#6398c8 !important;background:#fff !important;
     box-shadow:0 0 0 3px rgba(99,152,200,.15) !important;outline:none !important}}
-.dl-box label[data-testid="stWidgetLabel"]{{display:none !important}}
-.dl-box .stButton>button{{
+.dash-login-wrap .stTextInput input::placeholder{{color:#bbb !important;font-size:14px !important}}
+.dash-login-wrap .stTextInput,.dash-login-wrap .stTextInput>div{{margin:0 !important;padding:0 !important}}
+.dash-login-wrap .stButton>button{{
     width:100% !important;border-radius:10px !important;height:44px !important;
     font-size:14px !important;font-weight:700 !important;border:none !important;
     background:#191d3a !important;color:#fff !important;
     box-shadow:none !important;margin-top:8px !important}}
-.dl-box .stButton>button:hover{{background:#2a3060 !important}}
+.dash-login-wrap .stButton>button:hover{{background:#2a3060 !important}}
 </style>
-<div class="dl-box">
-  <div class="dl-icon">🔒</div>
-  <div class="dl-title">Dashboard</div>
-  <div class="dl-sub">Masukkan password dashboard</div>
-  {_err_html}
+
+<div class="dash-login-head">
+  <div class="dash-login-icon">🔒</div>
+  <div class="dash-login-title">Dashboard</div>
+  <div class="dash-login-sub">Masukkan password dashboard</div>
+  {_err_banner}
 </div>
 """, unsafe_allow_html=True)
 
-    with st.container():
-        st.markdown('<div class="dl-box" style="margin-top:-18px;padding-top:0;border-top:none;border-radius:0 0 16px 16px;box-shadow:0 4px 20px rgba(0,0,0,.06);">', unsafe_allow_html=True)
-        _dpw = st.text_input("Dashboard password", type="password",
-                             label_visibility="collapsed", key="_dash_pw_input",
-                             placeholder="Password dashboard")
-        _dbtn = st.button("Masuk ke Dashboard", type="primary",
-                          use_container_width=True, key="_dash_login_btn")
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="dash-login-wrap">', unsafe_allow_html=True)
+    _dpw = st.text_input("Dashboard password", type="password",
+                         label_visibility="collapsed", key="_dash_pw_input",
+                         placeholder="Password dashboard")
+    _dbtn = st.button("Masuk ke Dashboard", type="primary",
+                      use_container_width=True, key="_dash_login_btn")
+    st.markdown('<p style="font-size:11px;color:#bbb;text-align:center;margin-top:8px;max-width:280px;margin-left:auto;margin-right:auto;">Dashboard access terpisah dari login utama</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     if _dbtn:
         if _check_dash_pw(_dpw):
@@ -229,18 +250,18 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 [data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{{display:none !important}}
 *{{font-family:'Inter',system-ui,sans-serif !important}}
 
-/* ── Container: sempit, centered ── */
+/* ── Page: bg abu, centered ── */
 .main .block-container{{
     padding:0 !important;
-    max-width:320px !important;
+    max-width:600px !important;
     margin:0 auto !important;
     padding-top:max(24px,6vh) !important;
     padding-bottom:24px !important;
-    padding-left:16px !important;
-    padding-right:16px !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
 }}
 
-/* ── Card head (HTML block) ── */
+/* ── Card head ── */
 .lc-head{{
     background:#fff;
     border:1.5px solid #e4e4e4;
@@ -248,6 +269,10 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
     border-bottom:none;
     padding:26px 22px 18px;
     text-align:center;
+    max-width:280px;
+    margin:0 auto;
+    position:relative;
+    z-index:1;
 }}
 .lc-logo-wrap{{display:flex;justify-content:center;margin-bottom:12px}}
 .lc-logo-inner{{width:52px;height:52px;border-radius:14px;overflow:hidden;
@@ -255,82 +280,74 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .lc-title{{font-size:17px;font-weight:800;color:#191d3a;margin:0 0 2px}}
 .lc-sub{{font-size:11px;color:#9e9e9e;margin:0}}
 
-/* ── Card bottom: style langsung ke semua element setelah .lc-head ─────────
-   Karena Streamlit menyisipkan wrapper div, kita style elemen-elemen
-   secara global tapi hanya saat login page (tidak ada tab nav disini). ── */
-
-/* Seluruh vertical block = card bottom */
-[data-testid="stVerticalBlock"]{{
-    background:#fff !important;
-    border:1.5px solid #e4e4e4 !important;
-    border-radius:0 0 16px 16px !important;
-    border-top:1px solid #f0f0f0 !important;
-    padding:14px 20px 18px !important;
-    box-shadow:0 6px 24px rgba(0,0,0,.07) !important;
+/* ── Outer centering column ── */
+.lc-col-wrap [data-testid="stVerticalBlock"]{{
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+    padding:0 !important;
     gap:0 !important;
 }}
+.lc-col-wrap .element-container{{margin:0 !important;padding:0 !important}}
 
-/* Hilangkan semua margin/gap Streamlit di dalam card */
-[data-testid="stVerticalBlock"] > div,
-[data-testid="stVerticalBlock"] .element-container{{
-    margin:0 !important;
-    padding:0 !important;
-}}
-
-/* Label tersembunyi */
-label[data-testid="stWidgetLabel"],
-[data-testid="stWidgetLabel"]{{display:none !important}}
-
-/* Input */
-.stTextInput input{{
-    border-radius:10px !important;
-    border:1.5px solid #ddd !important;
-    background:#fafafa !important;
+/* ── Inner card body: the column's stVerticalBlock children ── */
+.lc-col-wrap .stTextInput input{{
+    border-radius:0 0 0 0 !important;
+    border:none !important;
+    border-top:1px solid #f0f0f0 !important;
+    background:#fff !important;
     font-size:15px !important;
     color:#191d3a !important;
-    padding:0 12px !important;
-    height:46px !important;
-    line-height:46px !important;
+    padding:0 14px !important;
+    height:52px !important;
+    line-height:52px !important;
     box-sizing:border-box !important;
     width:100% !important;
     -webkit-appearance:none !important;
     appearance:none !important;
-}}
-.stTextInput input:focus{{
-    border-color:#6398c8 !important;
-    background:#fff !important;
-    box-shadow:0 0 0 3px rgba(99,152,200,.15) !important;
+    box-shadow:none !important;
     outline:none !important;
 }}
-.stTextInput input::placeholder{{color:#bbb !important;font-size:14px !important}}
-.stTextInput,.stTextInput>div{{margin:0 !important;padding:0 !important}}
+.lc-col-wrap .stTextInput input:focus{{
+    border-top-color:#6398c8 !important;
+    box-shadow:inset 0 0 0 2px rgba(99,152,200,.2) !important;
+}}
+.lc-col-wrap .stTextInput input::placeholder{{color:#bbb !important;font-size:14px !important}}
+.lc-col-wrap .stTextInput,.lc-col-wrap .stTextInput>div{{margin:0 !important;padding:0 !important}}
+.lc-col-wrap label[data-testid="stWidgetLabel"]{{display:none !important}}
 
-/* Button */
-.stButton>button{{
+/* Button row */
+.lc-col-wrap .stButton>button{{
     width:100% !important;
-    border-radius:10px !important;
-    height:46px !important;
+    border-radius:0 0 14px 14px !important;
+    height:50px !important;
     font-size:15px !important;
     font-weight:700 !important;
     border:none !important;
+    border-top:1px solid #e4e4e4 !important;
     background:#1668e3 !important;
     color:#fff !important;
     box-shadow:none !important;
-    margin-top:10px !important;
+    margin:0 !important;
 }}
-.stButton>button:hover{{background:#1255c0 !important}}
-.stButton>button:active{{background:#0e449e !important;transform:scale(0.98)}}
+.lc-col-wrap .stButton>button:hover{{background:#1255c0 !important}}
+.lc-col-wrap .stButton>button:active{{transform:scale(0.99)}}
+
+/* Outer border wrapping input+button — via pseudo on head */
+.lc-card-wrap{{
+    max-width:280px;
+    margin:0 auto;
+    background:#fff;
+    border:1.5px solid #e4e4e4;
+    border-top:none;
+    border-radius:0 0 16px 16px;
+    box-shadow:0 8px 28px rgba(0,0,0,.08);
+    overflow:hidden;
+}}
 
 @media(max-width:400px){{
-    .main .block-container{{
-        padding-left:12px !important;
-        padding-right:12px !important;
-    }}
-    .lc-head{{padding:20px 16px 16px;border-radius:14px 14px 0 0}}
-    [data-testid="stVerticalBlock"]{{
-        border-radius:0 0 14px 14px !important;
-        padding:12px 16px 16px !important;
-    }}
+    .lc-head{{max-width:calc(100vw - 32px)}}
+    .lc-card-wrap{{max-width:calc(100vw - 32px);margin:0 16px}}
 }}
 </style>
 
@@ -345,15 +362,20 @@ label[data-testid="stWidgetLabel"],
   <div class="lc-sub">Mitra Tours &amp; Travel</div>
   {_err_banner}
 </div>
+<div class="lc-card-wrap" id="lc-card-wrap-id"></div>
 """, unsafe_allow_html=True)
 
-    # Widget Streamlit — langsung tanpa wrapper div
-    pw = st.text_input("pw", type="password", label_visibility="collapsed",
-                       key="_app_pw_input", placeholder="Masukkan password")
-    _btn = st.button("Masuk", type="primary", use_container_width=True,
-                     key="_app_login_btn")
-    st.markdown(f'<p style="font-size:11px;color:#bbb;text-align:center;margin-top:8px;">Sesi aktif {ttl} jam</p>',
-                unsafe_allow_html=True)
+    # Use columns to center and constrain width — this is the reliable Streamlit way
+    _lpad, _lcol, _rpad = st.columns([1, 2.8, 1])
+    with _lcol:
+        st.markdown('<div class="lc-col-wrap">', unsafe_allow_html=True)
+        pw = st.text_input("pw", type="password", label_visibility="collapsed",
+                           key="_app_pw_input", placeholder="Masukkan password")
+        _btn = st.button("Masuk", type="primary", use_container_width=True,
+                         key="_app_login_btn")
+        st.markdown(f'<p style="font-size:11px;color:#bbb;text-align:center;padding:8px 0 4px;">Sesi aktif {ttl} jam</p>',
+                    unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if _btn:
         if _check_pw(pw):
