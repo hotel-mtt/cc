@@ -140,93 +140,95 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 [data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{{display:none !important}}
 *{{font-family:'Inter',system-ui,sans-serif !important}}
 
-/* Container: centered, compact, no extra vertical space */
+/* Container: compact width, vertically centered */
 .main .block-container{{
     padding:0 !important;
-    max-width:400px !important;
+    max-width:320px !important;
     margin:0 auto !important;
-    /* vertically center by pushing top — works on both mobile & desktop */
-    padding-top:max(32px, 8vh) !important;
-    padding-bottom:32px !important;
+    padding-top:max(28px, 7vh) !important;
+    padding-bottom:28px !important;
     padding-left:16px !important;
     padding-right:16px !important;
 }}
 
-/* Card top half (HTML) */
+/* Card top half (HTML) — no bottom border, flush into lc-bottom */
 .lc-top{{
     background:#fff;
     border:1.5px solid #e4e4e4;
-    border-radius:20px 20px 0 0;
+    border-radius:16px 16px 0 0;
     border-bottom:none;
-    padding:28px 24px 20px;
+    padding:24px 20px 16px;
     text-align:center;
+    /* pull lc-bottom up tight — no pixel gap */
+    margin-bottom:0;
 }}
 .lc-logo{{
-    display:flex;justify-content:center;margin-bottom:14px}}
+    display:flex;justify-content:center;margin-bottom:12px}}
 .lc-logo-inner{{
-    width:56px;height:56px;border-radius:16px;overflow:hidden;
+    width:52px;height:52px;border-radius:14px;overflow:hidden;
     border:1.5px solid #e8e8e8;background:#fff;padding:3px}}
-.lc-title{{font-size:19px;font-weight:800;color:#191d3a;margin-bottom:3px}}
-.lc-sub{{font-size:12px;color:#9e9e9e;margin-bottom:0}}
+.lc-title{{font-size:17px;font-weight:800;color:#191d3a;margin-bottom:2px}}
+.lc-sub{{font-size:11px;color:#9e9e9e;margin-bottom:0}}
 .lc-err{{
     font-size:12px;color:#e53935;font-weight:500;
-    min-height:16px;margin-top:10px;
+    margin-top:10px;
     background:#fff1f2;border:1px solid #fecdd3;
     border-radius:8px;padding:6px 12px;
     display:{{'block' if _err else 'none'}};
 }}
 
-/* Card bottom half wrapping Streamlit widgets */
+/* Card bottom half — sits flush below lc-top, no gap */
 .lc-bottom{{
     background:#fff;
     border:1.5px solid #e4e4e4;
-    border-radius:0 0 20px 20px;
+    border-radius:0 0 16px 16px;
     border-top:1px solid #f0f0f0;
-    padding:16px 24px 20px;
-    box-shadow:0 8px 32px rgba(0,0,0,.07);
+    padding:14px 20px 18px;
+    box-shadow:0 6px 24px rgba(0,0,0,.07);
+    /* Streamlit injects a wrapper div above this — pull up by its margin */
+    margin-top:-4px;
 }}
 .lc-foot{{
     font-size:11px;color:#bbb;text-align:center;
-    margin-top:12px;}}
+    margin-top:10px;}}
 
-/* Input & button inside card-bottom */
+/* Collapse ALL Streamlit spacing above lc-bottom */
+.lc-bottom~div,.lc-bottom+div{{margin-top:0 !important}}
+[data-testid="stVerticalBlock"]>[data-testid="stVerticalBlock"]{{gap:0 !important}}
 .lc-bottom .stTextInput input{{
-    border-radius:12px !important;border:1.5px solid #ddd !important;
+    border-radius:10px !important;border:1.5px solid #ddd !important;
     background:#fafafa !important;font-size:15px !important;color:#191d3a !important;
-    padding:0 14px !important;height:48px !important;line-height:48px !important;
+    padding:0 12px !important;height:46px !important;line-height:46px !important;
     box-sizing:border-box !important;width:100% !important;
     -webkit-appearance:none;appearance:none;margin-bottom:0 !important}}
 .lc-bottom .stTextInput input:focus{{
     border-color:#6398c8 !important;background:#fff !important;
     box-shadow:0 0 0 3px rgba(99,152,200,.15) !important;outline:none !important}}
-.lc-bottom .stTextInput {{margin-bottom:0 !important}}
-.lc-bottom [data-testid="stTextInput"] {{margin-bottom:0 !important}}
+.lc-bottom .stTextInput{{margin-bottom:0 !important}}
+.lc-bottom [data-testid="stTextInput"]{{margin-bottom:0 !important}}
 .lc-bottom .stButton>button{{
-    width:100% !important;border-radius:12px !important;
-    height:48px !important;font-size:15px !important;
+    width:100% !important;border-radius:10px !important;
+    height:46px !important;font-size:15px !important;
     font-weight:700 !important;border:none !important;
     background:#1668e3 !important;color:#fff !important;
     box-shadow:none !important;margin-top:10px !important}}
 .lc-bottom .stButton>button:active{{background:#1255c0 !important}}
-/* Hide widget labels */
 .lc-bottom label[data-testid="stWidgetLabel"]{{display:none !important}}
 .lc-bottom [data-testid="stWidgetLabel"]{{display:none !important}}
-/* Remove all extra spacing Streamlit adds between elements */
 .lc-bottom [data-testid="stVerticalBlock"]>div{{gap:0 !important}}
 .lc-bottom .element-container{{margin:0 !important;padding:0 !important}}
 .lc-bottom .stTextInput>div{{margin-bottom:0 !important}}
 
-/* Responsive: on mobile ensure card fills nicely */
-@media(max-width:440px){{
+/* Mobile: already compact but tiny extra tweak */
+@media(max-width:400px){{
     .main .block-container{{
-        padding-top:max(20px, 5vh) !important;
+        padding-top:max(16px, 4vh) !important;
         padding-left:12px !important;
         padding-right:12px !important;
+        max-width:100vw !important;
     }}
-    .lc-top{{padding:24px 20px 18px}}
-    .lc-bottom{{padding:14px 20px 18px}}
-    .lc-logo-inner{{width:50px;height:50px;border-radius:14px}}
-    .lc-title{{font-size:18px}}
+    .lc-top{{padding:20px 16px 14px}}
+    .lc-bottom{{padding:12px 16px 16px}}
 }}
 </style>
 
