@@ -260,13 +260,13 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .lc-card{{
     background:rgba(255,255,255,0.82);
     border:1px solid rgba(255,255,255,0.9);
-    border-radius:20px;
+    border-radius:20px 20px 0 0;
+    border-bottom:none;
     max-width:340px;
     margin:0 auto;
-    overflow:hidden;
     box-shadow:0 8px 32px rgba(100,140,180,0.18),0 1.5px 4px rgba(0,0,0,0.06);
 }}
-.lc-card-inner{{padding:32px 28px 8px;text-align:center;}}
+.lc-card-inner{{padding:32px 28px 20px;text-align:center;}}
 .lc-logo-wrap{{display:flex;justify-content:center;margin-bottom:18px}}
 .lc-logo-inner{{
     width:52px;height:52px;border-radius:14px;overflow:hidden;
@@ -274,14 +274,19 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
     box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }}
 .lc-title{{font-size:20px;font-weight:700;color:#111827;margin:0 0 6px;letter-spacing:-.3px}}
-.lc-sub{{font-size:13px;color:#6b7280;margin:0 0 4px;line-height:1.5}}
-.lc-divider{{height:1px;background:rgba(0,0,0,0.06);margin:20px 0 0}}
+.lc-sub{{font-size:13px;color:#6b7280;margin:0;line-height:1.5}}
 
-/* Widgets section */
-.lc-fields{{padding:20px 28px 24px;}}
+/* ── Widget wrapper — menyambung di bawah card ── */
 .lc-col-wrap [data-testid="stVerticalBlock"]{{
-    background:transparent !important;border:none !important;
-    box-shadow:none !important;padding:0 !important;gap:8px !important;
+    background:rgba(255,255,255,0.82) !important;
+    border:1px solid rgba(255,255,255,0.9) !important;
+    border-top:1px solid #f0f0f0 !important;
+    border-radius:0 0 20px 20px !important;
+    box-shadow:0 8px 32px rgba(100,140,180,0.18),0 1.5px 4px rgba(0,0,0,0.06) !important;
+    padding:16px 28px 22px !important;
+    max-width:340px !important;
+    margin:0 auto !important;
+    gap:8px !important;
 }}
 .lc-col-wrap .element-container{{margin:0 !important;padding:0 !important}}
 .lc-col-wrap label[data-testid="stWidgetLabel"]{{display:none !important}}
@@ -318,9 +323,13 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .lc-col-wrap .stButton>button:active{{transform:scale(0.99) !important}}
 
 @media(max-width:420px){{
-    .lc-card{{max-width:calc(100vw - 32px);border-radius:18px}}
-    .lc-card-inner{{padding:26px 20px 8px}}
-    .lc-fields{{padding:16px 20px 20px}}
+    .lc-card{{max-width:calc(100vw - 32px);border-radius:18px 18px 0 0}}
+    .lc-card-inner{{padding:26px 20px 16px}}
+    .lc-col-wrap [data-testid="stVerticalBlock"]{{
+        max-width:calc(100vw - 32px) !important;
+        padding:14px 20px 18px !important;
+        border-radius:0 0 18px 18px !important;
+    }}
 }}
 </style>
 
@@ -335,12 +344,11 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
     <div class="lc-title">Masuk dengan password</div>
     <div class="lc-sub">Mitra Tours &amp; Travel · CC Reporting</div>
     {_err_banner}
-    <div class="lc-divider"></div>
   </div>
-  <div class="lc-fields" id="lc-fields-anchor"></div>
 </div>
 """, unsafe_allow_html=True)
 
+    # Widget section — columns untuk center & constrain lebar
     _lpad, _lcol, _rpad = st.columns([1, 4, 1])
     with _lcol:
         st.markdown('<div class="lc-col-wrap">', unsafe_allow_html=True)
