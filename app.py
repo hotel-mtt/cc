@@ -768,7 +768,7 @@ def sheet_id():
     return st.session_state.get("sheet_id", "")
 
 COLS = ["Timestamp Input","Supplier","Booking ID","Booking Date","Issued Date",
-        "Hotel","Check-in","Room x Night","Total (Rp)","Check-out","Guest Name",
+        "Hotel","Check-in","Room x Night","Room Nights","Total (Rp)","Check-out","Guest Name",
         "Kartu Kredit","Issuer","PIC","No. BC","Nama Kegiatan","Catatan"]
 
 @st.cache_resource(ttl=300)
@@ -784,7 +784,7 @@ def ws():
 def save_row(d):
     ws().append_row([d.get(k,"") for k in [
         "timestamp_input","supplier","booking_id","booked_on","issued_on","hotel",
-        "checkin","qty","room","checkout","name","card","issuer","pic",
+        "checkin","qty","room_nights","room","checkout","name","card","issuer","pic",
         "no_bc","nama_kegiatan","notes"]], value_input_option="USER_ENTERED")
 
 def load_rows(): return ws().get_all_records()
@@ -794,6 +794,32 @@ def _ns(v): return str(v or "").strip().lower()
 def _ni(v):
     try: return int(float(str(v).replace(",","").replace(".","") or 0))
     except: return 0
+
+def _parse_room_nights(qty_str: str) -> int:
+    """
+    Parse qty string like "1 room x 6 nights", "2 rooms x 3 malam", "3 kamar x 4 malam"
+    Returns total room-nights as integer. E.g. "1 room x 6 nights" -> 6
+    """
+    if not qty_str: return 0
+    s = str(qty_str).strip().lower()
+    # Pattern: NUMBER x NUMBER (rooms x nights or nights x rooms)
+    m = re.search(r'(\d+)\s*(?:room[s]?|kamar)?\s*[x×]\s*(\d+)', s)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        return a * b  # rooms × nights = total room-nights
+    # Pattern: just a number
+    m2 = re.search(r'(\d+)', s)
+    if m2: return int(m2.group(1))
+    return 0
+
+def _fmt_date_display(v: str) -> str:
+    """Convert YYYY-MM-DD to DD/MM/YYYY for display, pass through others."""
+    if not v: return ""
+    s = str(v).strip()
+    # Already YYYY-MM-DD
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})', s)
+    if m: return f"{m.group(3)}/{m.group(2)}/{m.group(1)}"
+    return s
 
 def check_duplicate(new, rows):
     bid = _ns(new.get("booking_id"))
@@ -832,20 +858,27 @@ _SYS = """You are a corporate hotel expense AI parser for credit card reporting.
 Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice.
 Return ONLY a valid JSON object — no markdown, no explanation.
 Keys: supplier, booking_id, booked_on (YYYY-MM-DD), issued_on (YYYY-MM-DD),
-hotel, checkin (YYYY-MM-DD), checkout (YYYY-MM-DD), qty (e.g. "1 room x 2 nights"),
+hotel, checkin (YYYY-MM-DD), checkout (YYYY-MM-DD),
+qty (ALWAYS format as "N room x N nights", e.g. "1 room x 6 nights"),
 room (integer total IDR, strip Rp/commas), name (primary guest),
 card (e.g. "Visa •••• 0191"), notes (room type, tax, etc.)
+
 Rules:
-1. ALL dates MUST be converted to YYYY-MM-DD format without exception.
-   - "Booking Date" / "Booked On" / "Order Date" -> booked_on
+1. ALL dates MUST be converted to YYYY-MM-DD without exception.
+   - "Booking Date" / "Booked On" / "Order Date"  -> booked_on
    - "Issued Date" / "Issue Date" / "Invoice Date" -> issued_on
-   - "Check-in" / "Check In" / "Arrival" -> checkin
-   - "Check-out" / "Check Out" / "Departure" -> checkout
-   - Handle any format: DD/MM/YYYY, MM/DD/YYYY, DD MMM YYYY, MMM DD YYYY, YYYY-MM-DD, etc.
+   - "Check-in" / "Check In" / "Arrival"           -> checkin
+   - "Check-out" / "Check Out" / "Departure"        -> checkout
+   - Handle ANY format: DD/MM/YYYY, MM/DD/YYYY, DD MMM YYYY, MMM DD YYYY, YYYY-MM-DD
    - Example: "15 May 2026" -> "2026-05-15", "05/15/2026" -> "2026-05-15"
-2. Amounts -> plain integer (strip Rp, IDR, commas, dots).
-3. Missing fields -> "" for strings, 0 for integers.
-4. If a date is ambiguous (e.g. 01/02/03), prefer DD/MM/YYYY for Indonesian documents."""
+   - If checkin and checkout are known, compute booked_on/issued_on from context.
+2. qty field: ALWAYS use "N room x N nights" format.
+   - Count rooms and nights from the document. If "1 room, 6 nights" -> "1 room x 6 nights"
+   - If only nights/malam mentioned: "6 malam" -> "1 room x 6 nights"
+   - NEVER leave qty empty if checkin+checkout are present; compute nights = checkout - checkin.
+3. Amounts -> plain integer (strip Rp, IDR, commas, dots).
+4. Missing -> "" strings, 0 integers.
+5. Ambiguous dates (01/02/03) -> prefer DD/MM/YYYY for Indonesian docs."""
 
 _SYS_NONEXP = """You are a payment receipt parser. Extract ONLY these 4 fields.
 Return ONLY a valid JSON object — no markdown, no explanation.
@@ -1166,11 +1199,14 @@ if st.session_state["tab"] == "input":
                     if _is_dup and skip_dup:
                         _res.update(status="skipped",parsed=_parsed,err=_why)
                     else:
+                        _qty_str = _parsed.get("qty","")
+                        _rn = _parse_room_nights(_qty_str)
                         save_row({"timestamp_input":_parsed.get("timestamp_input",""),
                             "supplier":_parsed.get("supplier",""),"booking_id":_parsed.get("booking_id",""),
                             "booked_on":_parsed.get("booked_on",""),"issued_on":_parsed.get("issued_on",""),
                             "hotel":_parsed.get("hotel",""),"checkin":_parsed.get("checkin",""),
-                            "qty":_parsed.get("qty",""),"room":_parsed.get("room",0),
+                            "qty":_qty_str,"room_nights":_rn if _rn else "",
+                            "room":_parsed.get("room",0),
                             "checkout":_parsed.get("checkout",""),"name":_parsed.get("name",""),
                             "card":normalize_card(_parsed.get("card","")),"issuer":bulk_issuer,"pic":bulk_pic,
                             "no_bc":bulk_no_bc.strip(),"nama_kegiatan":bulk_nama_kegiatan.strip(),
@@ -1327,11 +1363,14 @@ if st.session_state["tab"] == "input":
                 _booking_id_final = ne_booking_id.strip() or _inv_ai
                 _catatan = _booking_id_final
                 if ne_extra_notes.strip(): _catatan += " · " + ne_extra_notes.strip()
+                _ne_qty_str = ne_qty.strip()
+                _ne_rn = _parse_room_nights(_ne_qty_str)
                 _parsed_ne = {
                     "timestamp_input":_ts_final,"supplier":ne_supplier,
                     "booking_id":_booking_id_final,"booked_on":ne_booked_on,
                     "issued_on":ne_issued_on,"hotel":ne_hotel.strip(),
-                    "checkin":ne_checkin,"qty":ne_qty.strip(),"room":_total,
+                    "checkin":ne_checkin,"qty":_ne_qty_str,"room_nights":_ne_rn if _ne_rn else "",
+                    "room":_total,
                     "checkout":ne_checkout,"name":ne_name.strip(),"card":_card_ai,
                     "issuer":bulk_issuer,"pic":bulk_pic.strip(),
                     "no_bc":bulk_no_bc.strip(),"nama_kegiatan":bulk_nama_kegiatan.strip(),
@@ -1481,10 +1520,16 @@ elif st.session_state["tab"] == "dashboard":
             if "Booking ID" in _disp.columns: _cfg["Booking ID"]=st.column_config.TextColumn("Booking ID")
             if "Total (Rp)" in _disp.columns: _cfg["Total (Rp)"]=st.column_config.NumberColumn("Total (Rp)",format="Rp %d")
             if "Room x Night" in _disp.columns: _cfg["Room x Night"]=st.column_config.TextColumn("Room × Night")
+            if "Room Nights" in _disp.columns: _cfg["Room Nights"]=st.column_config.NumberColumn("Room Nights",format="%d malam")
             if "Timestamp Input" in _disp.columns: _cfg["Timestamp Input"]=st.column_config.TextColumn("Timestamp")
-            # Date columns — readable format
+            # Date columns: convert YYYY-MM-DD strings to actual dates for display
+            import pandas as pd
             for _dcol in ["Booking Date","Issued Date","Check-in","Check-out"]:
-                if _dcol in _disp.columns: _cfg[_dcol]=st.column_config.DateColumn(_dcol,format="DD MMM YYYY")
+                if _dcol in _disp.columns:
+                    _disp[_dcol] = pd.to_datetime(_disp[_dcol], errors="coerce", dayfirst=True)
+                    _cfg[_dcol] = st.column_config.DateColumn(_dcol, format="DD/MM/YYYY")
+            if "Room Nights" in _disp.columns:
+                _disp["Room Nights"] = pd.to_numeric(_disp["Room Nights"], errors="coerce").fillna(0).astype(int)
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
@@ -1508,8 +1553,22 @@ elif st.session_state["tab"] == "dashboard":
                     _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
                 if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
-                    _top5 = df_ctx.nlargest(5, "Total (Rp)")[["Hotel","Guest Name","Total (Rp)","Check-in","Issuer"]].fillna("").astype(str)
+                    _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room Nights","Issuer"] if c in df_ctx.columns]
+                    _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
+                if "Room Nights" in df_ctx.columns:
+                    import pandas as pd
+                    _rn = pd.to_numeric(df_ctx["Room Nights"], errors="coerce").fillna(0)
+                    _summary["total_room_nights"] = int(_rn.sum())
+                    _summary["rata_rata_room_nights"] = round(float(_rn[_rn>0].mean()), 1) if (_rn>0).any() else 0
+                if "Check-in" in df_ctx.columns:
+                    import pandas as pd
+                    _ci = pd.to_datetime(df_ctx["Check-in"], errors="coerce", dayfirst=True)
+                    _by_month = df_ctx.assign(_m=_ci.dt.to_period("M"))
+                    _by_month = _by_month.dropna(subset=["_m"])
+                    if not _by_month.empty and "Total (Rp)" in df_ctx.columns:
+                        _monthly = _by_month.groupby("_m")["Total (Rp)"].sum()
+                        _summary["pengeluaran_per_bulan"] = {str(k): int(v) for k,v in _monthly.items()}
                 return json.dumps(_summary, ensure_ascii=False, indent=2)
 
             _ctx_json = _build_data_context(df)
