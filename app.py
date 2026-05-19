@@ -354,7 +354,7 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
         st.markdown('<div class="lc-col-wrap">', unsafe_allow_html=True)
         pw = st.text_input("pw", type="password", label_visibility="collapsed",
                            key="_app_pw_input", placeholder="Password")
-        _btn = st.button("Masuk", type="primary", use_container_width=True,
+        _btn = st.button("SIGN IN", type="primary", use_container_width=True,
                          key="_app_login_btn")
         st.markdown(f'<p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:10px;">Sesi aktif {ttl} jam</p>',
                     unsafe_allow_html=True)
