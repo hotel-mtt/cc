@@ -341,7 +341,7 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
           style="width:100%;height:100%;object-fit:contain;border-radius:9px;" alt="Mitra">
       </div>
     </div>
-    <div class="lc-title">Masuk dengan password</div>
+    <div class="lc-title">Sign in to continue</div>
     <div class="lc-sub">Mitra Tours &amp; Travel · CC Reporting</div>
     {_err_banner}
   </div>
