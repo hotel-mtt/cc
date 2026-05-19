@@ -236,144 +236,119 @@ def _app_login_wall():
     _err = st.session_state.get("_app_login_err", "")
     _LOGO_B64 = "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"
 
-    # ── CSS: semua selector global, tidak ada wrapper div yg melingkupi widget ──
-    _err_banner = f'''<div style="background:#fff1f2;border:1px solid #fecdd3;
-        border-radius:8px;padding:7px 12px;margin-top:10px;
-        font-size:12px;color:#9f1239;font-weight:500;">{_err}</div>''' if _err else ""
+    _err_banner = f'''<div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;
+        padding:7px 12px;margin-top:12px;font-size:12px;color:#9f1239;font-weight:500;text-align:left;">{_err}</div>''' if _err else ""
 
     st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
 html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],.main{{
-    background:#ededed !important;font-family:'Inter',system-ui,sans-serif !important}}
+    background:linear-gradient(160deg,#dce8f5 0%,#edf2f7 60%,#e8edf4 100%) !important;
+    min-height:100vh !important;
+    font-family:'Inter',system-ui,sans-serif !important}}
 [data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{{display:none !important}}
 *{{font-family:'Inter',system-ui,sans-serif !important}}
 
-/* ── Page: bg abu, centered ── */
 .main .block-container{{
-    padding:0 !important;
-    max-width:600px !important;
-    margin:0 auto !important;
-    padding-top:max(24px,6vh) !important;
-    padding-bottom:24px !important;
-    padding-left:0 !important;
-    padding-right:0 !important;
+    padding:0 !important;max-width:520px !important;margin:0 auto !important;
+    padding-top:max(32px,10vh) !important;padding-bottom:32px !important;
+    padding-left:0 !important;padding-right:0 !important;
 }}
 
-/* ── Card head ── */
-.lc-head{{
-    background:#fff;
-    border:1.5px solid #e4e4e4;
-    border-radius:16px 16px 0 0;
-    border-bottom:none;
-    padding:26px 22px 18px;
-    text-align:center;
-    max-width:280px;
+/* ── Single unified card ── */
+.lc-card{{
+    background:rgba(255,255,255,0.82);
+    border:1px solid rgba(255,255,255,0.9);
+    border-radius:20px;
+    max-width:340px;
     margin:0 auto;
-    position:relative;
-    z-index:1;
+    overflow:hidden;
+    box-shadow:0 8px 32px rgba(100,140,180,0.18),0 1.5px 4px rgba(0,0,0,0.06);
 }}
-.lc-logo-wrap{{display:flex;justify-content:center;margin-bottom:12px}}
-.lc-logo-inner{{width:52px;height:52px;border-radius:14px;overflow:hidden;
-    border:1.5px solid #e8e8e8;background:#fff;padding:3px}}
-.lc-title{{font-size:17px;font-weight:800;color:#191d3a;margin:0 0 2px}}
-.lc-sub{{font-size:11px;color:#9e9e9e;margin:0}}
+.lc-card-inner{{padding:32px 28px 8px;text-align:center;}}
+.lc-logo-wrap{{display:flex;justify-content:center;margin-bottom:18px}}
+.lc-logo-inner{{
+    width:52px;height:52px;border-radius:14px;overflow:hidden;
+    border:1px solid rgba(0,0,0,0.07);background:#fff;padding:3px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}}
+.lc-title{{font-size:20px;font-weight:700;color:#111827;margin:0 0 6px;letter-spacing:-.3px}}
+.lc-sub{{font-size:13px;color:#6b7280;margin:0 0 4px;line-height:1.5}}
+.lc-divider{{height:1px;background:rgba(0,0,0,0.06);margin:20px 0 0}}
 
-/* ── Outer centering column ── */
+/* Widgets section */
+.lc-fields{{padding:20px 28px 24px;}}
 .lc-col-wrap [data-testid="stVerticalBlock"]{{
-    background:transparent !important;
-    border:none !important;
-    box-shadow:none !important;
-    padding:0 !important;
-    gap:0 !important;
+    background:transparent !important;border:none !important;
+    box-shadow:none !important;padding:0 !important;gap:8px !important;
 }}
 .lc-col-wrap .element-container{{margin:0 !important;padding:0 !important}}
-
-/* ── Inner card body: the column's stVerticalBlock children ── */
-.lc-col-wrap .stTextInput input{{
-    border-radius:0 0 0 0 !important;
-    border:none !important;
-    border-top:1px solid #f0f0f0 !important;
-    background:#fff !important;
-    font-size:15px !important;
-    color:#191d3a !important;
-    padding:0 14px !important;
-    height:52px !important;
-    line-height:52px !important;
-    box-sizing:border-box !important;
-    width:100% !important;
-    -webkit-appearance:none !important;
-    appearance:none !important;
-    box-shadow:none !important;
-    outline:none !important;
-}}
-.lc-col-wrap .stTextInput input:focus{{
-    border-top-color:#6398c8 !important;
-    box-shadow:inset 0 0 0 2px rgba(99,152,200,.2) !important;
-}}
-.lc-col-wrap .stTextInput input::placeholder{{color:#bbb !important;font-size:14px !important}}
-.lc-col-wrap .stTextInput,.lc-col-wrap .stTextInput>div{{margin:0 !important;padding:0 !important}}
 .lc-col-wrap label[data-testid="stWidgetLabel"]{{display:none !important}}
 
-/* Button row */
+/* Password input */
+.lc-col-wrap .stTextInput input{{
+    border-radius:10px !important;
+    border:1px solid #e5e7eb !important;
+    background:rgba(255,255,255,0.9) !important;
+    font-size:14px !important;color:#111827 !important;
+    padding:0 14px !important;height:44px !important;
+    box-sizing:border-box !important;width:100% !important;
+    -webkit-appearance:none !important;appearance:none !important;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06) !important;
+    transition:border-color .15s,box-shadow .15s !important;
+}}
+.lc-col-wrap .stTextInput input:focus{{
+    border-color:#6398c8 !important;outline:none !important;
+    box-shadow:0 0 0 3px rgba(99,152,200,0.15) !important;
+    background:#fff !important;
+}}
+.lc-col-wrap .stTextInput input::placeholder{{color:#9ca3af !important;font-size:14px !important}}
+.lc-col-wrap .stTextInput,.lc-col-wrap .stTextInput>div{{margin:0 !important;padding:0 !important}}
+
+/* Masuk button */
 .lc-col-wrap .stButton>button{{
-    width:100% !important;
-    border-radius:0 0 14px 14px !important;
-    height:50px !important;
-    font-size:15px !important;
-    font-weight:700 !important;
-    border:none !important;
-    border-top:1px solid #e4e4e4 !important;
-    background:#1668e3 !important;
-    color:#fff !important;
-    box-shadow:none !important;
-    margin:0 !important;
+    width:100% !important;border-radius:10px !important;height:44px !important;
+    font-size:14px !important;font-weight:600 !important;border:none !important;
+    background:#1c1c1e !important;color:#fff !important;
+    box-shadow:0 2px 8px rgba(0,0,0,0.18) !important;margin:0 !important;
+    letter-spacing:-.1px !important;
 }}
-.lc-col-wrap .stButton>button:hover{{background:#1255c0 !important}}
-.lc-col-wrap .stButton>button:active{{transform:scale(0.99)}}
+.lc-col-wrap .stButton>button:hover{{background:#333 !important}}
+.lc-col-wrap .stButton>button:active{{transform:scale(0.99) !important}}
 
-/* Outer border wrapping input+button — via pseudo on head */
-.lc-card-wrap{{
-    max-width:280px;
-    margin:0 auto;
-    background:#fff;
-    border:1.5px solid #e4e4e4;
-    border-top:none;
-    border-radius:0 0 16px 16px;
-    box-shadow:0 8px 28px rgba(0,0,0,.08);
-    overflow:hidden;
-}}
-
-@media(max-width:400px){{
-    .lc-head{{max-width:calc(100vw - 32px)}}
-    .lc-card-wrap{{max-width:calc(100vw - 32px);margin:0 16px}}
+@media(max-width:420px){{
+    .lc-card{{max-width:calc(100vw - 32px);border-radius:18px}}
+    .lc-card-inner{{padding:26px 20px 8px}}
+    .lc-fields{{padding:16px 20px 20px}}
 }}
 </style>
 
-<div class="lc-head">
-  <div class="lc-logo-wrap">
-    <div class="lc-logo-inner">
-      <img src="data:image/png;base64,{_LOGO_B64}"
-        style="width:100%;height:100%;object-fit:contain;border-radius:9px;" alt="Mitra">
+<div class="lc-card">
+  <div class="lc-card-inner">
+    <div class="lc-logo-wrap">
+      <div class="lc-logo-inner">
+        <img src="data:image/png;base64,{_LOGO_B64}"
+          style="width:100%;height:100%;object-fit:contain;border-radius:9px;" alt="Mitra">
+      </div>
     </div>
+    <div class="lc-title">Masuk dengan password</div>
+    <div class="lc-sub">Mitra Tours &amp; Travel · CC Reporting</div>
+    {_err_banner}
+    <div class="lc-divider"></div>
   </div>
-  <div class="lc-title">CC Reporting</div>
-  <div class="lc-sub">Mitra Tours &amp; Travel</div>
-  {_err_banner}
+  <div class="lc-fields" id="lc-fields-anchor"></div>
 </div>
-<div class="lc-card-wrap" id="lc-card-wrap-id"></div>
 """, unsafe_allow_html=True)
 
-    # Use columns to center and constrain width — this is the reliable Streamlit way
-    _lpad, _lcol, _rpad = st.columns([1, 2.8, 1])
+    _lpad, _lcol, _rpad = st.columns([1, 4, 1])
     with _lcol:
         st.markdown('<div class="lc-col-wrap">', unsafe_allow_html=True)
         pw = st.text_input("pw", type="password", label_visibility="collapsed",
-                           key="_app_pw_input", placeholder="Masukkan password")
+                           key="_app_pw_input", placeholder="Password")
         _btn = st.button("Masuk", type="primary", use_container_width=True,
                          key="_app_login_btn")
-        st.markdown(f'<p style="font-size:11px;color:#bbb;text-align:center;padding:8px 0 4px;">Sesi aktif {ttl} jam</p>',
+        st.markdown(f'<p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:10px;">Sesi aktif {ttl} jam</p>',
                     unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -852,7 +827,17 @@ Keys: supplier, booking_id, booked_on (YYYY-MM-DD), issued_on (YYYY-MM-DD),
 hotel, checkin (YYYY-MM-DD), checkout (YYYY-MM-DD), qty (e.g. "1 room x 2 nights"),
 room (integer total IDR, strip Rp/commas), name (primary guest),
 card (e.g. "Visa •••• 0191"), notes (room type, tax, etc.)
-Rules: 1.Dates->YYYY-MM-DD. 2.Amounts->plain integer. 3.Missing->"" or 0."""
+Rules:
+1. ALL dates MUST be converted to YYYY-MM-DD format without exception.
+   - "Booking Date" / "Booked On" / "Order Date" -> booked_on
+   - "Issued Date" / "Issue Date" / "Invoice Date" -> issued_on
+   - "Check-in" / "Check In" / "Arrival" -> checkin
+   - "Check-out" / "Check Out" / "Departure" -> checkout
+   - Handle any format: DD/MM/YYYY, MM/DD/YYYY, DD MMM YYYY, MMM DD YYYY, YYYY-MM-DD, etc.
+   - Example: "15 May 2026" -> "2026-05-15", "05/15/2026" -> "2026-05-15"
+2. Amounts -> plain integer (strip Rp, IDR, commas, dots).
+3. Missing fields -> "" for strings, 0 for integers.
+4. If a date is ambiguous (e.g. 01/02/03), prefer DD/MM/YYYY for Indonesian documents."""
 
 _SYS_NONEXP = """You are a payment receipt parser. Extract ONLY these 4 fields.
 Return ONLY a valid JSON object — no markdown, no explanation.
@@ -1415,15 +1400,19 @@ elif st.session_state["tab"] == "dashboard":
     # Dashboard has its own secondary password (dashboard_password in secrets).
     if not _dashboard_login_wall():
         _render_footer(); st.stop()
-    _cr,_cb2,_cb3 = st.columns([3,1,1])
-    _cr.markdown('<div class="sec-lbl" style="margin-top:4px">Ringkasan</div>',unsafe_allow_html=True)
-    if _cb2.button("↻",type="secondary",use_container_width=True,key="dash_ref"):
-        st.cache_resource.clear(); st.rerun()
-    with _cb3:
-        if st.button("Keluar Dashboard", type="secondary", use_container_width=True, key="_dash_logout_btn"):
-            st.session_state["_dash_auth_ok"] = False
-            st.session_state["_dash_login_err"] = ""
-            st.rerun()
+    # ── Dashboard header row ──────────────────────────────────────────────────
+    _dh1, _dh2 = st.columns([5,1])
+    _dh1.markdown('<p style="font-size:18px;font-weight:700;color:#111827;margin:4px 0 14px;">Dashboard</p>',unsafe_allow_html=True)
+    with _dh2:
+        _da, _db = st.columns(2)
+        with _da:
+            if st.button("↻", type="secondary", use_container_width=True, key="dash_ref"):
+                st.cache_resource.clear(); st.rerun()
+        with _db:
+            if st.button("⎋", type="secondary", use_container_width=True, key="_dash_logout_btn"):
+                st.session_state["_dash_auth_ok"] = False
+                st.session_state["_dash_login_err"] = ""
+                st.rerun()
     try:
         with st.spinner("Memuat data..."): rows = load_rows()
         if not rows:
@@ -1436,18 +1425,32 @@ elif st.session_state["tab"] == "dashboard":
             avg=tr/tn if tn else 0
             tds=datetime.now().strftime("%d/%m/%Y")
             tdc=int(df["Timestamp Input"].astype(str).str.startswith(tds).sum()) if "Timestamp Input" in df.columns else 0
-            st.markdown('<div class="stat-grid">'
-                +f'<div class="stat-card"><div class="stat-val">{tn}</div><div class="stat-lbl">Total transaksi</div></div>'
-                +f'<div class="stat-card"><div class="stat-val" style="font-size:16px">{fmt(tr)}</div><div class="stat-lbl">Total pengeluaran</div></div>'
-                +f'<div class="stat-card"><div class="stat-val" style="font-size:16px">{fmt(avg)}</div><div class="stat-lbl">Rata-rata</div></div>'
-                +f'<div class="stat-card"><div class="stat-val">{tdc}</div><div class="stat-lbl">Hari ini</div></div>'
-                +'</div>',unsafe_allow_html=True)
+
+            # ── Minimalist stat row ───────────────────────────────────────────
+            st.markdown(f"""
+<style>
+.ds-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}}
+.ds-card{{background:#fff;border-radius:14px;padding:14px 12px;border:1px solid #f0f0f0}}
+.ds-val{{font-size:18px;font-weight:700;color:#111827;line-height:1.1}}
+.ds-lbl{{font-size:10px;color:#9ca3af;margin-top:3px;font-weight:500;letter-spacing:.3px;text-transform:uppercase}}
+.ds-sep{{height:1px;background:#f3f4f6;margin:0 0 14px}}
+@media(max-width:380px){{.ds-row{{grid-template-columns:repeat(2,1fr)}}}}
+</style>
+<div class="ds-row">
+  <div class="ds-card"><div class="ds-val">{tn}</div><div class="ds-lbl">Transaksi</div></div>
+  <div class="ds-card"><div class="ds-val" style="font-size:14px">{fmt(tr)}</div><div class="ds-lbl">Total</div></div>
+  <div class="ds-card"><div class="ds-val" style="font-size:14px">{fmt(avg)}</div><div class="ds-lbl">Rata-rata</div></div>
+  <div class="ds-card"><div class="ds-val">{tdc}</div><div class="ds-lbl">Hari ini</div></div>
+</div>
+""", unsafe_allow_html=True)
+
+            # ── Kartu kredit breakdown ────────────────────────────────────────
             if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
                 df["Kartu Kredit"] = df["Kartu Kredit"].astype(str).apply(normalize_card)
                 _card_str=df["Kartu Kredit"].astype(str).str.strip().str.lower()
                 _cc=df[_card_str.ne("") & _card_str.ne("nan") & _card_str.ne("none")]
                 if not _cc.empty:
-                    st.markdown('<div class="sec-lbl">Kartu Kredit</div>',unsafe_allow_html=True)
+                    st.markdown('<p style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Kartu Kredit</p>',unsafe_allow_html=True)
                     _grp=_cc.groupby("Kartu Kredit")["Total (Rp)"].sum().sort_values(ascending=False).reset_index()
                     _grp.columns=["label","val"]; _tot2=_grp["val"].sum(); _cnt=_cc.groupby("Kartu Kredit").size()
                     _h=""
@@ -1455,13 +1458,15 @@ elif st.session_state["tab"] == "dashboard":
                         _p=_row["val"]/_tot2*100 if _tot2 else 0
                         _a="Rp {:,.0f}".format(_row["val"]).replace(",",".")
                         _c=int(_cnt.get(_row["label"],0))
-                        _h+=(f'<div style="padding:11px 0;border-bottom:1.5px solid #ededed">'
-                            +f'<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:600;color:#191d3a">{_row["label"]}</span><span style="font-size:13px;font-weight:700;color:#191d3a">{_a}</span></div>'
-                            +f'<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e8e8e8;border-radius:4px;height:4px"><div style="width:{int(_p)}%;background:#6398c8;border-radius:4px;height:4px"></div></div>'
-                            +f'<span style="font-size:11px;color:#9e9e9e;white-space:nowrap">{_p:.1f}% · {_c} trx</span></div></div>')
-                    st.markdown(f'<div style="background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:4px 14px">{_h}</div>',unsafe_allow_html=True)
+                        _h+=(f'<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f3f4f6;">'
+                            +f'<span style="font-size:13px;font-weight:500;color:#111827;flex:1">{_row["label"]}</span>'
+                            +f'<span style="font-size:11px;color:#6b7280;white-space:nowrap">{_c} trx</span>'
+                            +f'<span style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap">{_a}</span>'
+                            +f'</div>')
+                    st.markdown(f'<div style="background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;margin-bottom:14px">{_h}</div>',unsafe_allow_html=True)
 
-            st.markdown('<div class="sec-lbl">Data transaksi</div>',unsafe_allow_html=True)
+            # ── Data table ───────────────────────────────────────────────────
+            st.markdown('<p style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Data Transaksi</p>',unsafe_allow_html=True)
             _disp=df.iloc[::-1].reset_index(drop=True).copy()
             if "Booking ID" in _disp.columns: _disp["Booking ID"]=_disp["Booking ID"].astype(str)
             _cfg={}
@@ -1469,6 +1474,9 @@ elif st.session_state["tab"] == "dashboard":
             if "Total (Rp)" in _disp.columns: _cfg["Total (Rp)"]=st.column_config.NumberColumn("Total (Rp)",format="Rp %d")
             if "Room x Night" in _disp.columns: _cfg["Room x Night"]=st.column_config.TextColumn("Room × Night")
             if "Timestamp Input" in _disp.columns: _cfg["Timestamp Input"]=st.column_config.TextColumn("Timestamp")
+            # Date columns — readable format
+            for _dcol in ["Booking Date","Issued Date","Check-in","Check-out"]:
+                if _dcol in _disp.columns: _cfg[_dcol]=st.column_config.DateColumn(_dcol,format="DD MMM YYYY")
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
