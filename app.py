@@ -1522,13 +1522,13 @@ elif st.session_state["tab"] == "dashboard":
             if "Room x Night" in _disp.columns: _cfg["Room x Night"]=st.column_config.TextColumn("Room × Night")
             if "Room Nights" in _disp.columns: _cfg["Room Nights"]=st.column_config.NumberColumn("Room Nights",format="%d malam")
             if "Timestamp Input" in _disp.columns: _cfg["Timestamp Input"]=st.column_config.TextColumn("Timestamp")
-            # Date columns: convert YYYY-MM-DD strings to actual dates for display
-            import pandas as pd
+            # Date columns: tampilkan as-is (string), jangan konversi agar data tidak hilang
             for _dcol in ["Booking Date","Issued Date","Check-in","Check-out"]:
                 if _dcol in _disp.columns:
-                    _disp[_dcol] = pd.to_datetime(_disp[_dcol], errors="coerce", dayfirst=True)
-                    _cfg[_dcol] = st.column_config.DateColumn(_dcol, format="DD/MM/YYYY")
+                    _disp[_dcol] = _disp[_dcol].astype(str).replace("nan","").replace("NaT","")
+                    _cfg[_dcol] = st.column_config.TextColumn(_dcol)
             if "Room Nights" in _disp.columns:
+                import pandas as pd
                 _disp["Room Nights"] = pd.to_numeric(_disp["Room Nights"], errors="coerce").fillna(0).astype(int)
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
