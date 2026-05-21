@@ -1534,43 +1534,128 @@ elif st.session_state["tab"] == "dashboard":
 
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
 
-            def _build_data_context(df_ctx):
-                _summary = {
-                    "total_transaksi": len(df_ctx),
-                    "total_pengeluaran_rp": int(df_ctx["Total (Rp)"].sum()) if "Total (Rp)" in df_ctx.columns else 0,
-                    "rata_rata_rp": int(df_ctx["Total (Rp)"].mean()) if "Total (Rp)" in df_ctx.columns and len(df_ctx) > 0 else 0,
-                }
-                if "Hotel" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
-                    _top_hotel = df_ctx.groupby("Hotel")["Total (Rp)"].sum().sort_values(ascending=False).head(5)
-                    _summary["top_hotel"] = {k: int(v) for k, v in _top_hotel.items()}
-                if "Issuer" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
-                    _per_issuer = df_ctx.groupby("Issuer")["Total (Rp)"].sum().sort_values(ascending=False)
-                    _summary["per_issuer"] = {k: int(v) for k, v in _per_issuer.items()}
-                if "Kartu Kredit" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
-                    _per_kartu = df_ctx[df_ctx["Kartu Kredit"].astype(str).str.strip().ne("")].groupby("Kartu Kredit")["Total (Rp)"].sum()
-                    _summary["per_kartu_kredit"] = {k: int(v) for k, v in _per_kartu.items()}
-                if "Supplier" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
-                    _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
-                    _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
-                if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
-                    _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room Nights","Issuer"] if c in df_ctx.columns]
-                    _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
-                    _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
-                if "Room Nights" in df_ctx.columns:
-                    import pandas as pd
-                    _rn = pd.to_numeric(df_ctx["Room Nights"], errors="coerce").fillna(0)
-                    _summary["total_room_nights"] = int(_rn.sum())
-                    _summary["rata_rata_room_nights"] = round(float(_rn[_rn>0].mean()), 1) if (_rn>0).any() else 0
-                if "Check-in" in df_ctx.columns:
-                    import pandas as pd
-                    _ci = pd.to_datetime(df_ctx["Check-in"], errors="coerce", dayfirst=True)
-                    _by_month = df_ctx.assign(_m=_ci.dt.to_period("M"))
-                    _by_month = _by_month.dropna(subset=["_m"])
-                    if not _by_month.empty and "Total (Rp)" in df_ctx.columns:
-                        _monthly = _by_month.groupby("_m")["Total (Rp)"].sum()
-                        _summary["pengeluaran_per_bulan"] = {str(k): int(v) for k,v in _monthly.items()}
-                return json.dumps(_summary, ensure_ascii=False, indent=2)
+def _build_data_context(df_ctx):
+    import pandas as pd
 
+    # ── Helper: parse tanggal dari berbagai format ────────────────────────────
+    def _parse_dates(series):
+        """Parse tanggal dari format YYYY-MM-DD atau DD/MM/YYYY atau campuran."""
+        parsed = pd.to_datetime(series, errors="coerce", dayfirst=True)
+        # Coba lagi untuk yang masih NaT dengan format YYYY-MM-DD eksplisit
+        mask = parsed.isna() & series.astype(str).str.match(r'\d{4}-\d{2}-\d{2}')
+        if mask.any():
+            parsed[mask] = pd.to_datetime(series[mask], format="%Y-%m-%d", errors="coerce")
+        return parsed
+
+    _summary = {
+        "total_transaksi": len(df_ctx),
+        "total_pengeluaran_rp": int(df_ctx["Total (Rp)"].sum()) if "Total (Rp)" in df_ctx.columns else 0,
+        "rata_rata_rp": int(df_ctx["Total (Rp)"].mean()) if "Total (Rp)" in df_ctx.columns and len(df_ctx) > 0 else 0,
+    }
+
+    if "Hotel" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
+        _top_hotel = df_ctx.groupby("Hotel")["Total (Rp)"].sum().sort_values(ascending=False).head(5)
+        _summary["top_hotel"] = {k: int(v) for k, v in _top_hotel.items()}
+
+    if "Issuer" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
+        _per_issuer = df_ctx.groupby("Issuer")["Total (Rp)"].sum().sort_values(ascending=False)
+        _summary["per_issuer"] = {k: int(v) for k, v in _per_issuer.items()}
+
+    if "Kartu Kredit" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
+        _per_kartu = df_ctx[df_ctx["Kartu Kredit"].astype(str).str.strip().ne("")].groupby("Kartu Kredit")["Total (Rp)"].sum()
+        _summary["per_kartu_kredit"] = {k: int(v) for k, v in _per_kartu.items()}
+
+    if "Supplier" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
+        _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
+        _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
+
+    if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
+        _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room Nights","Issuer","Booking Date"] if c in df_ctx.columns]
+        _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
+        _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
+
+    if "Room Nights" in df_ctx.columns:
+        _rn = pd.to_numeric(df_ctx["Room Nights"], errors="coerce").fillna(0)
+        _summary["total_room_nights"] = int(_rn.sum())
+        _summary["rata_rata_room_nights"] = round(float(_rn[_rn>0].mean()), 1) if (_rn>0).any() else 0
+
+    # ── Analisa per bulan untuk semua kolom tanggal ────────────────────────────
+    _date_cols = {
+        "Check-in":      "checkin",
+        "Check-out":     "checkout",
+        "Booking Date":  "booking_date",
+        "Issued Date":   "issued_date",
+    }
+
+    _monthly_all = {}
+    _date_ranges = {}
+
+    for _col_name, _col_key in _date_cols.items():
+        if _col_name not in df_ctx.columns:
+            continue
+
+        _raw = df_ctx[_col_name].astype(str).str.strip()
+        _raw = _raw[_raw.ne("") & _raw.ne("nan") & _raw.ne("NaT") & _raw.ne("None")]
+
+        if _raw.empty:
+            continue
+
+        _dates = _parse_dates(_raw)
+        _valid = _dates.dropna()
+
+        if _valid.empty:
+            continue
+
+        # Rentang tanggal
+        _date_ranges[_col_key] = {
+            "terlama": _valid.min().strftime("%d/%m/%Y"),
+            "terbaru": _valid.max().strftime("%d/%m/%Y"),
+            "jumlah_valid": int(len(_valid)),
+        }
+
+        # Gabungkan dengan Total (Rp) berdasarkan index
+        if "Total (Rp)" in df_ctx.columns:
+            _df_join = df_ctx.loc[_dates.dropna().index].copy()
+            _df_join["_parsed_date"] = _dates.dropna()
+            _df_join["_bulan"] = _df_join["_parsed_date"].dt.to_period("M")
+
+            # Per bulan — jumlah transaksi dan total Rp
+            _monthly_count = _df_join.groupby("_bulan").size()
+            _monthly_sum   = _df_join.groupby("_bulan")["Total (Rp)"].sum()
+
+            _monthly_all[_col_key] = {
+                str(k): {"jumlah": int(_monthly_count.get(k, 0)), "total_rp": int(_monthly_sum.get(k, 0))}
+                for k in sorted(set(list(_monthly_count.index) + list(_monthly_sum.index)))
+            }
+
+            # Per tahun
+            _df_join["_tahun"] = _df_join["_parsed_date"].dt.year
+            _yearly_sum = _df_join.groupby("_tahun")["Total (Rp)"].sum()
+            _yearly_cnt = _df_join.groupby("_tahun").size()
+            _summary[f"per_tahun_{_col_key}"] = {
+                str(k): {"jumlah": int(_yearly_cnt.get(k, 0)), "total_rp": int(_yearly_sum.get(k, 0))}
+                for k in sorted(_yearly_sum.index)
+            }
+
+    if _monthly_all:
+        _summary["pengeluaran_per_bulan"] = _monthly_all
+
+    if _date_ranges:
+        _summary["rentang_tanggal"] = _date_ranges
+
+    # ── Analisa per PIC ───────────────────────────────────────────────────────
+    if "PIC" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
+        _per_pic = df_ctx[df_ctx["PIC"].astype(str).str.strip().ne("")].groupby("PIC")["Total (Rp)"].sum().sort_values(ascending=False)
+        _summary["per_pic"] = {k: int(v) for k, v in _per_pic.items()}
+
+    # ── Analisa per Nama Kegiatan ─────────────────────────────────────────────
+    if "Nama Kegiatan" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
+        _per_keg = df_ctx[df_ctx["Nama Kegiatan"].astype(str).str.strip().ne("") & 
+                          df_ctx["Nama Kegiatan"].astype(str).str.strip().ne("nan")].groupby("Nama Kegiatan")["Total (Rp)"].sum().sort_values(ascending=False)
+        if not _per_keg.empty:
+            _summary["per_nama_kegiatan"] = {k: int(v) for k, v in _per_keg.items()}
+
+    return json.dumps(_summary, ensure_ascii=False, indent=2)
             _ctx_json = _build_data_context(df)
 
             if "dash_chat_history" not in st.session_state:
