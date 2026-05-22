@@ -1476,10 +1476,14 @@ elif st.session_state["tab"] == "dashboard":
             # Konversi Room Nights ke numerik (dari Google Sheets nilainya masih string)
                         
             if "Room Nights" in df.columns:
-                df["Room Nights"] = pd.to_numeric(
-                    df["Room Nights"].astype(str).str.strip().str.replace(r"[^\d]", "", regex=True),
-                    errors="coerce"
-                ).fillna(0).astype(int)
+                def _parse_rn_safe(v):
+                    s = str(v).strip()
+                    if s in ("", "nan", "None", "NaT"): return 0
+                    try: return int(float(s))
+                    except: 
+                        d = re.sub(r"[^\d]", "", s)
+                        return int(d) if d else 0
+                df["Room Nights"] = df["Room Nights"].apply(_parse_rn_safe)
 
             # ── Minimalist stat row ───────────────────────────────────────────
             st.markdown(f"""
@@ -1536,8 +1540,7 @@ elif st.session_state["tab"] == "dashboard":
                     _disp[_dcol] = _disp[_dcol].astype(str).replace("nan","").replace("NaT","")
                     _cfg[_dcol] = st.column_config.TextColumn(_dcol)
             if "Room Nights" in _disp.columns:
-                import pandas as pd
-                _disp["Room Nights"] = pd.to_numeric(_disp["Room Nights"], errors="coerce").fillna(0).astype(int)
+                _disp["Room Nights"] = df["Room Nights"]  # sudah dikonversi di atas, ambil langsung
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
@@ -1583,18 +1586,18 @@ elif st.session_state["tab"] == "dashboard":
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
                             
                 if "Room Nights" in df_ctx.columns:
-                    # Bersihkan string dulu: strip whitespace, hapus koma/titik ribuan
-                    _rn_raw = (
-                        df_ctx["Room Nights"]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(r"[,\.]", "", regex=True)  # hapus separator ribuan
-                        .str.replace(r"[^\d]", "", regex=True)  # hapus semua non-digit
-                    )
-                    _rn = pd.to_numeric(_rn_raw, errors="coerce").fillna(0).astype(int)
+                    def _parse_rn_ctx(v):
+                        s = str(v).strip()
+                        if s in ("", "nan", "None", "NaT"): return 0
+                        try: return int(float(s))
+                        except:
+                            d = re.sub(r"[^\d]", "", s)
+                            return int(d) if d else 0
+                    _rn = df_ctx["Room Nights"].apply(_parse_rn_ctx)
+                    _rn = pd.Series(_rn, dtype=int)
                     _summary["total_room_nights"] = int(_rn.sum())
                     _summary["rata_rata_room_nights"] = round(float(_rn[_rn > 0].mean()), 1) if (_rn > 0).any() else 0
-                    _summary["jumlah_baris_room_nights"] = int((_rn > 0).sum())  # berapa baris yang ada datanya
+                    _summary["jumlah_baris_room_nights"] = int((_rn > 0).sum())
             
                 # ── Analisa per bulan untuk semua kolom tanggal ────────────────────────────
                 _date_cols = {
