@@ -1591,12 +1591,20 @@ elif st.session_state["tab"] == "dashboard":
                     _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room Nights","Issuer","Booking Date"] if c in df_ctx.columns]
                     _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
-                            
+                                
+                # Normalisasi kolom Room Nights (support "Room Nights" atau "Total Room Nights")
                 _rn_col_ctx = "Room Nights" if "Room Nights" in df_ctx.columns else ("Total Room Nights" if "Total Room Nights" in df_ctx.columns else None)
                 if _rn_col_ctx:
                     df_ctx = df_ctx.copy()
-                    df_ctx["Room Nights"] = df_ctx[_rn_col_ctx]
+                    # Pastikan selalu tersedia sebagai "Room Nights" untuk kode di bawah
+                    df_ctx["Room Nights"] = df_ctx[_rn_col_ctx].apply(
+                        lambda v: int(float(str(v).strip())) if str(v).strip() not in ("", "nan", "None", "NaT") else 0
+                    )
                 if "Room Nights" in df_ctx.columns:
+                    _rn = df_ctx["Room Nights"]
+                    _summary["total_room_nights"] = int(_rn.sum())
+                    _summary["rata_rata_room_nights"] = round(float(_rn[_rn > 0].mean()), 1) if (_rn > 0).any() else 0
+                    _summary["jumlah_baris_room_nights"] = int((_rn > 0).sum())
             
                 # ── Analisa per bulan untuk semua kolom tanggal ────────────────────────────
                 _date_cols = {
