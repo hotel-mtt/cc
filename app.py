@@ -154,7 +154,7 @@ def _dashboard_login_wall():
 <div class="dash-login-head">
   <div class="dash-login-icon">🔒</div>
   <div class="dash-login-title">Dashboard</div>
-  <div class="dash-login-sub">Masukkan password dashboard</div>
+  <div class="dash-login-sub">Login</div>
   {_err_banner}
 </div>
 """, unsafe_allow_html=True)
