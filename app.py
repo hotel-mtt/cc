@@ -1475,15 +1475,17 @@ elif st.session_state["tab"] == "dashboard":
             
             # Konversi Room Nights ke numerik (dari Google Sheets nilainya masih string)
                         
-            if "Room Nights" in df.columns:
+            # Normalisasi nama kolom Room Nights (sheet bisa pakai "Room Nights" atau "Total Room Nights")
+            _rn_col = "Room Nights" if "Room Nights" in df.columns else ("Total Room Nights" if "Total Room Nights" in df.columns else None)
+            if _rn_col:
                 def _parse_rn_safe(v):
                     s = str(v).strip()
                     if s in ("", "nan", "None", "NaT"): return 0
                     try: return int(float(s))
-                    except: 
+                    except:
                         d = re.sub(r"[^\d]", "", s)
                         return int(d) if d else 0
-                df["Room Nights"] = df["Room Nights"].apply(_parse_rn_safe)
+                df["Room Nights"] = df[_rn_col].apply(_parse_rn_safe)
 
             # ── Minimalist stat row ───────────────────────────────────────────
             st.markdown(f"""
@@ -1585,19 +1587,11 @@ elif st.session_state["tab"] == "dashboard":
                     _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
                             
+                _rn_col_ctx = "Room Nights" if "Room Nights" in df_ctx.columns else ("Total Room Nights" if "Total Room Nights" in df_ctx.columns else None)
+                if _rn_col_ctx:
+                    df_ctx = df_ctx.copy()
+                    df_ctx["Room Nights"] = df_ctx[_rn_col_ctx]
                 if "Room Nights" in df_ctx.columns:
-                    def _parse_rn_ctx(v):
-                        s = str(v).strip()
-                        if s in ("", "nan", "None", "NaT"): return 0
-                        try: return int(float(s))
-                        except:
-                            d = re.sub(r"[^\d]", "", s)
-                            return int(d) if d else 0
-                    _rn = df_ctx["Room Nights"].apply(_parse_rn_ctx)
-                    _rn = pd.Series(_rn, dtype=int)
-                    _summary["total_room_nights"] = int(_rn.sum())
-                    _summary["rata_rata_room_nights"] = round(float(_rn[_rn > 0].mean()), 1) if (_rn > 0).any() else 0
-                    _summary["jumlah_baris_room_nights"] = int((_rn > 0).sum())
             
                 # ── Analisa per bulan untuk semua kolom tanggal ────────────────────────────
                 _date_cols = {
