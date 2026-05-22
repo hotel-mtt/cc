@@ -1756,7 +1756,7 @@ elif st.session_state["tab"] == "dashboard":
                     key="dash_send_btn")
 
             if _chat_hist:
-                if st.button("Hapus riwayat chat", type="secondary",
+                if st.button("Clear chat", type="secondary",
                              use_container_width=True, key="dash_clear_chat"):
                     st.session_state["dash_chat_history"] = []
                     st.rerun()
