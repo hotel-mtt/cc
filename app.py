@@ -1472,6 +1472,14 @@ elif st.session_state["tab"] == "dashboard":
             avg=tr/tn if tn else 0
             tds=datetime.now().strftime("%d/%m/%Y")
             tdc=int(df["Timestamp Input"].astype(str).str.startswith(tds).sum()) if "Timestamp Input" in df.columns else 0
+            
+            # Konversi Room Nights ke numerik (dari Google Sheets nilainya masih string)
+                        
+            if "Room Nights" in df.columns:
+                df["Room Nights"] = pd.to_numeric(
+                    df["Room Nights"].astype(str).str.strip().str.replace(r"[^\d]", "", regex=True),
+                    errors="coerce"
+                ).fillna(0).astype(int)
 
             # ── Minimalist stat row ───────────────────────────────────────────
             st.markdown(f"""
@@ -1573,11 +1581,20 @@ elif st.session_state["tab"] == "dashboard":
                     _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room Nights","Issuer","Booking Date"] if c in df_ctx.columns]
                     _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
-            
+                            
                 if "Room Nights" in df_ctx.columns:
-                    _rn = pd.to_numeric(df_ctx["Room Nights"], errors="coerce").fillna(0)
+                    # Bersihkan string dulu: strip whitespace, hapus koma/titik ribuan
+                    _rn_raw = (
+                        df_ctx["Room Nights"]
+                        .astype(str)
+                        .str.strip()
+                        .str.replace(r"[,\.]", "", regex=True)  # hapus separator ribuan
+                        .str.replace(r"[^\d]", "", regex=True)  # hapus semua non-digit
+                    )
+                    _rn = pd.to_numeric(_rn_raw, errors="coerce").fillna(0).astype(int)
                     _summary["total_room_nights"] = int(_rn.sum())
-                    _summary["rata_rata_room_nights"] = round(float(_rn[_rn>0].mean()), 1) if (_rn>0).any() else 0
+                    _summary["rata_rata_room_nights"] = round(float(_rn[_rn > 0].mean()), 1) if (_rn > 0).any() else 0
+                    _summary["jumlah_baris_room_nights"] = int((_rn > 0).sum())  # berapa baris yang ada datanya
             
                 # ── Analisa per bulan untuk semua kolom tanggal ────────────────────────────
                 _date_cols = {
@@ -1747,6 +1764,12 @@ Kamu diberikan data ringkasan transaksi kartu kredit hotel berikut dalam format 
 Jawab pertanyaan user dalam Bahasa Indonesia dengan singkat, padat, dan mudah dipahami.
 Gunakan format yang rapi — boleh pakai poin atau angka jika perlu.
 Tampilkan angka Rupiah dengan format: Rp 1.500.000 (titik sebagai pemisah ribuan).
+
+Untuk Room Nights:
+- "total_room_nights" = total malam menginap seluruh transaksi
+- "rata_rata_room_nights" = rata-rata malam per booking yang ada datanya
+- "jumlah_baris_room_nights" = berapa booking yang tercatat room nights-nya
+
 Jika data tidak cukup untuk menjawab, katakan dengan jelas."""
 
                 with st.spinner("🟣 Claude sedang menganalisa…"):
