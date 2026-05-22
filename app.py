@@ -1534,7 +1534,10 @@ elif st.session_state["tab"] == "dashboard":
             if "Booking ID" in _disp.columns: _cfg["Booking ID"]=st.column_config.TextColumn("Booking ID")
             if "Total (Rp)" in _disp.columns: _cfg["Total (Rp)"]=st.column_config.NumberColumn("Total (Rp)",format="Rp %d")
             if "Room x Night" in _disp.columns: _cfg["Room x Night"]=st.column_config.TextColumn("Room × Night")
-            if "Room Nights" in _disp.columns: _cfg["Room Nights"]=st.column_config.NumberColumn("Room Nights",format="%d malam")
+            # Support kedua nama kolom
+            for _rn_cn in ["Room Nights", "Total Room Nights"]:
+                if _rn_cn in _disp.columns:
+                    _cfg[_rn_cn] = st.column_config.NumberColumn(_rn_cn, format="%d malam")
             if "Timestamp Input" in _disp.columns: _cfg["Timestamp Input"]=st.column_config.TextColumn("Timestamp")
             # Date columns: tampilkan as-is (string), jangan konversi agar data tidak hilang
             for _dcol in ["Booking Date","Issued Date","Check-in","Check-out"]:
@@ -1542,7 +1545,9 @@ elif st.session_state["tab"] == "dashboard":
                     _disp[_dcol] = _disp[_dcol].astype(str).replace("nan","").replace("NaT","")
                     _cfg[_dcol] = st.column_config.TextColumn(_dcol)
             if "Room Nights" in _disp.columns:
-                _disp["Room Nights"] = df["Room Nights"]  # sudah dikonversi di atas, ambil langsung
+                _disp["Room Nights"] = df["Room Nights"]
+            elif "Total Room Nights" in _disp.columns:
+                _disp["Total Room Nights"] = _disp["Total Room Nights"].apply(_parse_rn_val)
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
