@@ -199,17 +199,9 @@ def _render_footer():
 </div>""", unsafe_allow_html=True)
 
 # ─── APP-LEVEL LOGIN WALL ─────────────────────────────────────────────────────
-# This runs before ANYTHING else is rendered. If not authenticated, show only
-# the login screen and call st.stop().
-
 def _app_login_wall():
-    """
-    Returns True if user is authenticated. Otherwise renders login screen
-    and calls st.stop() — blocking the rest of the app from rendering.
-    """
     ctrl = _get_cookie_ctrl()
 
-    # 1. Try restoring session from cookie
     if not st.session_state.get("_auth_ok") and ctrl:
         try:
             token = ctrl.get(_COOKIE_NAME)
@@ -218,20 +210,15 @@ def _app_login_wall():
                 st.session_state["_auth_login_time"] = time.time()
         except: pass
 
-    # 2. Check if already authenticated and not expired
     if st.session_state.get("_auth_ok"):
         elapsed = time.time() - st.session_state.get("_auth_login_time", 0)
         if elapsed < _ttl_hours() * 3600:
             return True
-        # Expired — clear session
         st.session_state["_auth_ok"] = False
         if ctrl:
             try: ctrl.remove(_COOKIE_NAME)
             except: pass
 
-    # 3. Not authenticated — render login screen and stop
-    # Strategy: pure Streamlit widgets, CSS-only card styling.
-    # No JS injection — reliable across all browsers.
     ttl = int(_ttl_hours())
     _err = st.session_state.get("_app_login_err", "")
     _LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAABCGlDQ1BJQ0MgUHJvZmlsZQAAeJxjYGA8wQAELAYMDLl5JUVB7k4KEZFRCuwPGBiBEAwSk4sLGHADoKpv1yBqL+viUYcLcKakFicD6Q9ArFIEtBxopAiQLZIOYWuA2EkQtg2IXV5SUAJkB4DYRSFBzkB2CpCtkY7ETkJiJxcUgdT3ANk2uTmlyQh3M/Ck5oUGA2kOIJZhKGYIYnBncAL5H6IkfxEDg8VXBgbmCQixpJkMDNtbGRgkbiHEVBYwMPC3MDBsO48QQ4RJQWJRIliIBYiZ0tIYGD4tZ2DgjWRgEL7AwMAVDQsIHG5TALvNnSEfCNMZchhSgSKeDHkMyQx6QJYRgwGDIYMZAKbWPz9HbOBQAAAPqElEQVR42uWce3BdxXnAv293zzn3rWs9rQeWbOMHrmIwfhDz9sSkvGIgbkILHWgBkyEzJk7STmlxMoTUMMOkTTNtSkJITUpDw8NN68KkBRssxyaZUMVg60oELFl+COutK+le6d5zdvfrH+dKvpIl3XPtK1zUM2dGo6OjPfvb77G737e7CGMXY0xrDQDV1dV33333LbfcsmLFimg0yhhDRPgkXESktY7H483Nza+++uoLL7zQ0dGRjQbZtABgGMb27du7urpoTlydnZ2PPvqoYRjjgBNoKysrDxw44L4qpVRKaa0/iZxaa6WUlNL99cCBA5WVlWeYXY0tKytrbm4mItu2P6GcU5Lbtk1EsVistLQUERljwDlHxD179ri0NOcuF+qNN95ARM45AMCWLVvmKm028wMPPAAAGAwGm5qaamtriWiCZc+hS2uNiMePH6+vr2e33XZbXV3dHKZ1/RQR1dXVbdq0SWzevNmVe+5eDkATAQBmPcmUODs9NQEQ6azvZDEgy6qIpy6aiDZv3ozt7e2uPs9cZ03EZnyBCAoLrYg4wgxUBBqBeQdGxPb2dkylUpZl5bABAobQn7L3neprGxwZdqSjCQF8nBVZxrJ5weuqS3yC52yUPAQLxADTBG2Dzf3J/xm2+x2dAgDBTMGs8sDiFSXXG8yXFzMApFIpdA06p2wPftT/17/5sHvURgAc+wcCIgICuDgaePLKSxYVBRQRPz9mGpPpi119b3c8Fxl9RVMKYPyLmbfmB5dsXvJ4VWg5AaFn3SaiHMAubdvgyJ++8a4kCAh2trEjwpAtKwLWP26orwn5z4dZAzCAtJZfamlr6n75DmsX8ggAn2TGCDgqh0Jm6YMrdxZZFe4Tj8AsZ3sDwMsffpRwVFBwqUnR5FtqipiiZ8Te1hDrGklzRO3BBU5JiwC2Vne+d+TnHx25LdDAeUgRaJKaVPatSPqNosH06X0nn0VAyudzOYA5IgG09CcsziTp6V6TmoIGP5VIbWuI9Y7aLH9mGlOo+5ve3d0b/3TghA8GbeIIU5ejtLR46Gj8VymZYMgIqADAbhm20kmpcnojRRQ2RNvQyMMNTfkyk2tdAFtih3d1dZaZPh/1Yw4GYshTMpFw+iZ2kecnYVfIBvOkNpIoYorWwZFtDbH+lFdmGvMUW1uaXjj9UblpOlojUJ7KAQUDJknpIQeZpzq49vxBPLmtITaQdnIyu7Qc8S8+aHn21Mly05SZsQ15Y83bWzAvnu2j1mHvJUpNRZZ4fyC5raEpnovZdemPt37wvePt47T5hjkKDMwM1tsx0nsqaVh8erc1BXNLf3JbQ2wGZkkkEP+mvfXJttayibQ4K+rsWcKA0PZO38iQww302KAuc3N/YltDbHAqZpf26ZPHv3H0g1LTPKtFvDs8youceSmScXRGZFNDp5NWnOfPvH8ys0v7k45Tf/67lmLD1HROHXc2KBZQwkBKE5gsMWA3NXQppVmezLG+xLb9sUE7w+zSvtx5euv7TUVC0LnTnotuM09OgQA0GBYb7E7FftkNRIxBXsxNfYmvNsSGbAcRBeJrPd0PNh8OcoHnYobnNzfO2WzkMiOQBsPH+ztGmg92ozsD9swctcSRvsRX9sccR+8f6Lv3yLsWYxxRw8d9CW9uIUNGmgwf6zmefF/0XHJluZJeKyw1RSzxfk/y3gPvNpqDACCQzdhF4wUDpomCJA2GxU63DnOBS68oU472amIKRBD36F7moI/znAOSC6HS03yfCEyLdfxuqLWxT5gspzETACdMCXUsPGoIJuAcp1MfEzCBO8mfKGcCw2InYvG2Q/2GNROzS5sW+kRRSjFCggvG6r0fns57GxZrPzzQfnhgBmZG4HB9IjLqMM0uNG2+Kk1TMrcd6j8Ri0/JjACawYlIyuaaE3qnxQsLTDP20sJkRxv7TrUMGhY7u6Id4dSoUN5p0Y17EOGFlHBOX2+wD97p7To6LMeCS67pxi05ZEqRj2wJQAHV+XxydpgLA8wZakdd7BhfWFrZl3IEQ7fqQ5bMaywlELvt9DcWXXxPVXXccfgshPcLmV7hgm2tr7u5tqw/5RgMJSOba/QsJ4HYbdsPL6j7eu38hFL5JTPwQgDbUhPA41cuu666eCDlcAbacz0MxG7bvq+65jvL692O8P+0DWc3NEd84srl6yqi8bQ0vEnJpf3D+ZXfX1GvSCPgBfbS6O0lrQkAtAaf4E9dc8makqJESnKGOWl7bHtTecWP6i8FyHdggtN2JESg9blKGD2Bux9lCJooZIi/vXbFumh00HHE9AIzEHsdZ2NJ6U8+dalAJABWkD5Ya0CEqSaxhVTp8Zk8Q1REIVM8u2pljeVLKjUls4Gsz3HWR6M/XbnKx3juPIjHSylgjKRUJ0+dbRysgA5QZ7UmR1RElZbvpytXBTgfktLAzIIv184NxG4nfWk4/OKll4eFKEzmkQikAs6dxkPxDTcNrLlq+GuPkONk6zbzwIvuaCLf6rjMl0eKdq9ac3Eg0GWnE1KmtU5rPSidbtu+obj03y5bU2KY50GbqRsgZKgET734yuDn/kDFmpHx9L/8TPf0AmPjzAIK5rXOsiIizrkiWhUp2rd2/c6Ok6/39XakUwJxkT9wR8X8O+dXgYdU+7T+FrnUtiYFACAVCIO0Tn7z26m/+z6GQlAUocEhsXY1qygHIhhb0CFgli73A0Rca81YSIittQu31i5MacUAzbHPE0D+tOhmz0aceMgsNZkftEZhyGPtiYf/TO7dh6UloDVognTa9+B9yDkoBe6CpUJ2S1ktT1IOf/2R9N63ABE4Z4gkpdSagHyMm4xpIjVxuYgXy2LIGXICNSIHbTVSX7Lx/kuenuevBsZG//WlwRtulfsPYFlpxmnF4+IzG3x3bAKtx2lnRcIIoD5sTf1oZ3rn86mNG3xb7rM2bkAhBABoTaTBXRGXoxDm4rkRCE1KaluSDUQhs2R59Jo15bcvLF4HAPJo68jjT9o/343BIBYVgZSACFJiMBh6ake29XoFPhfzUhKDQTQN57/3OK+/Obp6lfnFz1u33sSrq3DcnSoN6DqdKUZWUqeTThwANCmOwsfDJf7qCv/FiyKrF5esj1gVACA7O1PP/FP6x/9M/QM4bx5oDUoBAHBOff3BH3xPLF+arcyeJZwnMWnNly3ly5aqw0ewuBiklIfelb/+zehT3zWuXm/e9FnjqvX8ohoQfJKHyywEIg0I832LP12+udhXEzHLiv0XlQTror7q8YrYhw+nX9plv/IfdLIDIxGcF82gAoBhUGeX9dAW/71/DFJN+IpLM8MaD7cCKUet+Oprx7oTPmPaUCNnOJq0b1xb84u/2qClYoLbb+0fuv2LGAiAYWScpG1TMgmasKyU168w1q0Ra1eL5ctYdSUaRm6v39fvNDfbB38lGw6oQ4dhOIHhEFgWKHVmOGUY1N1j3Hpj5IXnEBmwybpDRGJW/LPW5oZrQ889k/jyNkgkMRIGxwHOMRoFAEil5C/flm/uAyEwGmVVlaz2Il67gNVUs/IyLCpCn0VS6mRCDwzozi59/KQ+dly3n6DuHkinwTQxEIDSYlAapMwauBnU3SM2bgjvfAZdNZ5KkKKAXhqzmZXy3bGJ1y4Yfugr+kgMS4oBcdzGMBzKDHQdR394VDW3OFIBETAExjN/0jqj6oyBIdC0MBiEcDjzXKoJTYyoO7vMOzZFfvw0BvygNUzjF0WBHfQZLeeglHH5ZdE9rya/9UR65/OgFEYimbHu+FSGMfD7MRDIjOVc5STK/Dr+0L1d1MnTUQGjozSa8n9ta3DHY4g4A22BJw+TfQHnoDULh8PfeTKy+2VxzVUUH6ShIUAEITL65mIoBVKBlKAUKAVag5r40BX1pDGlEKCJenqxrCz0/LOhJ76FboEz9nlslgR8RtmIQCnzqvXR/3wl/LPnxPXXUjpNvX2QTgNjIARw7mnC7/ZhnIMQGRfY2wuc+7Y+FN33X77bPwdKZQb+MweSZj3y7dZSa0C0br7RuvlGp/FQete/23ve0q1tkEqBEGhZZ8jPrrGrz0qB45Btg3TAMNmiWvOWG617/shcsjRjJpx7ipydZ1w6v6G1UsCYsXqVsXoVffMvnUPvOQfelu/8Vh1tpe4eSiRBOqD1hO8hADIwDAwFcX4FX7yQX/YpY/0684p1LBgCAFAaGHqk9S7hAmVI3GppDUTo85nrrzDXXwEANDKqTp/Wp7t0Tw/19NLwsE6lCDSaFoZDWFLM5lfwqipRVYV+/3hhvYljh3peu3z+phL/Au9LTMXHBnv2RAo0AWlgDAN+sXgRLF6U81+T6f7eZNvJRFPbUOPJRFPSiV9acfNYLQsETLOUrUUEjhmvOd7xABBpBOxMftg10iqYaavRETk47PQO2T1xu3PQ7ko6/Y5OcxQG9weNojO1xEKq9Ow7NsSs8Sxvir/5i2PfDZrFWks3jsmQMRQcDYP5TB4gd98dqbyzQl5Cc2507uPMdHJmBYxoQBRlI9HYinTKnzNPCdMsWfMMrXxmdXSuqhVw6SECABiCmYID5V51XsD28I6B+cZjZuYlAoOzkrAJWs9QMgKgpvKIBQAFWYnkxjq8jWYxr0l7jqGl0gQAl9XNA6lnypkgEMHVy8sLJWiBpvdAV+FUemxGec91C0FMv4oD0bZ1WXnw9rU1bjDg/IGLfTWYQ/tQk/KLopBZkpdi59rzwFBpWr+07E8+s3h0YNQ0JgdVGSJnKBPpb9+5siRsKU3nmT9AZACwKLo26psvdZohm6ZiIiWHlxVfbfGgJg2FAnaRNNE/3Ld24xUXJXpHlCbB0b05Q1uqZP/Iw1+o/9INS5Sm8xcvAhJpv4h8tnZrSiWllgyFG8HMukXCHigLLLy+5n4Cyit1nnuj1nhwy5b6sZfe++HrR/sHRsczhReVBx/ZXP/l31+qibBwOxCJNCL7bdfu14///bDdN3nfErIF4ZWfX/JYqb82741aXrbiQdbWwtMDow2xrqNdw4KxFTWR636voihgFmoT3sSeSSOwYbv3aPzXw3aP1DaRZigM7isPLFoy70oEzIsW3K14Hjdbut5XT6W0BdHkGeQ8Q1+dn2wR29vbWWNjo7td3kvIgTMkIqlJKpKKlCYimCVaV3XdtMNZt4Y8ZesebNDY2Mh27dqFmIf1IaJgZ5zWbJ/wMZ5SmnizfPMDLuOuXbswGAzGYrEFCxb8f9kSn0wmd+zYgYhKKZijl1IKEXfs2JFMJjPHWuzdu3duH2uxZ8+ezLEW4weXtLS0zNWDS5qbm8vKynA8Tev+qKqqOnjw4Nw/mmYsrjY3Dx/avn37pMOHshNgmTOYampq7rrrrrl6vNT/AgHg96zADI9eAAAAAElFTkSuQmCC"
@@ -256,7 +243,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
     padding-left:0 !important;padding-right:0 !important;
 }}
 
-/* ── Single unified card ── */
 .lc-card{{
     background:rgba(255,255,255,0.82);
     border:1px solid rgba(255,255,255,0.9);
@@ -276,7 +262,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .lc-title{{font-size:20px;font-weight:700;color:#111827;margin:0 0 6px;letter-spacing:-.3px}}
 .lc-sub{{font-size:13px;color:#6b7280;margin:0;line-height:1.5}}
 
-/* ── Widget wrapper — menyambung di bawah card ── */
 .lc-col-wrap [data-testid="stVerticalBlock"]{{
     background:rgba(255,255,255,0.82) !important;
     border:1px solid rgba(255,255,255,0.9) !important;
@@ -291,7 +276,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .lc-col-wrap .element-container{{margin:0 !important;padding:0 !important}}
 .lc-col-wrap label[data-testid="stWidgetLabel"]{{display:none !important}}
 
-/* Password input */
 .lc-col-wrap .stTextInput input{{
     border-radius:10px !important;
     border:1px solid #e5e7eb !important;
@@ -311,7 +295,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .lc-col-wrap .stTextInput input::placeholder{{color:#9ca3af !important;font-size:14px !important}}
 .lc-col-wrap .stTextInput,.lc-col-wrap .stTextInput>div{{margin:0 !important;padding:0 !important}}
 
-/* Masuk button */
 .lc-col-wrap .stButton>button{{
     width:100% !important;border-radius:10px !important;height:44px !important;
     font-size:14px !important;font-weight:600 !important;border:none !important;
@@ -348,7 +331,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 </div>
 """, unsafe_allow_html=True)
 
-    # Widget section — columns untuk center & constrain lebar
     _lpad, _lcol, _rpad = st.columns([1, 4, 1])
     with _lcol:
         st.markdown('<div class="lc-col-wrap">', unsafe_allow_html=True)
@@ -375,11 +357,10 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
             st.rerun()
 
     st.stop()
-    return False  # never reached
+    return False
 
 
 # ─── RUN APP-LEVEL LOGIN WALL ─────────────────────────────────────────────────
-# Every page render checks auth first. st.stop() is called if not authenticated.
 _app_login_wall()
 
 
@@ -389,7 +370,6 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-/* ── Viewport & base ── */
 html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContainer"],.main{
     background:#ededed !important;font-family:'Inter',system-ui,sans-serif !important}
 .main .block-container{
@@ -399,13 +379,11 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 [data-testid="stSidebar"],#MainMenu,footer,header,[data-testid="stDecoration"]{display:none !important}
 *{font-family:'Inter',system-ui,sans-serif !important;-webkit-tap-highlight-color:transparent}
 
-/* ── Safe area for notch/home bar (iOS) ── */
 .main .block-container{
     padding-bottom:max(100px, calc(80px + env(safe-area-inset-bottom))) !important;
     padding-left:max(8px, env(safe-area-inset-left)) !important;
     padding-right:max(8px, env(safe-area-inset-right)) !important}
 
-/* ── App header ── */
 .app-header{background:#191d3a;border-radius:16px;padding:12px 14px;
     display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .ah-icon{width:40px;height:40px;border-radius:11px;background:#fddb32;
@@ -421,7 +399,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .ah-ai-openai{background:#0d1f12;color:#4ade80;border:1px solid #1e4620}
 .ah-ai-claude{background:#1a1020;color:#c084fc;border:1px solid #6b21a8}
 
-/* ── Bottom nav bar (fixed, mobile-style) ── */
 .nb-fixed{
     position:fixed;bottom:0;left:0;right:0;z-index:9999;
     background:#fff;border-top:1px solid #e8e8e8;
@@ -437,7 +414,6 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
 .nb-item.active{color:#191d3a;background:#f5f5f5}
 .nb-item .nb-icon{font-size:20px;line-height:1}
 .nb-item .nb-lbl{font-size:9px;font-weight:600;white-space:nowrap}
-/* Streamlit override inside fixed nav */
 .nb-wrap div[data-testid="stHorizontalBlock"]{gap:4px !important}
 .nb-wrap .stButton>button{
     height:56px !important;border-radius:12px !important;
@@ -451,16 +427,13 @@ html,body,[data-testid="stAppViewContainer"],[data-testid="stAppViewBlockContain
     background:#f0f0f0 !important;color:#191d3a !important;
     border-bottom:2.5px solid #191d3a !important}
 
-/* ── Section label ── */
 .sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
     color:#9e9e9e;margin:14px 0 8px;padding-bottom:6px;border-bottom:1.5px solid #ddd}
 
-/* ── Form labels ── */
 label[data-testid="stWidgetLabel"] p,label[data-testid="stWidgetLabel"]{
     font-size:12px !important;font-weight:600 !important;color:#191d3a !important;
     text-transform:none !important;letter-spacing:0 !important;margin-bottom:3px !important}
 
-/* ── Inputs — bigger touch targets ── */
 .stTextInput input,.stNumberInput input{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:16px !important;color:#191d3a !important;
@@ -472,7 +445,6 @@ label[data-testid="stWidgetLabel"] p,label[data-testid="stWidgetLabel"]{
     box-shadow:0 0 0 3px rgba(99,152,200,.18) !important;outline:none !important}
 .stTextInput input::placeholder{font-size:14px !important;color:#bbb !important}
 
-/* ── Selectbox ── */
 [data-testid="stSelectbox"]>div>div{
     border-radius:12px !important;border:1.5px solid #ddd !important;
     background:#fff !important;font-size:16px !important;color:#191d3a !important;
@@ -481,7 +453,6 @@ label[data-testid="stWidgetLabel"] p,label[data-testid="stWidgetLabel"]{
 .stTextInput,.stSelectbox,[data-testid="stSelectbox"]{width:100% !important;min-width:0 !important}
 div[data-testid="stWidgetLabel"]{overflow:visible !important}
 
-/* ── Columns ── */
 [data-testid="stHorizontalBlock"]{
     gap:8px !important;align-items:flex-start !important;
     flex-wrap:nowrap !important;overflow:visible !important}
@@ -492,12 +463,10 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 [data-testid="stHorizontalBlock"]>[data-testid="column"] [data-testid="stVerticalBlock"]{
     overflow:visible !important;width:100% !important;min-width:0 !important}
 
-/* Stack columns on very small screens */
 @media(max-width:360px){
     [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important}
     [data-testid="stHorizontalBlock"]>[data-testid="column"]{flex:1 1 100% !important}}
 
-/* ── Buttons — big touch targets ── */
 .stButton>button{
     width:100% !important;border-radius:14px !important;
     height:52px !important;font-size:15px !important;
@@ -521,7 +490,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     font-weight:400 !important;height:36px !important;
     text-decoration:underline !important;text-underline-offset:3px !important}
 
-/* ── Link button ── */
 [data-testid="stLinkButton"] a{
     background:#6398c8 !important;color:#fff !important;
     border-radius:14px !important;height:52px !important;
@@ -529,11 +497,9 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     display:flex !important;align-items:center !important;
     justify-content:center !important;text-decoration:none !important}
 
-/* ── Checkbox ── */
 [data-testid="stCheckbox"] label{font-size:13px !important;color:#616161 !important;font-weight:500 !important}
 [data-testid="stCheckbox"] input{width:20px !important;height:20px !important}
 
-/* ── Mode toggle ── */
 .mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:0;
     background:#e4e4e4;border-radius:14px;padding:3px;margin-bottom:12px}
 .mode-toggle .stButton>button{
@@ -544,7 +510,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
     background:#fff !important;color:#191d3a !important;
     box-shadow:0 1px 4px rgba(0,0,0,.12) !important}
 
-/* ── Notices ── */
 .notice{border-radius:12px;padding:10px 13px;font-size:13px;line-height:1.5;
     display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
 .nok{background:#f0fdf4;border:1px solid #86efac;color:#166534}
@@ -553,7 +518,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .nwarn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
 .nviolet{background:#faf5ff;border:1px solid #d8b4fe;color:#6b21a8}
 
-/* ── Expedia banner & upload ── */
 .expedia-banner{background:#fff;border:1.5px solid #ddd;border-bottom:none;
     border-radius:16px 16px 0 0;padding:11px 14px;
     display:flex;align-items:center;justify-content:space-between;margin-top:14px}
@@ -584,18 +548,15 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 [data-testid="stFileUploaderDropInstructions"] small,
 [data-testid="stFileUploaderDropInstructions"] span{font-size:12px !important;color:#9e9e9e !important;font-weight:400 !important}
 
-/* ── Stats grid ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .stat-card{background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:14px 13px}
 .stat-val{font-size:20px;font-weight:800;color:#191d3a;line-height:1.1}
 .stat-lbl{font-size:10px;color:#9e9e9e;margin-top:4px;font-weight:500}
 
-/* ── Progress bar ── */
 .bulk-prog{background:#ddd;border-radius:99px;height:5px;overflow:hidden;margin-bottom:6px}
 .bulk-prog-f{height:100%;background:#6398c8;border-radius:99px;transition:width .3s}
 .bulk-prog-lbl{font-size:12px;color:#9e9e9e;text-align:center;margin-bottom:12px;font-weight:500}
 
-/* ── Bulk summary ── */
 .bulk-sum{background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:16px 14px;margin-bottom:14px}
 .bulk-sum-ttl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9e9e9e;margin-bottom:12px}
 .bulk-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin-bottom:12px}
@@ -606,7 +567,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .bulk-bar-f{height:100%;background:#1e9e5a;border-radius:99px}
 .bulk-pct{font-size:11px;color:#9e9e9e;text-align:right;margin-top:4px}
 
-/* ── File result cards ── */
 .file-item{background:#fff;border:1.5px solid #ddd;border-radius:14px;padding:12px 13px;margin-bottom:8px}
 .fi-success{border-color:#6ee7b7 !important;background:#f0fdf4 !important}
 .fi-error{border-color:#fca5a5 !important;background:#fff1f2 !important}
@@ -622,7 +582,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .fi-k{font-size:9px;font-weight:700;color:#9e9e9e;min-width:48px;flex-shrink:0;text-transform:uppercase;letter-spacing:.3px}
 .fi-v{font-size:12px;font-weight:500;color:#191d3a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* ── Settings rows ── */
 .st-row{display:flex;align-items:center;gap:10px;background:#fff;
     border:1.5px solid #ddd;border-radius:14px;padding:12px 13px;margin-bottom:8px}
 .st-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
@@ -635,7 +594,6 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .br{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
 .by{background:#fffde7;color:#7a5c00;border:1px solid #fcd34d}
 
-/* ── AI settings ── */
 .ai-card-btn-wrap .stButton>button{
     height:52px !important;border-radius:14px !important;font-size:14px !important;
     font-weight:500 !important;padding:0 14px !important;margin-bottom:8px !important}
@@ -655,31 +613,24 @@ div[data-testid="stWidgetLabel"]{overflow:visible !important}
 .ai-key-ok{font-size:11px;color:#1D9E75}
 .ai-key-warn{font-size:11px;color:#e68900}
 
-/* ── About box ── */
 .about-box{background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:14px 16px}
 .about-ttl{font-size:14px;font-weight:800;color:#191d3a;margin-bottom:12px}
 .about-r{display:flex;gap:8px;margin-bottom:6px}
 .about-k{font-size:11px;font-weight:700;color:#191d3a;width:62px;flex-shrink:0}
 .about-v{font-size:11px;color:#616161;line-height:1.5}
 
-/* ── DataTable ── */
 [data-testid="stDataFrame"]{border-radius:14px !important;border:1.5px solid #ddd !important;overflow:hidden !important;box-shadow:none !important}
 [data-testid="stDataFrame"] th{background:#f5f8fc !important;color:#616161 !important;font-size:10px !important;font-weight:700 !important;text-transform:uppercase !important;letter-spacing:.4px !important;border-bottom:1.5px solid #ddd !important;padding:9px 11px !important}
 [data-testid="stDataFrame"] td{font-size:12px !important;color:#191d3a !important;padding:9px 11px !important;border-bottom:1px solid #ededed !important}
 [data-testid="stDataFrame"] tr:hover td{background:#f5f8fc !important}
 
-/* ── Spinner ── */
 .stSpinner>div{border-top-color:#6398c8 !important}
 
-/* ── Date input fix ── */
 [data-testid="stDateInput"] input{
     font-size:15px !important;height:52px !important;
     border-radius:12px !important;border:1.5px solid #ddd !important;
     padding:0 14px !important;-webkit-appearance:none;appearance:none}
 
-/* ═══════════════════════════════════════════════
-   PORTRAIT MODE  (lebar ≤ 430px, orientasi tegak)
-   ═══════════════════════════════════════════════ */
 @media screen and (max-width:430px) and (orientation:portrait){
   .main .block-container{
     padding:6px 10px max(90px,calc(72px + env(safe-area-inset-bottom))) !important;
@@ -796,27 +747,19 @@ def _ni(v):
     except: return 0
 
 def _parse_room_nights(qty_str: str) -> int:
-    """
-    Parse qty string like "1 room x 6 nights", "2 rooms x 3 malam", "3 kamar x 4 malam"
-    Returns total room-nights as integer. E.g. "1 room x 6 nights" -> 6
-    """
     if not qty_str: return 0
     s = str(qty_str).strip().lower()
-    # Pattern: NUMBER x NUMBER (rooms x nights or nights x rooms)
     m = re.search(r'(\d+)\s*(?:room[s]?|kamar)?\s*[x×]\s*(\d+)', s)
     if m:
         a, b = int(m.group(1)), int(m.group(2))
-        return a * b  # rooms × nights = total room-nights
-    # Pattern: just a number
+        return a * b
     m2 = re.search(r'(\d+)', s)
     if m2: return int(m2.group(1))
     return 0
 
 def _fmt_date_display(v: str) -> str:
-    """Convert YYYY-MM-DD to DD/MM/YYYY for display, pass through others."""
     if not v: return ""
     s = str(v).strip()
-    # Already YYYY-MM-DD
     m = re.match(r'(\d{4})-(\d{2})-(\d{2})', s)
     if m: return f"{m.group(3)}/{m.group(2)}/{m.group(1)}"
     return s
@@ -854,6 +797,9 @@ def to_b64(img):
     return base64.b64encode(buf.getvalue()).decode(),"image/jpeg"
 
 # ─── AI Prompts ───────────────────────────────────────────────────────────────
+# ===========================================================================
+#  _SYS — UPDATED: room field reads the amount directly above card info line
+# ===========================================================================
 _SYS = """You are a corporate hotel expense AI parser for credit card reporting.
 Parse any document: Expedia TAAP receipt, Mitra Tours itinerary, hotel invoice.
 Return ONLY a valid JSON object — no markdown, no explanation.
@@ -876,9 +822,26 @@ Rules:
    - Count rooms and nights from the document. If "1 room, 6 nights" -> "1 room x 6 nights"
    - If only nights/malam mentioned: "6 malam" -> "1 room x 6 nights"
    - NEVER leave qty empty if checkin+checkout are present; compute nights = checkout - checkin.
-3. Amounts -> plain integer (strip Rp, IDR, commas, dots).
-4. Missing -> "" strings, 0 integers.
-5. Ambiguous dates (01/02/03) -> prefer DD/MM/YYYY for Indonesian docs."""
+3. room field — THE AMOUNT ACTUALLY CHARGED TO THE CREDIT CARD:
+   On Expedia TAAP receipts, the card brand and masked number
+   (e.g. "MasterCard •••• 4467", "AmericanExpress •••• 4205", "Visa •••• 0191")
+   always appears on the line DIRECTLY BELOW the charged amount.
+   RULE: find the card info line, then use the IDR amount on the line immediately above it.
+   - Example A: "Subtotal paid to Expedia  IDR 18,502,321" followed by
+                "AmericanExpress •••• 4205"
+                -> room = 18502321  (subtotal above card line)
+   - Example B: "Total  IDR 21,866,052" followed by
+                "MasterCard •••• 4467"
+                -> room = 21866052  (total above card line, no subtotal exists)
+   - NEVER use "Due at property", "Subtotal due at property", or any EUR/non-IDR amount.
+   - NEVER include amounts labelled as local tax, resort fee, or property fees.
+   - Strip IDR/Rp/commas/dots/decimals -> plain integer.
+4. card field: read the brand and masked number from the line directly below the charged amount.
+   Format as "Brand •••• last4", e.g. "MasterCard •••• 4467", "AmericanExpress •••• 4205",
+   "Visa •••• 0191".
+5. Amounts -> plain integer (strip Rp, IDR, commas, dots, decimal portion).
+6. Missing -> "" strings, 0 integers.
+7. Ambiguous dates (01/02/03) -> prefer DD/MM/YYYY for Indonesian docs."""
 
 _SYS_NONEXP = """You are a payment receipt parser. Extract ONLY these 4 fields.
 Return ONLY a valid JSON object — no markdown, no explanation.
@@ -964,58 +927,44 @@ def notice(kind, msg):
     st.markdown(f'<div class="notice {cls.get(kind,"ninfo")}"><b>{icons.get(kind,"ℹ")}</b>&ensp;{msg}</div>',
                 unsafe_allow_html=True)
 
-# ─── Card normalizer (UPDATED) ────────────────────────────────────────────────
-# Maps known BIN6 to (Brand, last4)
+# ─── Card normalizer ──────────────────────────────────────────────────────────
 _BIN_MAP = {"521558": ("MasterCard", "4467"), "489594": ("Visa", "0191")}
 
-# Canonical display strings (lowercase key → display value)
 _DISPLAY_MAP = {
     "mastercard \u2022\u2022\u2022\u2022 4467": "MasterCard \u2022\u2022\u2022\u2022 4467",
     "visa \u2022\u2022\u2022\u2022 0191":        "Visa \u2022\u2022\u2022\u2022 0191",
 }
 
-# Brand name aliases for pattern matching
 _BRAND_ALIAS = {
-    "mastercard":  "MasterCard",
-    "master card": "MasterCard",
-    "visa":        "Visa",
+    "mastercard":      "MasterCard",
+    "master card":     "MasterCard",
+    "visa":            "Visa",
+    "americanexpress": "AmericanExpress",
+    "american express":"AmericanExpress",
+    "amex":            "AmericanExpress",
 }
 
 def normalize_card(raw: str) -> str:
-    """
-    Normalizes any card string to canonical form: "Brand •••• last4"
-    Handles inputs like:
-      - "521558******4467"        (BIN-based)
-      - "MasterCard .... 4467"    (dots)
-      - "MasterCard **** 4467"    (asterisks)
-      - "MasterCard •••• 4467"    (already correct)
-      - "mastercard •••• 4467"    (lowercase)
-    """
     if not raw: return ""
     v = str(raw).strip()
     _lower = re.sub(r"\s+", " ", v.lower())
 
-    # 1. Direct display map lookup (exact match after normalization)
     if _lower in _DISPLAY_MAP:
         return _DISPLAY_MAP[_lower]
 
-    # 2. Pattern: "BrandName [mask] last4"
-    #    Mask = any combo of . * • - x (with optional spaces)
     _m = re.match(
-        r'^(mastercard|master\s+card|visa)\s*[\.\*\u2022\-x]+\s*(\d{4})$',
+        r'^(mastercard|master\s+card|visa|americanexpress|american\s+express|amex)\s*[\.\*\u2022\-x]+\s*(\d{4})$',
         _lower, re.IGNORECASE
     )
     if _m:
         brand_key = re.sub(r'\s+', ' ', _m.group(1).strip().lower())
         last4 = _m.group(2)
         brand = _BRAND_ALIAS.get(brand_key, brand_key.title())
-        # Verify against known BIN map for canonical casing
         for _bin6, (b, l4) in _BIN_MAP.items():
             if b.lower() == brand.lower() and l4 == last4:
                 return f"{b} \u2022\u2022\u2022\u2022 {l4}"
         return f"{brand} \u2022\u2022\u2022\u2022 {last4}"
 
-    # 3. BIN-based lookup (digits only input like "521558******4467")
     digits = re.sub(r"[^\d]", "", v)
     if len(digits) >= 6:
         bin6 = digits[:6]
@@ -1023,7 +972,6 @@ def normalize_card(raw: str) -> str:
             brand, last4 = _BIN_MAP[bin6]
             return f"{brand} \u2022\u2022\u2022\u2022 {last4}"
 
-    # 4. Fallback: return as-is
     return v
 
 # ─── Session state ────────────────────────────────────────────────────────────
@@ -1101,7 +1049,6 @@ if st.session_state["tab"] == "input":
     if not _PDF_OK:
         notice("warn","pypdfium2 belum terinstall — PDF nonaktif.")
 
-    # ── Mode toggle ───────────────────────────────────────────────────────────
     _cur_mode = st.session_state["input_mode"]
     st.markdown('<div class="mode-toggle">', unsafe_allow_html=True)
     _ma,_mb = st.columns(2)
@@ -1119,7 +1066,6 @@ if st.session_state["tab"] == "input":
             st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Issuer & PIC ──────────────────────────────────────────────────────────
     st.markdown('<div class="sec-lbl">Issuer &amp; PIC</div>', unsafe_allow_html=True)
     _ISSUERS = ["","Ade Puspitasari","Farras Mahmud","Meijika",
         "Muhammad Geraldi Jagaddhita","Nur Anissa Firda Aulia","Riega Wisudhantara",
@@ -1444,10 +1390,8 @@ if st.session_state["tab"] == "input":
 # ═══════════════════════════════════════════════════════════════════════════════
 elif st.session_state["tab"] == "dashboard":
     import pandas as pd
-    # Dashboard has its own secondary password (dashboard_password in secrets).
     if not _dashboard_login_wall():
         _render_footer(); st.stop()
-    # ── Dashboard header row ──────────────────────────────────────────────────
     _dh1, _dh2 = st.columns([5,1])
     _dh1.markdown('<p style="font-size:18px;font-weight:700;color:#111827;margin:4px 0 14px;">Dashboard</p>',unsafe_allow_html=True)
     with _dh2:
@@ -1472,10 +1416,7 @@ elif st.session_state["tab"] == "dashboard":
             avg=tr/tn if tn else 0
             tds=datetime.now().strftime("%d/%m/%Y")
             tdc=int(df["Timestamp Input"].astype(str).str.startswith(tds).sum()) if "Timestamp Input" in df.columns else 0
-            
-            # Konversi Room Nights ke numerik (dari Google Sheets nilainya masih string)
-                        
-            # Normalisasi nama kolom Room Nights (sheet bisa pakai "Room Nights" atau "Total Room Nights")
+
             _rn_col = "Room Nights" if "Room Nights" in df.columns else ("Total Room Nights" if "Total Room Nights" in df.columns else None)
             if _rn_col:
                 def _parse_rn_safe(v):
@@ -1487,7 +1428,6 @@ elif st.session_state["tab"] == "dashboard":
                         return int(d) if d else 0
                 df["Room Nights"] = df[_rn_col].apply(_parse_rn_safe)
 
-            # ── Minimalist stat row ───────────────────────────────────────────
             st.markdown(f"""
 <style>
 .ds-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}}
@@ -1505,7 +1445,6 @@ elif st.session_state["tab"] == "dashboard":
 </div>
 """, unsafe_allow_html=True)
 
-            # ── Kartu kredit breakdown ────────────────────────────────────────
             if "Kartu Kredit" in df.columns and "Total (Rp)" in df.columns:
                 df["Kartu Kredit"] = df["Kartu Kredit"].astype(str).apply(normalize_card)
                 _card_str=df["Kartu Kredit"].astype(str).str.strip().str.lower()
@@ -1526,7 +1465,6 @@ elif st.session_state["tab"] == "dashboard":
                             +f'</div>')
                     st.markdown(f'<div style="background:#fff;border-radius:14px;border:1px solid #f0f0f0;overflow:hidden;margin-bottom:14px">{_h}</div>',unsafe_allow_html=True)
 
-            # ── Data table ───────────────────────────────────────────────────
             st.markdown('<p style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin:0 0 8px;">Data Transaksi</p>',unsafe_allow_html=True)
             _disp=df.iloc[::-1].reset_index(drop=True).copy()
             if "Booking ID" in _disp.columns: _disp["Booking ID"]=_disp["Booking ID"].astype(str)
@@ -1534,69 +1472,60 @@ elif st.session_state["tab"] == "dashboard":
             if "Booking ID" in _disp.columns: _cfg["Booking ID"]=st.column_config.TextColumn("Booking ID")
             if "Total (Rp)" in _disp.columns: _cfg["Total (Rp)"]=st.column_config.NumberColumn("Total (Rp)",format="Rp %d")
             if "Room x Night" in _disp.columns: _cfg["Room x Night"]=st.column_config.TextColumn("Room × Night")
-            # Support kedua nama kolom
             for _rn_cn in ["Room Nights", "Total Room Nights"]:
                 if _rn_cn in _disp.columns:
                     _cfg[_rn_cn] = st.column_config.NumberColumn(_rn_cn, format="%d malam")
             if "Timestamp Input" in _disp.columns: _cfg["Timestamp Input"]=st.column_config.TextColumn("Timestamp")
-            # Date columns: tampilkan as-is (string), jangan konversi agar data tidak hilang
             for _dcol in ["Booking Date","Issued Date","Check-in","Check-out"]:
                 if _dcol in _disp.columns:
                     _disp[_dcol] = _disp[_dcol].astype(str).replace("nan","").replace("NaT","")
                     _cfg[_dcol] = st.column_config.TextColumn(_dcol)
             if "Room Nights" in _disp.columns:
                 _disp["Room Nights"] = df["Room Nights"]
-            elif "Total Room Nights" in _disp.columns:
-                _disp["Total Room Nights"] = _disp["Total Room Nights"].apply(_parse_rn_val)
             st.dataframe(_disp,use_container_width=True,height=260,column_config=_cfg,hide_index=True)
 
             st.markdown('<div class="sec-lbl">Analisa dengan Claude</div>',unsafe_allow_html=True)
 
             def _build_data_context(df_ctx):
                 import pandas as pd
-            
-                # ── Helper: parse tanggal dari berbagai format ────────────────────────────
+
                 def _parse_dates(series):
-                    """Parse tanggal dari format YYYY-MM-DD atau DD/MM/YYYY atau campuran."""
                     parsed = pd.to_datetime(series, errors="coerce", dayfirst=True)
-                    # Coba lagi untuk yang masih NaT dengan format YYYY-MM-DD eksplisit
                     mask = parsed.isna() & series.astype(str).str.match(r'\d{4}-\d{2}-\d{2}')
                     if mask.any():
                         parsed[mask] = pd.to_datetime(series[mask], format="%Y-%m-%d", errors="coerce")
                     return parsed
-            
+
                 _summary = {
                     "total_transaksi": len(df_ctx),
                     "total_pengeluaran_rp": int(df_ctx["Total (Rp)"].sum()) if "Total (Rp)" in df_ctx.columns else 0,
                     "rata_rata_rp": int(df_ctx["Total (Rp)"].mean()) if "Total (Rp)" in df_ctx.columns and len(df_ctx) > 0 else 0,
                 }
-            
+
                 if "Hotel" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _top_hotel = df_ctx.groupby("Hotel")["Total (Rp)"].sum().sort_values(ascending=False).head(5)
                     _summary["top_hotel"] = {k: int(v) for k, v in _top_hotel.items()}
-            
+
                 if "Issuer" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_issuer = df_ctx.groupby("Issuer")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_issuer"] = {k: int(v) for k, v in _per_issuer.items()}
-            
+
                 if "Kartu Kredit" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_kartu = df_ctx[df_ctx["Kartu Kredit"].astype(str).str.strip().ne("")].groupby("Kartu Kredit")["Total (Rp)"].sum()
                     _summary["per_kartu_kredit"] = {k: int(v) for k, v in _per_kartu.items()}
-            
+
                 if "Supplier" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_sup = df_ctx[df_ctx["Supplier"].astype(str).str.strip().ne("")].groupby("Supplier")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_supplier"] = {k: int(v) for k, v in _per_sup.items()}
-            
+
                 if "Total (Rp)" in df_ctx.columns and "Hotel" in df_ctx.columns:
                     _cols5 = [c for c in ["Hotel","Guest Name","Total (Rp)","Check-in","Room Nights","Issuer","Booking Date"] if c in df_ctx.columns]
                     _top5 = df_ctx.nlargest(5, "Total (Rp)")[_cols5].fillna("").astype(str)
                     _summary["transaksi_terbesar"] = _top5.to_dict(orient="records")
-                                
-                # Normalisasi kolom Room Nights (support "Room Nights" atau "Total Room Nights")
+
                 _rn_col_ctx = "Room Nights" if "Room Nights" in df_ctx.columns else ("Total Room Nights" if "Total Room Nights" in df_ctx.columns else None)
                 if _rn_col_ctx:
                     df_ctx = df_ctx.copy()
-                    # Pastikan selalu tersedia sebagai "Room Nights" untuk kode di bawah
                     df_ctx["Room Nights"] = df_ctx[_rn_col_ctx].apply(
                         lambda v: int(float(str(v).strip())) if str(v).strip() not in ("", "nan", "None", "NaT") else 0
                     )
@@ -1605,57 +1534,52 @@ elif st.session_state["tab"] == "dashboard":
                     _summary["total_room_nights"] = int(_rn.sum())
                     _summary["rata_rata_room_nights"] = round(float(_rn[_rn > 0].mean()), 1) if (_rn > 0).any() else 0
                     _summary["jumlah_baris_room_nights"] = int((_rn > 0).sum())
-            
-                # ── Analisa per bulan untuk semua kolom tanggal ────────────────────────────
+
                 _date_cols = {
                     "Check-in":      "checkin",
                     "Check-out":     "checkout",
                     "Booking Date":  "booking_date",
                     "Issued Date":   "issued_date",
                 }
-            
+
                 _monthly_all = {}
                 _date_ranges = {}
-            
+
                 for _col_name, _col_key in _date_cols.items():
                     if _col_name not in df_ctx.columns:
                         continue
-            
+
                     _raw = df_ctx[_col_name].astype(str).str.strip()
                     _raw = _raw[_raw.ne("") & _raw.ne("nan") & _raw.ne("NaT") & _raw.ne("None")]
-            
+
                     if _raw.empty:
                         continue
-            
+
                     _dates = _parse_dates(_raw)
                     _valid = _dates.dropna()
-            
+
                     if _valid.empty:
                         continue
-            
-                    # Rentang tanggal
+
                     _date_ranges[_col_key] = {
                         "terlama": _valid.min().strftime("%d/%m/%Y"),
                         "terbaru": _valid.max().strftime("%d/%m/%Y"),
                         "jumlah_valid": int(len(_valid)),
                     }
-            
-                    # Gabungkan dengan Total (Rp) berdasarkan index
+
                     if "Total (Rp)" in df_ctx.columns:
                         _df_join = df_ctx.loc[_dates.dropna().index].copy()
                         _df_join["_parsed_date"] = _dates.dropna()
                         _df_join["_bulan"] = _df_join["_parsed_date"].dt.to_period("M")
-            
-                        # Per bulan — jumlah transaksi dan total Rp
+
                         _monthly_count = _df_join.groupby("_bulan").size()
                         _monthly_sum   = _df_join.groupby("_bulan")["Total (Rp)"].sum()
-            
+
                         _monthly_all[_col_key] = {
                             str(k): {"jumlah": int(_monthly_count.get(k, 0)), "total_rp": int(_monthly_sum.get(k, 0))}
                             for k in sorted(set(list(_monthly_count.index) + list(_monthly_sum.index)))
                         }
-            
-                        # Per tahun
+
                         _df_join["_tahun"] = _df_join["_parsed_date"].dt.year
                         _yearly_sum = _df_join.groupby("_tahun")["Total (Rp)"].sum()
                         _yearly_cnt = _df_join.groupby("_tahun").size()
@@ -1663,27 +1587,25 @@ elif st.session_state["tab"] == "dashboard":
                             str(k): {"jumlah": int(_yearly_cnt.get(k, 0)), "total_rp": int(_yearly_sum.get(k, 0))}
                             for k in sorted(_yearly_sum.index)
                         }
-            
+
                 if _monthly_all:
                     _summary["pengeluaran_per_bulan"] = _monthly_all
-            
+
                 if _date_ranges:
                     _summary["rentang_tanggal"] = _date_ranges
-            
-                # ── Analisa per PIC ───────────────────────────────────────────────────────
+
                 if "PIC" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
                     _per_pic = df_ctx[df_ctx["PIC"].astype(str).str.strip().ne("")].groupby("PIC")["Total (Rp)"].sum().sort_values(ascending=False)
                     _summary["per_pic"] = {k: int(v) for k, v in _per_pic.items()}
-            
-                # ── Analisa per Nama Kegiatan ─────────────────────────────────────────────
+
                 if "Nama Kegiatan" in df_ctx.columns and "Total (Rp)" in df_ctx.columns:
-                    _per_keg = df_ctx[df_ctx["Nama Kegiatan"].astype(str).str.strip().ne("") & 
+                    _per_keg = df_ctx[df_ctx["Nama Kegiatan"].astype(str).str.strip().ne("") &
                                       df_ctx["Nama Kegiatan"].astype(str).str.strip().ne("nan")].groupby("Nama Kegiatan")["Total (Rp)"].sum().sort_values(ascending=False)
                     if not _per_keg.empty:
                         _summary["per_nama_kegiatan"] = {k: int(v) for k, v in _per_keg.items()}
-            
+
                 return json.dumps(_summary, ensure_ascii=False, indent=2)
-                
+
             _ctx_json = _build_data_context(df)
 
             if "dash_chat_history" not in st.session_state:
@@ -1809,6 +1731,7 @@ Jika data tidak cukup untuk menjawab, katakan dengan jelas."""
         notice("err",str(e))
     _render_footer()
 
+
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — RECENT ACTIVITY
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1854,6 +1777,7 @@ elif st.session_state["tab"] == "log":
             st.markdown(_items_html,unsafe_allow_html=True)
     except Exception as e: notice("err",str(e))
     _render_footer()
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 #  TAB — SETTINGS
