@@ -94,7 +94,7 @@ File JSON akan terlihat seperti ini:
 #### A5. Bagikan Google Spreadsheet ke Service Account
 
 1. Buka Google Spreadsheet Anda:
-   👉 [https://docs.google.com/spreadsheets/d/1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g](https://docs.google.com/spreadsheets/d/1nvgMCmo1EJtbCAt0db_OizvPYDvaEzphKhwzBJ-3X_g)
+   👉 [https://docs.google.com/spreadsheets
 2. Klik tombol **Share** (kanan atas)
 3. Di kolom "Add people and groups", masukkan **client_email** dari file JSON tadi
    Contoh: `cc-reporting-bot@ai-cc-reporting.iam.gserviceaccount.com`
